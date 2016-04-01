@@ -1,8 +1,22 @@
 /*
- * string.h
+ * Copyright (C) 2012-2016 Jacob R. Lifshay
+ * This file is part of Voxels.
  *
- *  Created on: Mar 27, 2016
- *      Author: jacob
+ * Voxels is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Voxels is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Voxels; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ *
  */
 
 #ifndef JAVASCRIPT_TASKLETS_STRING_H_
@@ -11,6 +25,7 @@
 #include <cstdint>
 #include <string>
 #include <cstring>
+#include <functional>
 
 namespace javascript_tasklets
 {
@@ -45,11 +60,13 @@ struct Char16Traits final
     {
         std::memmove(
             static_cast<void *>(dest), static_cast<const void *>(src), count * sizeof(char_type));
+        return dest;
     }
     static char_type *copy(char_type *dest, const char_type *src, std::size_t count) noexcept
     {
         std::memcpy(
             static_cast<void *>(dest), static_cast<const void *>(src), count * sizeof(char_type));
+        return dest;
     }
     static int compare(const char_type *l, const char_type *r, std::size_t count) noexcept
     {
@@ -125,6 +142,7 @@ struct StringCastHelper<std::basic_string<CharT, TraitsT, AllocT>,
     }
 };
 
+template <>
 struct StringCastHelper<std::string, String> final
 {
     static std::string convert(String src)
@@ -194,10 +212,11 @@ struct StringCastHelper<std::string, String> final
     }
 };
 
+template <>
 struct StringCastHelper<String, std::string> final
 {
 private:
-    void writeValue(String &retval, std::uint_fast32_t value)
+    static void writeValue(String &retval, std::uint_fast32_t value)
     {
         if(value > 0x10000UL)
         {
@@ -347,6 +366,24 @@ String operator"" _js(const char *str, std::size_t length)
 {
     return string_cast<String>(std::string(str, length));
 }
+}
+
+namespace std
+{
+template <>
+struct hash<javascript_tasklets::String> final
+{
+    std::size_t operator()(const javascript_tasklets::String &str) const
+    {
+        std::size_t retval = str.size();
+        for(auto ch : str)
+        {
+            retval *= 1361;
+            retval ^= ch;
+        }
+        return retval;
+    }
+};
 }
 
 #endif /* JAVASCRIPT_TASKLETS_STRING_H_ */

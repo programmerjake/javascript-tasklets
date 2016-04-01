@@ -1,8 +1,22 @@
 /*
- * gc.h
+ * Copyright (C) 2012-2016 Jacob R. Lifshay
+ * This file is part of Voxels.
  *
- *  Created on: Mar 27, 2016
- *      Author: jacob
+ * Voxels is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Voxels is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with Voxels; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ *
  */
 
 #ifndef JAVASCRIPT_TASKLETS_GC_H_
@@ -13,210 +27,281 @@
 #include <cstdint>
 #include <vector>
 #include <new>
+#include <memory>
+#include <unordered_map>
+#include "string.h"
 
 namespace javascript_tasklets
 {
 namespace gc
 {
-struct ObjectDescriptorBase;
+struct ObjectDescriptor;
 
-struct Object;
-
-struct ObjectMemberDescriptor final
+union ObjectMember final
 {
-    enum class Type
+    std::size_t referenceIndexValue;
+    double doubleValue;
+    std::uint32_t uint32Value;
+    const String *stringValue;
+    typedef std::uint8_t TypeBaseType;
+    enum class Type : TypeBaseType
     {
-        ReferenceIndex, Int32, Double,
+        Object, // uses referenceIndexValue
+        Double, // uses doubleValue
+        Int32, // uses uint32Value
+        UInt32, // uses uint32Value
+        Symbol, // uses stringValue
+        String, // uses stringValue
+        Undefined = String, // stringValue is null
+        Null = Symbol, // stringValue is null
     };
-    Type type;
-    std::size_t arrayLength;
-    std::size_t offset;
-    constexpr bool isArray() const
+    constexpr bool isObject(Type type) const
     {
-        return arrayLength > 0;
+        return type == Type::Object;
     }
-    constexpr bool isScalar() const
+    constexpr bool isDouble(Type type) const
     {
-        return arrayLength == 0;
+        return type == Type::Double;
     }
-    static std::size_t getTypeSize(Type type)
+    constexpr bool isInt32(Type type) const
     {
-        switch(type)
-        {
-        case Type::ReferenceIndex:
-            return sizeof(std::size_t);
-        case Type::Int32:
-            return sizeof(std::int32_t);
-        case Type::Double:
-            return sizeof(double);
-        }
-        assert(false);
-        return sizeof(std::int32_t);
+        return type == Type::Int32;
     }
-    std::size_t getSize() const
+    constexpr bool isUInt32(Type type) const
     {
-        std::size_t typeSize = getTypeSize(type);
-        if(isScalar())
-        {
-            return typeSize;
-        }
-        else if(isArray())
-        {
-            return typeSize * arrayLength;
-        }
-        else
-        {
-            assert(false);
-            return typeSize;
-        }
+        return type == Type::UInt32;
     }
-    static std::size_t getTypeAlignment(Type type)
+    constexpr bool isSymbol(Type type) const
     {
-        switch(type)
-        {
-        case Type::ReferenceIndex:
-            return alignof(std::size_t);
-        case Type::Int32:
-            return alignof(std::int32_t);
-        case Type::Double:
-            return alignof(double);
-        }
-        assert(false);
-        return alignof(std::int32_t);
+        return type == Type::Symbol && stringValue != nullptr;
     }
-    std::size_t getAlignment() const
+    constexpr bool isString(Type type) const
     {
-        return getTypeAlignment(type);
+        return type == Type::String && stringValue != nullptr;
     }
-    std::size_t &getReferenceIndex(Object *object, std::size_t index) const
+    constexpr bool isUndefined(Type type) const
     {
-        assert(type == Type::ReferenceIndex);
-        assert(index < arrayLength || (arrayLength == 0 && index == 0));
-        return reinterpret_cast<std::size_t *>(reinterpret_cast<char *>(object)
-            + offset)[index];
+        return type == Type::Undefined && stringValue == nullptr;
     }
-    std::int32_t &getInt32(Object *object, std::size_t index) const
+    constexpr bool isNull(Type type) const
     {
-        assert(type == Type::Int32);
-        assert(index < arrayLength || (arrayLength == 0 && index == 0));
-        return reinterpret_cast<std::int32_t *>(reinterpret_cast<char *>(object)
-            + offset)[index];
-    }
-    double &getDouble(Object *object, std::size_t index) const
-    {
-        assert(type == Type::Double);
-        assert(index < arrayLength || (arrayLength == 0 && index == 0));
-        return reinterpret_cast<double *>(reinterpret_cast<char *>(object)
-            + offset)[index];
-    }
-    std::size_t getIfReferenceIndex(Object *object, std::size_t index) const
-    {
-        if(type != Type::ReferenceIndex)
-            return 0;
-        return getReferenceIndex(object, index);
-    }
-    constexpr ObjectMemberDescriptor(Type type,
-        std::size_t arrayLength,
-        std::size_t offset)
-        : type(type),
-          arrayLength(arrayLength),
-          offset(offset)
-    {
-    }
-    static ObjectMemberDescriptor make(std::size_t &currentSize,
-        Type type,
-        std::size_t arrayLength = 0)
-    {
-        std::size_t alignment = getTypeAlignment(type);
-        std::size_t size = getTypeSize(type);
-        if(arrayLength > 0)
-            size *= arrayLength;
-        assert((alignment & (alignment - 1)) == 0); // assert alignment is a power of 2
-        currentSize = (currentSize + alignment - 1) & ~(alignment - 1); // round up to next multiple of alignment (only works for powers of 2)
-        ObjectMemberDescriptor retval(type, arrayLength, currentSize);
-        currentSize += size;
-        return retval;
+        return type == Type::Null && stringValue == nullptr;
     }
 };
 
-class Allocator;
+struct Value final
+{
+    ObjectMember::Type type;
+    ObjectMember value;
+};
+
+struct ObjectMemberGroup final
+{
+    static constexpr std::size_t objectMembersPerGroup =
+        sizeof(ObjectMember) / sizeof(ObjectMember::Type);
+    ObjectMember::Type types[objectMembersPerGroup];
+    ObjectMember values[objectMembersPerGroup];
+};
+
+class GC;
+
+struct Object final
+{
+    const ObjectDescriptor *objectDescriptor;
+    const GC *gc;
+    struct ExtraData : public std::enable_shared_from_this<ExtraData>
+    {
+        virtual ~ExtraData() = default;
+        ExtraData() = default;
+        virtual std::shared_ptr<ExtraData> clone() const = 0;
+    };
+    std::shared_ptr<ExtraData> extraData;
+    ObjectMemberGroup *getMembersArray();
+    const ObjectMemberGroup *getMembersArray() const;
+    ObjectMember::Type &getMemberType(std::size_t memberIndex);
+    ObjectMember &getMemberValue(std::size_t memberIndex);
+    ObjectMember::Type getMemberType(std::size_t memberIndex) const;
+    const ObjectMember &getMemberValue(std::size_t memberIndex) const;
+};
+
+inline ObjectMemberGroup *Object::getMembersArray()
+{
+    return reinterpret_cast<ObjectMemberGroup *>(this + 1);
+}
+
+inline const ObjectMemberGroup *Object::getMembersArray() const
+{
+    return reinterpret_cast<const ObjectMemberGroup *>(this + 1);
+}
 
 struct ObjectDescriptor
 {
-    std::size_t size;
-    std::vector<ObjectMemberDescriptor> members;
-    void addMember(ObjectMemberDescriptor::Type type)
+    struct Member final
     {
-        members.push_back(ObjectMemberDescriptor::make(size, type));
-    }
-    void addMember(ObjectMemberDescriptor::Type type, std::size_t arrayLength)
+        enum class Kind
+        {
+            Empty,
+            Transition,
+            Embedded,
+            Constant,
+        };
+        union MemberValue final
+        {
+            std::size_t embeddedMember;
+            const ObjectDescriptor *newObjectDescriptor;
+            Value constantMember;
+            constexpr MemberValue() : embeddedMember()
+            {
+            }
+            constexpr MemberValue(std::size_t embeddedMember) : embeddedMember(embeddedMember)
+            {
+            }
+            constexpr MemberValue(const ObjectDescriptor *newObjectDescriptor)
+                : newObjectDescriptor(newObjectDescriptor)
+            {
+            }
+            constexpr MemberValue(Value constantMember) : constantMember(constantMember)
+            {
+            }
+        };
+        Kind kind;
+        MemberValue value;
+        constexpr Member() : kind(Kind::Empty), value()
+        {
+        }
+
+    private:
+        constexpr Member(Kind kind, MemberValue value) : kind(kind), value(value)
+        {
+        }
+
+    public:
+        static constexpr Member makeTransition(const ObjectDescriptor *newObjectDescriptor)
+        {
+            return Member(Kind::Transition, MemberValue(newObjectDescriptor));
+        }
+        static constexpr Member makeEmbedded(std::size_t embeddedMember)
+        {
+            return Member(Kind::Embedded, MemberValue(embeddedMember));
+        }
+        static constexpr Member makeConstant(Value constantMember)
+        {
+            return Member(Kind::Embedded, Value(constantMember));
+        }
+    };
+    struct InternalSlot final
     {
-        assert(arrayLength >= 1);
-        members.push_back(ObjectMemberDescriptor::make(size,
-            type,
-            arrayLength));
-    }
+        const char *name;
+        template <typename TagType>
+        const InternalSlot *get()
+        {
+            static InternalSlot retval(TagType::name);
+            return &retval;
+        }
+    };
+    const GC *const gc;
+private:
+    std::size_t memberCount;
+    std::unordered_map<String, Member> namedMembers;
+    std::unordered_map<const String *, Member> symbolMembers;
+    std::unordered_map<const InternalSlot *, Member> internalSlots;
+public:
+    explicit ObjectDescriptor(const GC *gc);
     virtual ~ObjectDescriptor() = default;
-    virtual void destructObject(Object *object) const
+    std::size_t getMemberCount() const
     {
+        return memberCount;
     }
-    virtual ObjectDescriptor *clone(Allocator &allocator) const;
+    Member getInternalSlot(const InternalSlot *slot) const
+    {
+        assert(slot);
+        auto iter = internalSlots.find(slot);
+        if(iter == internalSlots.end())
+            return Member();
+        return std::get<1>(*iter);
+    }
+    void setInternalSlot(const InternalSlot *slot, Member member)
+    {
+        assert(slot);
+        internalSlots[slot] = member;
+    }
+    virtual Member getNamedMember(const String &name) const
+    {
+        auto iter = namedMembers.find(name);
+        if(iter == namedMembers.end())
+            return Member();
+        return std::get<1>(*iter);
+    }
 };
 
-class Allocator
+inline ObjectMember::Type &Object::getMemberType(std::size_t memberIndex)
 {
-    Allocator(const Allocator &) = delete;
-    Allocator &operator=(const Allocator &) = delete;
+    assert(memberIndex < objectDescriptor->getMemberCount());
+    return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
+        .types[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
+}
+
+inline ObjectMember &Object::getMemberValue(std::size_t memberIndex)
+{
+    assert(memberIndex < objectDescriptor->getMemberCount());
+    return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
+        .values[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
+}
+
+inline ObjectMember::Type Object::getMemberType(std::size_t memberIndex) const
+{
+    assert(memberIndex < objectDescriptor->getMemberCount());
+    return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
+        .types[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
+}
+
+inline const ObjectMember &Object::getMemberValue(std::size_t memberIndex) const
+{
+    assert(memberIndex < objectDescriptor->getMemberCount());
+    return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
+        .values[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
+}
+
+
+class GC : public std::enable_shared_from_this<GC>
+{
+    GC &operator=(const GC &) = delete;
+    GC(const GC &) = delete;
+
+private:
+    std::vector<Object *> objects;
+    std::vector<String *> strings;
+    bool immutable;
+    const std::shared_ptr<const GC> parent;
+    Object *objectCopyOnWrite(std::size_t referenceIndex);
 
 public:
-    Allocator() = default;
-    virtual ~Allocator() = default;
-    virtual void *allocate(std::size_t size) = 0;
-    virtual void free(void *memory) noexcept = 0;
-    template <typename T, typename ...Args>
-    T *create(Args &&...args)
+    GC();
+    GC(std::shared_ptr<const GC> parent);
+    ~GC();
+    bool isImmutable() const
     {
-        void *mem = allocate(sizeof(T));
-        if(!mem)
-            return nullptr;
-        try
-        {
-            return ::new (mem) T(std::forward<Args>(args)...);
-        }
-        catch(...)
-        {
-            free(mem);
-            throw;
-        }
+        return immutable;
     }
-    template <typename T>
-    void destroy(T *object) noexcept(std::is_nothrow_destructible<T>::value)
+    void makeImmutable()
     {
-        if(!object)
-            return;
-        try
-        {
-            object->~T();
-        }
-        catch(...)
-        {
-            free(object);
-            throw;
-        }
-        free(object);
+        immutable = true;
     }
-};
-
-struct NewDeleteAllocator final : public Allocator
-{
-    virtual void *allocate(std::size_t size) override
+    const Object *getObjectForRead(std::size_t referenceIndex) const
     {
-        return ::operator new(size);
+        assert(referenceIndex > 0 && referenceIndex < objects.size());
+        return objects[referenceIndex];
     }
-    virtual void free(void *memory) noexcept override
+    Object *getObjectForWrite(std::size_t referenceIndex)
     {
-        ::operator delete(memory);
+        assert(!immutable);
+        assert(referenceIndex > 0 && referenceIndex < objects.size());
+        Object *&retval = objects[referenceIndex];
+        if(retval->gc == this)
+            return retval;
+        return objectCopyOnWrite(referenceIndex);
     }
+    Object *create(ObjectDescriptor *objectDescriptor);
 };
 }
 }
