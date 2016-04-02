@@ -19,10 +19,52 @@
  *
  */
 #include "gc.h"
+#include <type_traits>
 
 namespace javascript_tasklets
 {
 namespace gc
 {
+static_assert(std::is_trivially_destructible<ObjectMemberGroup>::value,
+              "ObjectMemberGroup should be trivially destructable");
+
+ObjectDescriptor::ObjectDescriptor(const GC *gc) : gc(gc), memberCount(0)
+{
+#error finish
+}
+
+Object *GC::objectCopyOnWrite(ObjectReference objectReference)
+{
+    assert(!immutable);
+    assert(objectReference.index < objects.size());
+    assert(parent);
+#error finish
+}
+
+GC::GC()
+{
+#error finish
+}
+
+GC::GC(std::shared_ptr<const GC> parent)
+{
+#error finish
+}
+
+GC::~GC()
+{
+#error finish
+}
+
+void GC::collect()
+{
+    assert(!immutable);
+#error finish
+}
+
+ObjectHandle GC::create(ObjectDescriptor *objectDescriptor)
+{
+#error finish
+}
 }
 }

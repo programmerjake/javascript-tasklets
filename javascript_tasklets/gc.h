@@ -37,19 +37,75 @@ namespace gc
 {
 struct ObjectDescriptor;
 
+struct ObjectReference final
+{
+    std::size_t index;
+    static constexpr std::size_t invalidIndex = ~static_cast<std::size_t>(0);
+    constexpr explicit ObjectReference(std::size_t index) : index(index)
+    {
+    }
+    constexpr explicit ObjectReference(std::nullptr_t = nullptr) : index(invalidIndex)
+    {
+    }
+    constexpr bool operator==(const ObjectReference &rt) const
+    {
+        return index == rt.index;
+    }
+    constexpr bool operator!=(const ObjectReference &rt) const
+    {
+        return index != rt.index;
+    }
+    constexpr bool operator==(std::nullptr_t) const
+    {
+        return index == invalidIndex;
+    }
+    constexpr bool operator!=(std::nullptr_t) const
+    {
+        return index != invalidIndex;
+    }
+    friend bool operator==(std::nullptr_t, const ObjectReference &v)
+    {
+        return v.index == invalidIndex;
+    }
+    friend bool operator!=(std::nullptr_t, const ObjectReference &v)
+    {
+        return v.index != invalidIndex;
+    }
+};
+}
+}
+
+namespace std
+{
+template <>
+struct hash<javascript_tasklets::gc::ObjectReference> final
+{
+    constexpr std::size_t operator()(const javascript_tasklets::gc::ObjectReference &v) const
+    {
+        return v.index;
+    }
+};
+}
+
+namespace javascript_tasklets
+{
+namespace gc
+{
 union ObjectMember final
 {
-    std::size_t referenceIndexValue;
+    ObjectReference objectValue;
     double doubleValue;
     std::uint32_t uint32Value;
     const String *stringValue;
+    constexpr ObjectMember();
     typedef std::uint8_t TypeBaseType;
     enum class Type : TypeBaseType
     {
-        Object, // uses referenceIndexValue
+        Object, // uses objectValue
         Double, // uses doubleValue
         Int32, // uses uint32Value
         UInt32, // uses uint32Value
+        Boolean, // uses uint32Value
         Symbol, // uses stringValue
         String, // uses stringValue
         Undefined = String, // stringValue is null
@@ -71,6 +127,10 @@ union ObjectMember final
     {
         return type == Type::UInt32;
     }
+    constexpr bool isBoolean(Type type) const
+    {
+        return type == Type::Boolean;
+    }
     constexpr bool isSymbol(Type type) const
     {
         return type == Type::Symbol && stringValue != nullptr;
@@ -89,10 +149,14 @@ union ObjectMember final
     }
 };
 
+constexpr ObjectMember::ObjectMember() : uint32Value()
+{
+}
+
 struct Value final
 {
-    ObjectMember::Type type;
     ObjectMember value;
+    ObjectMember::Type type;
 };
 
 struct ObjectMemberGroup final
@@ -105,16 +169,32 @@ struct ObjectMemberGroup final
 
 class GC;
 
-struct Object final
+class Object final
 {
-    const ObjectDescriptor *objectDescriptor;
-    const GC *gc;
+    friend class GC;
+    Object(const Object &rt) = delete;
+    Object &operator=(const Object &rt) = delete;
+
+public:
     struct ExtraData : public std::enable_shared_from_this<ExtraData>
     {
         virtual ~ExtraData() = default;
         ExtraData() = default;
         virtual std::shared_ptr<ExtraData> clone() const = 0;
     };
+
+private:
+    Object(const ObjectDescriptor *objectDescriptor,
+           const GC *gc,
+           std::shared_ptr<ExtraData> extraData)
+        : objectDescriptor(objectDescriptor), gc(gc), extraData(std::move(extraData))
+    {
+    }
+    ~Object() = default;
+
+public:
+    const ObjectDescriptor *objectDescriptor;
+    const GC *gc;
     std::shared_ptr<ExtraData> extraData;
     ObjectMemberGroup *getMembersArray();
     const ObjectMemberGroup *getMembersArray() const;
@@ -200,11 +280,13 @@ struct ObjectDescriptor
         }
     };
     const GC *const gc;
+
 private:
     std::size_t memberCount;
     std::unordered_map<String, Member> namedMembers;
     std::unordered_map<const String *, Member> symbolMembers;
     std::unordered_map<const InternalSlot *, Member> internalSlots;
+
 public:
     explicit ObjectDescriptor(const GC *gc);
     virtual ~ObjectDescriptor() = default;
@@ -262,9 +344,248 @@ inline const ObjectMember &Object::getMemberValue(std::size_t memberIndex) const
         .values[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
 }
 
-
-class GC : public std::enable_shared_from_this<GC>
+struct ObjectHandle final
 {
+    ObjectReference object;
+    inline ObjectHandle(GC &gc, ObjectReference object);
+    constexpr ObjectHandle() : object()
+    {
+    }
+    constexpr bool empty() const
+    {
+        return object == ObjectReference();
+    }
+};
+
+struct StringHandle final
+{
+    const String *string;
+    inline StringHandle(GC &gc, const String *string);
+    constexpr StringHandle() : string(nullptr)
+    {
+    }
+    constexpr bool empty() const
+    {
+        return string == nullptr;
+    }
+};
+
+struct SymbolHandle final
+{
+    const String *symbol;
+    inline SymbolHandle(GC &gc, const String *symbol);
+    constexpr SymbolHandle() : symbol(nullptr)
+    {
+    }
+    constexpr bool empty() const
+    {
+        return symbol == nullptr;
+    }
+};
+
+struct ValueHandle final
+{
+    ObjectMember value;
+    ObjectMember::Type type;
+    ValueHandle() : value(), type(ObjectMember::Type::Undefined)
+    {
+        value.stringValue = nullptr;
+    }
+    inline ValueHandle(GC &gc, ObjectMember::Type type, ObjectMember value);
+
+private:
+    ValueHandle(ObjectMember::Type type, ObjectMember value) : value(value), type(type)
+    {
+    }
+
+public:
+    static ValueHandle makeUndefined()
+    {
+        ObjectMember value;
+        value.stringValue = nullptr;
+        return ValueHandle(ObjectMember::Type::Undefined, value);
+    }
+    static ValueHandle makeNull()
+    {
+        ObjectMember value;
+        value.stringValue = nullptr;
+        return ValueHandle(ObjectMember::Type::Null, value);
+    }
+    static ValueHandle makeObject(ObjectHandle object)
+    {
+        assert(!object.empty());
+        ObjectMember value;
+        value.objectValue = object.object;
+        return ValueHandle(ObjectMember::Type::Object, value);
+    }
+    static ValueHandle makeObject(GC &gc, ObjectReference object)
+    {
+        return makeObject(ObjectHandle(gc, object));
+    }
+    static ValueHandle makeDouble(double doubleValue)
+    {
+        ObjectMember value;
+        value.doubleValue = doubleValue;
+        return ValueHandle(ObjectMember::Type::Double, value);
+    }
+    static ValueHandle makeInt32(std::int32_t intValue)
+    {
+        ObjectMember value;
+        value.uint32Value = static_cast<std::uint32_t>(intValue);
+        return ValueHandle(ObjectMember::Type::Int32, value);
+    }
+    static ValueHandle makeUInt32(std::uint32_t intValue)
+    {
+        ObjectMember value;
+        value.uint32Value = intValue;
+        return ValueHandle(ObjectMember::Type::UInt32, value);
+    }
+    static ValueHandle makeBoolean(bool boolValue)
+    {
+        ObjectMember value;
+        value.uint32Value = boolValue ? 1 : 0;
+        return ValueHandle(ObjectMember::Type::Boolean, value);
+    }
+    static ValueHandle makeSymbol(SymbolHandle symbol)
+    {
+        assert(!symbol.empty());
+        ObjectMember value;
+        value.stringValue = symbol.symbol;
+        return ValueHandle(ObjectMember::Type::Symbol, value);
+    }
+    static ValueHandle makeSymbol(GC &gc, const String *symbol)
+    {
+        return makeSymbol(SymbolHandle(gc, symbol));
+    }
+    static ValueHandle makeString(StringHandle string)
+    {
+        assert(!string.empty());
+        ObjectMember value;
+        value.stringValue = string.string;
+        return ValueHandle(ObjectMember::Type::String, value);
+    }
+    static ValueHandle makeString(GC &gc, const String *string)
+    {
+        return makeString(StringHandle(gc, string));
+    }
+};
+
+class HandleScope final
+{
+    friend class GC;
+    friend struct ObjectHandle;
+    friend struct StringHandle;
+    friend struct SymbolHandle;
+    friend struct ValueHandle;
+    HandleScope(const HandleScope &rt) = delete;
+    HandleScope &operator=(const HandleScope &rt) = delete;
+    void *operator new(std::size_t) = delete;
+
+private:
+    HandleScope *parent;
+    GC &gc;
+    std::vector<ObjectReference> objectReferences;
+    std::vector<const String *> stringReferences;
+    inline void addToGC();
+    inline void removeFromGC();
+    void init(std::size_t objectReferenceCount, std::size_t stringReferenceCount)
+    {
+        objectReferences.reserve(objectReferenceCount);
+        stringReferences.reserve(stringReferenceCount);
+        addToGC();
+    }
+    void init(std::size_t referenceCount = 20)
+    {
+        init(referenceCount, referenceCount);
+    }
+    void addHandle(const ObjectHandle &object)
+    {
+        if(!object.empty())
+            objectReferences.push_back(object.object);
+    }
+    void addHandle(const StringHandle &string)
+    {
+        if(!string.empty())
+            stringReferences.push_back(string.string);
+    }
+    void addHandle(const SymbolHandle &symbol)
+    {
+        if(!symbol.empty())
+            stringReferences.push_back(symbol.symbol);
+    }
+    void addHandle(const ValueHandle &value)
+    {
+        switch(value.type)
+        {
+        case ObjectMember::Type::Object:
+            assert(value.value.objectValue != nullptr);
+            objectReferences.push_back(value.value.objectValue);
+            return;
+        case ObjectMember::Type::Double:
+        case ObjectMember::Type::Int32:
+        case ObjectMember::Type::UInt32:
+        case ObjectMember::Type::Boolean:
+            return;
+        case ObjectMember::Type::Symbol:
+        case ObjectMember::Type::String:
+            if(value.value.stringValue)
+                stringReferences.push_back(value.value.stringValue);
+            return;
+        }
+    }
+
+public:
+    explicit HandleScope(GC &gc) : parent(nullptr), gc(gc), objectReferences(), stringReferences()
+    {
+        init();
+    }
+    HandleScope(GC &gc, std::size_t referenceCount)
+        : parent(nullptr), gc(gc), objectReferences(), stringReferences()
+    {
+        init(referenceCount);
+    }
+    HandleScope(GC &gc, std::size_t objectReferenceCount, std::size_t stringReferenceCount)
+        : parent(nullptr), gc(gc), objectReferences(), stringReferences()
+    {
+        init(objectReferenceCount, stringReferenceCount);
+    }
+    ~HandleScope()
+    {
+        removeFromGC();
+    }
+    ObjectHandle escapeHandle(const ObjectHandle &handle)
+    {
+        assert(parent);
+        parent->addHandle(handle);
+        return handle;
+    }
+    SymbolHandle escapeHandle(const SymbolHandle &handle)
+    {
+        assert(parent);
+        parent->addHandle(handle);
+        return handle;
+    }
+    StringHandle escapeHandle(const StringHandle &handle)
+    {
+        assert(parent);
+        parent->addHandle(handle);
+        return handle;
+    }
+    ValueHandle escapeHandle(const ValueHandle &handle)
+    {
+        assert(parent);
+        parent->addHandle(handle);
+        return handle;
+    }
+};
+
+class GC final : public std::enable_shared_from_this<GC>
+{
+    friend class HandleScope;
+    friend struct ObjectHandle;
+    friend struct StringHandle;
+    friend struct SymbolHandle;
+    friend struct ValueHandle;
     GC &operator=(const GC &) = delete;
     GC(const GC &) = delete;
 
@@ -273,12 +594,14 @@ private:
     std::vector<String *> strings;
     bool immutable;
     const std::shared_ptr<const GC> parent;
-    Object *objectCopyOnWrite(std::size_t referenceIndex);
+    HandleScope *handleScopesStack;
+    Object *objectCopyOnWrite(ObjectReference objectReference);
 
 public:
     GC();
     GC(std::shared_ptr<const GC> parent);
     ~GC();
+    void collect();
     bool isImmutable() const
     {
         return immutable;
@@ -287,22 +610,61 @@ public:
     {
         immutable = true;
     }
-    const Object *getObjectForRead(std::size_t referenceIndex) const
+    const Object *getObjectForRead(ObjectReference objectReference) const
     {
-        assert(referenceIndex > 0 && referenceIndex < objects.size());
-        return objects[referenceIndex];
+        assert(objectReference.index < objects.size());
+        return objects[objectReference.index];
     }
-    Object *getObjectForWrite(std::size_t referenceIndex)
+    Object *getObjectForWrite(ObjectReference objectReference)
     {
         assert(!immutable);
-        assert(referenceIndex > 0 && referenceIndex < objects.size());
-        Object *&retval = objects[referenceIndex];
+        assert(objectReference.index < objects.size());
+        Object *&retval = objects[objectReference.index];
         if(retval->gc == this)
             return retval;
-        return objectCopyOnWrite(referenceIndex);
+        return objectCopyOnWrite(objectReference);
     }
-    Object *create(ObjectDescriptor *objectDescriptor);
+    ObjectHandle create(ObjectDescriptor *objectDescriptor);
 };
+
+inline ObjectHandle::ObjectHandle(GC &gc, ObjectReference object) : object(object)
+{
+    assert(gc.handleScopesStack);
+    gc.handleScopesStack->addHandle(*this);
+}
+
+inline StringHandle::StringHandle(GC &gc, const String *string) : string(string)
+{
+    assert(gc.handleScopesStack);
+    gc.handleScopesStack->addHandle(*this);
+}
+
+inline SymbolHandle::SymbolHandle(GC &gc, const String *symbol) : symbol(symbol)
+{
+    assert(gc.handleScopesStack);
+    gc.handleScopesStack->addHandle(*this);
+}
+
+inline ValueHandle::ValueHandle(GC &gc, ObjectMember::Type type, ObjectMember value)
+    : value(value), type(type)
+{
+    assert(gc.handleScopesStack);
+    gc.handleScopesStack->addHandle(*this);
+}
+
+inline void HandleScope::addToGC()
+{
+    assert(!parent);
+    parent = gc.handleScopesStack;
+    gc.handleScopesStack = this;
+}
+
+inline void HandleScope::removeFromGC()
+{
+    assert(this == gc.handleScopesStack);
+    gc.handleScopesStack = parent;
+    parent = nullptr;
+}
 }
 }
 
