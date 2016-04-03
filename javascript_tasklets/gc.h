@@ -37,21 +37,23 @@ namespace gc
 {
 struct ObjectDescriptor;
 
-struct ObjectReference final
+struct BaseReference final
 {
     std::size_t index;
     static constexpr std::size_t invalidIndex = ~static_cast<std::size_t>(0);
-    constexpr explicit ObjectReference(std::size_t index) : index(index)
+protected:
+    constexpr explicit BaseReference(std::size_t index) : index(index)
     {
     }
-    constexpr explicit ObjectReference(std::nullptr_t = nullptr) : index(invalidIndex)
+    constexpr explicit BaseReference(std::nullptr_t = nullptr) : index(invalidIndex)
     {
     }
-    constexpr bool operator==(const ObjectReference &rt) const
+public:
+    constexpr bool operator==(const BaseReference &rt) const
     {
         return index == rt.index;
     }
-    constexpr bool operator!=(const ObjectReference &rt) const
+    constexpr bool operator!=(const BaseReference &rt) const
     {
         return index != rt.index;
     }
@@ -63,14 +65,24 @@ struct ObjectReference final
     {
         return index != invalidIndex;
     }
-    friend bool operator==(std::nullptr_t, const ObjectReference &v)
+    friend bool operator==(std::nullptr_t, const BaseReference &v)
     {
         return v.index == invalidIndex;
     }
-    friend bool operator!=(std::nullptr_t, const ObjectReference &v)
+    friend bool operator!=(std::nullptr_t, const BaseReference &v)
     {
         return v.index != invalidIndex;
     }
+};
+
+struct ObjectReference final : public BaseReference
+{
+    using BaseReference::BaseReference;
+};
+
+struct StringOrSymbolReference final : public BaseReference
+{
+    using BaseReference::BaseReference;
 };
 }
 }
@@ -78,12 +90,22 @@ struct ObjectReference final
 namespace std
 {
 template <>
-struct hash<javascript_tasklets::gc::ObjectReference> final
+struct hash<javascript_tasklets::gc::BaseReference> final
 {
-    constexpr std::size_t operator()(const javascript_tasklets::gc::ObjectReference &v) const
+    constexpr std::size_t operator()(const javascript_tasklets::gc::BaseReference &v) const
     {
         return v.index;
     }
+};
+
+template <>
+struct hash<javascript_tasklets::gc::ObjectReference> final : public hash<javascript_tasklets::gc::BaseReference>
+{
+};
+
+template <>
+struct hash<javascript_tasklets::gc::StringOrSymbolReference> final : public hash<javascript_tasklets::gc::BaseReference>
+{
 };
 }
 
@@ -96,20 +118,23 @@ union ObjectMember final
     ObjectReference objectValue;
     double doubleValue;
     std::uint32_t uint32Value;
-    const String *stringValue;
-    constexpr ObjectMember();
+    StringOrSymbolReference stringOrSymbolValue;
+    ObjectMember() noexcept : stringOrSymbolValue(nullptr) // initialize stringOrSymbolValue because it is used by
+    // Undefined, which is the default type
+    {
+    }
     typedef std::uint8_t TypeBaseType;
     enum class Type : TypeBaseType
     {
+        Undefined = 0, // default value; stringOrSymbolValue is empty
         Object, // uses objectValue
         Double, // uses doubleValue
         Int32, // uses uint32Value
         UInt32, // uses uint32Value
         Boolean, // uses uint32Value
-        Symbol, // uses stringValue
-        String, // uses stringValue
-        Undefined = String, // stringValue is null
-        Null = Symbol, // stringValue is null
+        Symbol, // uses stringOrSymbolValue
+        String = Undefined, // uses stringOrSymbolValue
+        Null = Symbol, // stringOrSymbolValue is empty
     };
     constexpr bool isObject(Type type) const
     {
@@ -133,25 +158,21 @@ union ObjectMember final
     }
     constexpr bool isSymbol(Type type) const
     {
-        return type == Type::Symbol && stringValue != nullptr;
+        return type == Type::Symbol && stringOrSymbolValue != nullptr;
     }
     constexpr bool isString(Type type) const
     {
-        return type == Type::String && stringValue != nullptr;
+        return type == Type::String && stringOrSymbolValue != nullptr;
     }
     constexpr bool isUndefined(Type type) const
     {
-        return type == Type::Undefined && stringValue == nullptr;
+        return type == Type::Undefined && stringOrSymbolValue == nullptr;
     }
     constexpr bool isNull(Type type) const
     {
-        return type == Type::Null && stringValue == nullptr;
+        return type == Type::Null && stringOrSymbolValue == nullptr;
     }
 };
-
-constexpr ObjectMember::ObjectMember() : uint32Value()
-{
-}
 
 struct Value final
 {
@@ -165,6 +186,17 @@ struct ObjectMemberGroup final
         sizeof(ObjectMember) / sizeof(ObjectMember::Type);
     ObjectMember::Type types[objectMembersPerGroup];
     ObjectMember values[objectMembersPerGroup];
+    ObjectMemberGroup() noexcept // initialize everything to Undefined
+    {
+        for(ObjectMember::Type &type : types)
+        {
+            type = ObjectMember::Type::Undefined;
+        }
+        for(ObjectMember &value : values)
+        {
+            value.stringOrSymbolValue = nullptr;
+        }
+    }
 };
 
 class GC;
@@ -176,32 +208,34 @@ class Object final
     Object &operator=(const Object &rt) = delete;
 
 public:
-    struct ExtraData : public std::enable_shared_from_this<ExtraData>
+    struct ExtraData
     {
         virtual ~ExtraData() = default;
         ExtraData() = default;
-        virtual std::shared_ptr<ExtraData> clone() const = 0;
+        virtual std::unique_ptr<ExtraData> clone() const = 0;
     };
 
 private:
     Object(const ObjectDescriptor *objectDescriptor,
            const GC *gc,
-           std::shared_ptr<ExtraData> extraData)
+           std::unique_ptr<ExtraData> extraData)
         : objectDescriptor(objectDescriptor), gc(gc), extraData(std::move(extraData))
     {
     }
     ~Object() = default;
 
 public:
-    const ObjectDescriptor *objectDescriptor;
-    const GC *gc;
-    std::shared_ptr<ExtraData> extraData;
+    const ObjectDescriptor *const objectDescriptor;
+    const GC *const gc;
+    std::unique_ptr<ExtraData> extraData;
     ObjectMemberGroup *getMembersArray();
     const ObjectMemberGroup *getMembersArray() const;
     ObjectMember::Type &getMemberType(std::size_t memberIndex);
     ObjectMember &getMemberValue(std::size_t memberIndex);
     ObjectMember::Type getMemberType(std::size_t memberIndex) const;
     const ObjectMember &getMemberValue(std::size_t memberIndex) const;
+    static std::size_t getSize(const ObjectDescriptor *objectDescriptor);
+    static std::size_t getMemberGroupCount(const ObjectDescriptor *objectDescriptor);
 };
 
 inline ObjectMemberGroup *Object::getMembersArray()
@@ -282,17 +316,17 @@ struct ObjectDescriptor
     const GC *const gc;
 
 private:
-    std::size_t memberCount;
+    std::size_t embeddedMemberCount;
     std::unordered_map<String, Member> namedMembers;
-    std::unordered_map<const String *, Member> symbolMembers;
+    std::unordered_map<StringOrSymbolReference, Member> symbolMembers;
     std::unordered_map<const InternalSlot *, Member> internalSlots;
 
 public:
     explicit ObjectDescriptor(const GC *gc);
     virtual ~ObjectDescriptor() = default;
-    std::size_t getMemberCount() const
+    std::size_t getEmbeddedMemberCount() const
     {
-        return memberCount;
+        return embeddedMemberCount;
     }
     Member getInternalSlot(const InternalSlot *slot) const
     {
@@ -316,30 +350,42 @@ public:
     }
 };
 
+inline std::size_t Object::getSize(const ObjectDescriptor *objectDescriptor)
+{
+    return sizeof(Object) + sizeof(ObjectMemberGroup) * getMemberGroupCount(objectDescriptor);
+}
+
+inline std::size_t Object::getMemberGroupCount(const ObjectDescriptor *objectDescriptor)
+{
+    assert(objectDescriptor);
+    return (objectDescriptor->getEmbeddedMemberCount() + ObjectMemberGroup::objectMembersPerGroup
+            - 1) / ObjectMemberGroup::objectMembersPerGroup;
+}
+
 inline ObjectMember::Type &Object::getMemberType(std::size_t memberIndex)
 {
-    assert(memberIndex < objectDescriptor->getMemberCount());
+    assert(memberIndex < objectDescriptor->getEmbeddedMemberCount());
     return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
         .types[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
 }
 
 inline ObjectMember &Object::getMemberValue(std::size_t memberIndex)
 {
-    assert(memberIndex < objectDescriptor->getMemberCount());
+    assert(memberIndex < objectDescriptor->getEmbeddedMemberCount());
     return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
         .values[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
 }
 
 inline ObjectMember::Type Object::getMemberType(std::size_t memberIndex) const
 {
-    assert(memberIndex < objectDescriptor->getMemberCount());
+    assert(memberIndex < objectDescriptor->getEmbeddedMemberCount());
     return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
         .types[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
 }
 
 inline const ObjectMember &Object::getMemberValue(std::size_t memberIndex) const
 {
-    assert(memberIndex < objectDescriptor->getMemberCount());
+    assert(memberIndex < objectDescriptor->getEmbeddedMemberCount());
     return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
         .values[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
 }
@@ -359,8 +405,8 @@ struct ObjectHandle final
 
 struct StringHandle final
 {
-    const String *string;
-    inline StringHandle(GC &gc, const String *string);
+    StringOrSymbolReference string;
+    inline StringHandle(GC &gc, StringOrSymbolReference string);
     constexpr StringHandle() : string(nullptr)
     {
     }
@@ -372,8 +418,8 @@ struct StringHandle final
 
 struct SymbolHandle final
 {
-    const String *symbol;
-    inline SymbolHandle(GC &gc, const String *symbol);
+    StringOrSymbolReference symbol;
+    inline SymbolHandle(GC &gc, StringOrSymbolReference symbol);
     constexpr SymbolHandle() : symbol(nullptr)
     {
     }
@@ -389,7 +435,7 @@ struct ValueHandle final
     ObjectMember::Type type;
     ValueHandle() : value(), type(ObjectMember::Type::Undefined)
     {
-        value.stringValue = nullptr;
+        value.stringOrSymbolValue = nullptr;
     }
     inline ValueHandle(GC &gc, ObjectMember::Type type, ObjectMember value);
 
@@ -402,14 +448,22 @@ public:
     static ValueHandle makeUndefined()
     {
         ObjectMember value;
-        value.stringValue = nullptr;
+        value.stringOrSymbolValue = nullptr;
         return ValueHandle(ObjectMember::Type::Undefined, value);
+    }
+    bool isUndefined() const
+    {
+        return value.isUndefined(type);
     }
     static ValueHandle makeNull()
     {
         ObjectMember value;
-        value.stringValue = nullptr;
+        value.stringOrSymbolValue = nullptr;
         return ValueHandle(ObjectMember::Type::Null, value);
+    }
+    bool isNull() const
+    {
+        return value.isNull(type);
     }
     static ValueHandle makeObject(ObjectHandle object)
     {
@@ -417,6 +471,29 @@ public:
         ObjectMember value;
         value.objectValue = object.object;
         return ValueHandle(ObjectMember::Type::Object, value);
+    }
+    static ValueHandle makeObjectOrNull(ObjectHandle object)
+    {
+        if(object.empty())
+            return makeNull();
+        return makeObject(object);
+    }
+    bool isObject() const
+    {
+        return value.isObject(type);
+    }
+    ObjectHandle getObject() const
+    {
+        assert(isObject());
+        ObjectHandle retval;
+        retval.object = value.objectValue;
+        return retval;
+    }
+    ObjectHandle getIfObject() const
+    {
+        if(isObject())
+            return getObject();
+        return ObjectHandle();
     }
     static ValueHandle makeObject(GC &gc, ObjectReference object)
     {
@@ -428,11 +505,29 @@ public:
         value.doubleValue = doubleValue;
         return ValueHandle(ObjectMember::Type::Double, value);
     }
+    bool isDouble() const
+    {
+        return value.isDouble(type);
+    }
+    double getDouble() const
+    {
+        assert(isDouble());
+        return value.doubleValue;
+    }
     static ValueHandle makeInt32(std::int32_t intValue)
     {
         ObjectMember value;
         value.uint32Value = static_cast<std::uint32_t>(intValue);
         return ValueHandle(ObjectMember::Type::Int32, value);
+    }
+    bool isInt32() const
+    {
+        return value.isInt32(type);
+    }
+    std::int32_t getInt32() const
+    {
+        assert(isInt32());
+        return static_cast<std::int32_t>(value.uint32Value);
     }
     static ValueHandle makeUInt32(std::uint32_t intValue)
     {
@@ -440,20 +535,55 @@ public:
         value.uint32Value = intValue;
         return ValueHandle(ObjectMember::Type::UInt32, value);
     }
+    bool isUInt32() const
+    {
+        return value.isUInt32(type);
+    }
+    std::uint32_t getUInt32() const
+    {
+        assert(isUInt32());
+        return value.uint32Value;
+    }
     static ValueHandle makeBoolean(bool boolValue)
     {
         ObjectMember value;
         value.uint32Value = boolValue ? 1 : 0;
         return ValueHandle(ObjectMember::Type::Boolean, value);
     }
+    bool isBoolean() const
+    {
+        return value.isBoolean(type);
+    }
+    bool getBoolean() const
+    {
+        assert(isBoolean());
+        return value.uint32Value ? true : false;
+    }
     static ValueHandle makeSymbol(SymbolHandle symbol)
     {
         assert(!symbol.empty());
         ObjectMember value;
-        value.stringValue = symbol.symbol;
+        value.stringOrSymbolValue = symbol.symbol;
         return ValueHandle(ObjectMember::Type::Symbol, value);
     }
-    static ValueHandle makeSymbol(GC &gc, const String *symbol)
+    bool isSymbol() const
+    {
+        return value.isSymbol(type);
+    }
+    SymbolHandle getSymbol() const
+    {
+        assert(isSymbol());
+        SymbolHandle retval;
+        retval.symbol = value.stringOrSymbolValue;
+        return retval;
+    }
+    SymbolHandle getIfSymbol() const
+    {
+        if(isSymbol())
+            return getSymbol();
+        return SymbolHandle();
+    }
+    static ValueHandle makeSymbol(GC &gc, StringOrSymbolReference symbol)
     {
         return makeSymbol(SymbolHandle(gc, symbol));
     }
@@ -461,10 +591,27 @@ public:
     {
         assert(!string.empty());
         ObjectMember value;
-        value.stringValue = string.string;
+        value.stringOrSymbolValue = string.string;
         return ValueHandle(ObjectMember::Type::String, value);
     }
-    static ValueHandle makeString(GC &gc, const String *string)
+    bool isString() const
+    {
+        return value.isString(type);
+    }
+    StringHandle getString() const
+    {
+        assert(isString());
+        StringHandle retval;
+        retval.string = value.stringOrSymbolValue;
+        return retval;
+    }
+    StringHandle getIfString() const
+    {
+        if(isString())
+            return getString();
+        return StringHandle();
+    }
+    static ValueHandle makeString(GC &gc, StringOrSymbolReference string)
     {
         return makeString(StringHandle(gc, string));
     }
@@ -485,13 +632,13 @@ private:
     HandleScope *parent;
     GC &gc;
     std::vector<ObjectReference> objectReferences;
-    std::vector<const String *> stringReferences;
+    std::vector<StringOrSymbolReference> stringOrSymbolReferences;
     inline void addToGC();
     inline void removeFromGC();
-    void init(std::size_t objectReferenceCount, std::size_t stringReferenceCount)
+    void init(std::size_t objectReferenceCount, std::size_t stringOrSymbolReferenceCount)
     {
         objectReferences.reserve(objectReferenceCount);
-        stringReferences.reserve(stringReferenceCount);
+        stringOrSymbolReferences.reserve(stringOrSymbolReferenceCount);
         addToGC();
     }
     void init(std::size_t referenceCount = 20)
@@ -506,12 +653,12 @@ private:
     void addHandle(const StringHandle &string)
     {
         if(!string.empty())
-            stringReferences.push_back(string.string);
+            stringOrSymbolReferences.push_back(string.string);
     }
     void addHandle(const SymbolHandle &symbol)
     {
         if(!symbol.empty())
-            stringReferences.push_back(symbol.symbol);
+            stringOrSymbolReferences.push_back(symbol.symbol);
     }
     void addHandle(const ValueHandle &value)
     {
@@ -528,26 +675,26 @@ private:
             return;
         case ObjectMember::Type::Symbol:
         case ObjectMember::Type::String:
-            if(value.value.stringValue)
-                stringReferences.push_back(value.value.stringValue);
+            if(value.value.stringOrSymbolValue != nullptr)
+                stringOrSymbolReferences.push_back(value.value.stringOrSymbolValue);
             return;
         }
     }
 
 public:
-    explicit HandleScope(GC &gc) : parent(nullptr), gc(gc), objectReferences(), stringReferences()
+    explicit HandleScope(GC &gc) : parent(nullptr), gc(gc), objectReferences(), stringOrSymbolReferences()
     {
         init();
     }
     HandleScope(GC &gc, std::size_t referenceCount)
-        : parent(nullptr), gc(gc), objectReferences(), stringReferences()
+        : parent(nullptr), gc(gc), objectReferences(), stringOrSymbolReferences()
     {
         init(referenceCount);
     }
-    HandleScope(GC &gc, std::size_t objectReferenceCount, std::size_t stringReferenceCount)
-        : parent(nullptr), gc(gc), objectReferences(), stringReferences()
+    HandleScope(GC &gc, std::size_t objectReferenceCount, std::size_t stringOrSymbolReferenceCount)
+        : parent(nullptr), gc(gc), objectReferences(), stringOrSymbolReferences()
     {
-        init(objectReferenceCount, stringReferenceCount);
+        init(objectReferenceCount, stringOrSymbolReferenceCount);
     }
     ~HandleScope()
     {
@@ -590,41 +737,85 @@ class GC final : public std::enable_shared_from_this<GC>
     GC(const GC &) = delete;
 
 private:
-    std::vector<Object *> objects;
-    std::vector<String *> strings;
+    std::vector<Object *> objects, oldObjects;
+    std::vector<std::size_t> freeObjectIndexesList;
+    std::vector<ObjectReference> objectsWorklist;
+    std::vector<String *> strings, oldStrings;
+    std::vector<std::size_t> freeStringsIndexesList;
     bool immutable;
     const std::shared_ptr<const GC> parent;
     HandleScope *handleScopesStack;
+    std::size_t allocationsLeftTillNextCollect;
+    std::size_t memoryLeftTillNextCollect;
+    const std::size_t startingAllocationsLeftTillNextCollect;
+    const std::size_t startingMemoryLeftTillNextCollect;
+    std::vector<ObjectDescriptor *> objectDescriptors;
+    ObjectReference allocateObjectIndex();
+    void freeObjectIndex(ObjectReference object) noexcept;
+    std::size_t allocateStringIndex();
+    void freeStringIndex(std::size_t stringIndex) noexcept;
     Object *objectCopyOnWrite(ObjectReference objectReference);
+    Object *createInternal(const ObjectDescriptor *objectDescriptor,
+                           std::unique_ptr<Object::ExtraData> extraData);
+    void freeInternal(Object *object) noexcept;
 
 public:
-    GC();
-    GC(std::shared_ptr<const GC> parent);
+    explicit GC(std::shared_ptr<const GC> parent = nullptr);
     ~GC();
-    void collect();
+    void collect() noexcept;
     bool isImmutable() const
     {
         return immutable;
     }
-    void makeImmutable()
+    void makeImmutable() noexcept
     {
-        immutable = true;
+        if(!immutable)
+        {
+            collect();
+            immutable = true;
+        }
     }
-    const Object *getObjectForRead(ObjectReference objectReference) const
+    const Object *readObject(ObjectHandle handle) const
     {
-        assert(objectReference.index < objects.size());
-        return objects[objectReference.index];
+        assert(handle.object.index < objects.size());
+        const Object *retval = objects[handle.object.index];
+        assert(retval);
+        return retval;
     }
-    Object *getObjectForWrite(ObjectReference objectReference)
+    Object *writeObject(ObjectHandle handle)
     {
+        assert(!handle.empty());
         assert(!immutable);
-        assert(objectReference.index < objects.size());
-        Object *&retval = objects[objectReference.index];
+        assert(handle.object.index < objects.size());
+        Object *&retval = objects[handle.object.index];
+        assert(retval);
         if(retval->gc == this)
             return retval;
-        return objectCopyOnWrite(objectReference);
+        return objectCopyOnWrite(handle.object);
     }
-    ObjectHandle create(ObjectDescriptor *objectDescriptor);
+    const String *readString(StringHandle handle) const
+    {
+        assert(handle.string.index < strings.size());
+        const String *retval = strings[handle.string.index];
+        assert(retval);
+        return retval;
+    }
+    const String *readSymbol(SymbolHandle handle) const
+    {
+        assert(handle.symbol.index < strings.size());
+        const String *retval = strings[handle.symbol.index];
+        assert(retval);
+        return retval;
+    }
+    ObjectHandle create(const ObjectDescriptor *objectDescriptor);
+    template <typename T, typename Args>
+    T *createObjectDescriptor(Args &&...args)
+    {
+        static_assert(std::is_base_of<ObjectDescriptor, T>::value, "T is not derived from ObjectDescriptor");
+        auto iter = objectDescriptors.insert(objectDescriptors.end(), nullptr);
+        *iter = new T(std::forward<Args>(args)...);
+        return *iter;
+    }
 };
 
 inline ObjectHandle::ObjectHandle(GC &gc, ObjectReference object) : object(object)
@@ -633,13 +824,13 @@ inline ObjectHandle::ObjectHandle(GC &gc, ObjectReference object) : object(objec
     gc.handleScopesStack->addHandle(*this);
 }
 
-inline StringHandle::StringHandle(GC &gc, const String *string) : string(string)
+inline StringHandle::StringHandle(GC &gc, StringOrSymbolReference string) : string(string)
 {
     assert(gc.handleScopesStack);
     gc.handleScopesStack->addHandle(*this);
 }
 
-inline SymbolHandle::SymbolHandle(GC &gc, const String *symbol) : symbol(symbol)
+inline SymbolHandle::SymbolHandle(GC &gc, StringOrSymbolReference symbol) : symbol(symbol)
 {
     assert(gc.handleScopesStack);
     gc.handleScopesStack->addHandle(*this);
