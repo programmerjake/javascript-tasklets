@@ -26,6 +26,7 @@
 #include <string>
 #include <cstring>
 #include <functional>
+#include <iosfwd>
 
 namespace javascript_tasklets
 {
@@ -128,7 +129,7 @@ typedef std::basic_string<std::uint16_t, Char16Traits> String;
 template <typename Dest, typename Src>
 struct StringCastHelper final
 {
-    static Dest convert(Src src) = delete;
+    static Dest convert(const Src &src) = delete;
 };
 
 template <typename CharT, typename TraitsT, typename AllocT>
@@ -136,7 +137,7 @@ struct StringCastHelper<std::basic_string<CharT, TraitsT, AllocT>,
                         std::basic_string<CharT, TraitsT, AllocT>> final
 {
     static std::basic_string<CharT, TraitsT, AllocT> convert(
-        std::basic_string<CharT, TraitsT, AllocT> v)
+        const std::basic_string<CharT, TraitsT, AllocT> &v)
     {
         return v;
     }
@@ -145,34 +146,9 @@ struct StringCastHelper<std::basic_string<CharT, TraitsT, AllocT>,
 template <>
 struct StringCastHelper<std::string, String> final
 {
-    static std::string convert(String src)
+    template <typename Fn>
+    static void convertImplementation(const String &src, Fn &&fn)
     {
-        std::size_t retvalSize = 0;
-        for(std::size_t i = 0; i < src.size(); i++)
-        {
-            auto ch = src[i];
-            std::uint_fast32_t value = ch;
-            if(ch >= 0xD800U && ch < 0xDC00U && i + 1 < src.size() && src[i + 1] >= 0xDC00U
-               && src[i + 1] < 0xC000U)
-            {
-                i++;
-                retvalSize += 4;
-            }
-            else if(value < 0x80)
-            {
-                retvalSize++;
-            }
-            else if(value < 0x800)
-            {
-                retvalSize += 2;
-            }
-            else
-            {
-                retvalSize += 3;
-            }
-        }
-        std::string retval;
-        retval.reserve(retvalSize);
         for(std::size_t i = 0; i < src.size(); i++)
         {
             auto ch = src[i];
@@ -187,27 +163,43 @@ struct StringCastHelper<std::string, String> final
             }
             if(value < 0x80)
             {
-                retval += static_cast<char>(value);
+                fn(static_cast<char>(value));
             }
             else if(value < 0x800)
             {
-                retval += static_cast<char>((value >> 6) | 0xC0);
-                retval += static_cast<char>((value & 0x3F) | 0x80);
+                fn(static_cast<char>((value >> 6) | 0xC0));
+                fn(static_cast<char>((value & 0x3F) | 0x80));
             }
             else if(value < 0x10000UL)
             {
-                retval += static_cast<char>((value >> 12) | 0xE0);
-                retval += static_cast<char>(((value >> 6) & 0x3F) | 0x80);
-                retval += static_cast<char>((value & 0x3F) | 0x80);
+                fn(static_cast<char>((value >> 12) | 0xE0));
+                fn(static_cast<char>(((value >> 6) & 0x3F) | 0x80));
+                fn(static_cast<char>((value & 0x3F) | 0x80));
             }
             else
             {
-                retval += static_cast<char>((value >> 18) | 0xF0);
-                retval += static_cast<char>(((value >> 12) & 0x3F) | 0xE0);
-                retval += static_cast<char>(((value >> 6) & 0x3F) | 0x80);
-                retval += static_cast<char>((value & 0x3F) | 0x80);
+                fn(static_cast<char>((value >> 18) | 0xF0));
+                fn(static_cast<char>(((value >> 12) & 0x3F) | 0xE0));
+                fn(static_cast<char>(((value >> 6) & 0x3F) | 0x80));
+                fn(static_cast<char>((value & 0x3F) | 0x80));
             }
         }
+    }
+    static std::string convert(const String &src)
+    {
+        std::size_t retvalSize = 0;
+        convertImplementation(src,
+                              [&](char)
+                              {
+                                  retvalSize++;
+                              });
+        std::string retval;
+        retval.reserve(retvalSize);
+        convertImplementation(src,
+                              [&](char ch)
+                              {
+                                  retval += ch;
+                              });
         return retval;
     }
 };
@@ -230,7 +222,7 @@ private:
     }
 
 public:
-    static String convert(std::string src)
+    static String convert(const std::string &src)
     {
         String retval;
         retval.reserve(src.size());
@@ -282,8 +274,8 @@ public:
                     case 0xDD:
                     case 0xDE:
                     case 0xDF:
-                    	value = currentByte & 0x1F;
-                    	break;
+                        value = currentByte & 0x1F;
+                        break;
                     case 0xE0:
                     case 0xE1:
                     case 0xE2:
@@ -300,8 +292,8 @@ public:
                     case 0xED:
                     case 0xEE:
                     case 0xEF:
-                    	value = currentByte & 0x0F;
-                    	break;
+                        value = currentByte & 0x0F;
+                        break;
                     case 0xF0:
                     case 0xF1:
                     case 0xF2:
@@ -310,32 +302,32 @@ public:
                     case 0xF5:
                     case 0xF6:
                     case 0xF7:
-                    	value = currentByte & 0x07;
-                    	break;
+                        value = currentByte & 0x07;
+                        break;
                     case 0xF8:
                     case 0xF9:
                     case 0xFA:
                     case 0xFB:
-                    	value = currentByte & 0x03;
-                    	break;
+                        value = currentByte & 0x03;
+                        break;
                     case 0xFC:
                     case 0xFD:
-                    	value = currentByte & 0x01;
-                    	break;
+                        value = currentByte & 0x01;
+                        break;
                     case 0xFE:
                     case 0xFF:
-                    	value = 0;
-                    	break;
+                        value = 0;
+                        break;
                     }
                 }
                 else if(!hasValue)
                 {
-                	writeValue(retval, currentByte);
+                    writeValue(retval, currentByte);
                 }
                 else
                 {
-                	value <<= 6;
-                	value |= currentByte & 0x3F;
+                    value <<= 6;
+                    value |= currentByte & 0x3F;
                 }
             }
             else
@@ -357,15 +349,17 @@ public:
 };
 
 template <typename Dest, typename Src>
-Dest string_cast(Src src)
+Dest string_cast(const Src &src)
 {
-    return StringCastHelper<Dest, Src>::convert(std::move(src));
+    return StringCastHelper<Dest, Src>::convert(src);
 }
 
-String operator"" _js(const char *str, std::size_t length)
+inline String operator"" _js(const char *str, std::size_t length)
 {
     return string_cast<String>(std::string(str, length));
 }
+
+std::ostream &operator<<(std::ostream &os, const String &string);
 }
 
 namespace std
