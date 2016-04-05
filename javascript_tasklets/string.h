@@ -212,6 +212,7 @@ private:
     {
         if(value > 0x10000UL)
         {
+            value -= 0x10000UL;
             retval += static_cast<std::uint16_t>(((value >> 10) & 0x3FF) | 0xD800U);
             retval += static_cast<std::uint16_t>((value & 0x3FF) | 0xDC00U);
         }

@@ -19,8 +19,14 @@
  *
  */
 #include "javascript_tasklets/gc.h"
+#include "javascript_tasklets/string.h"
 #include <iostream>
+
+using namespace javascript_tasklets;
 
 int main()
 {
+    String testString = u8"this is a test '\u1234''\uFEFF''\U0010FFFF'"_js;
+    std::cout << testString << std::endl;
+    return 0;
 }
