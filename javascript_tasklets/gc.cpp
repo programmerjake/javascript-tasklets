@@ -70,8 +70,14 @@ GC::GC(std::shared_ptr<const GC> parent)
       immutable(false),
       parent(parent),
       handleScopesStack(nullptr),
+#if 1
+#warning GC always collects
+      startingAllocationsLeftTillNextCollect(0), // always collect
+      startingMemoryLeftTillNextCollect(0),
+#else
       startingAllocationsLeftTillNextCollect(1 << 12),
       startingMemoryLeftTillNextCollect(1 << 16),
+#endif
       allocationsLeftTillNextCollect(startingAllocationsLeftTillNextCollect),
       memoryLeftTillNextCollect(startingMemoryLeftTillNextCollect)
 {
@@ -90,6 +96,13 @@ GC::GC(std::shared_ptr<const GC> parent)
         stringHashToStringReferenceMap = parent->stringHashToStringReferenceMap;
         objectDescriptorSymbolTransitions = parent->objectDescriptorSymbolTransitions;
         objectDescriptorStringTransitions = parent->objectDescriptorStringTransitions;
+        globalValuesMap = parent->globalValuesMap;
+    }
+    else
+    {
+        const std::size_t transitionsHashTableSize = 8191;
+        objectDescriptorStringTransitions.resize(transitionsHashTableSize);
+        objectDescriptorSymbolTransitions.resize(transitionsHashTableSize);
     }
 }
 
@@ -120,8 +133,10 @@ GC::~GC()
     }
     for(ObjectDescriptor *objectDescriptor : objectDescriptors)
     {
-        assert(objectDescriptor);
-        delete objectDescriptor;
+        if(objectDescriptor)
+        {
+            delete objectDescriptor;
+        }
     }
 }
 
@@ -154,14 +169,36 @@ void GC::collect() noexcept
         handleScope = handleScope->parent)
     {
         assert(&handleScope->gc == this);
-        for(ObjectReference object : handleScope->objectReferences)
-        {
-            collectorMarkObject(object);
-        }
-        for(StringOrSymbolReference stringOrSymbol : handleScope->stringOrSymbolReferences)
-        {
-            collectorMarkStringOrSymbol(stringOrSymbol);
-        }
+        for(std::size_t i = 0;
+            i < handleScope->objectReferenceCount && i < HandleScope::embeddedHandleCount;
+            i++)
+            collectorMarkObject(handleScope->embeddedObjectReferences[i]);
+        for(std::size_t i = HandleScope::embeddedHandleCount; i < handleScope->objectReferenceCount;
+            i++)
+            collectorMarkObject(handleScope->objectReferences[i]);
+
+        for(std::size_t i = 0;
+            i < handleScope->stringOrSymbolReferenceCount && i < HandleScope::embeddedHandleCount;
+            i++)
+            collectorMarkStringOrSymbol(handleScope->embeddedStringOrSymbolReferences[i]);
+        for(std::size_t i = HandleScope::embeddedHandleCount;
+            i < handleScope->stringOrSymbolReferenceCount;
+            i++)
+            collectorMarkStringOrSymbol(handleScope->stringOrSymbolReferences[i]);
+
+        for(std::size_t i = 0;
+            i < handleScope->objectDescriptorCount && i < HandleScope::embeddedHandleCount;
+            i++)
+            collectorMarkObjectDescriptor(handleScope->embeddedObjectDescriptors[i]);
+        for(std::size_t i = HandleScope::embeddedHandleCount;
+            i < handleScope->objectDescriptorCount;
+            i++)
+            collectorMarkObjectDescriptor(handleScope->objectDescriptors[i]);
+    }
+    for(const auto &globalValue : globalValuesMap)
+    {
+        const Value &value = std::get<1>(globalValue);
+        collectorMarkObjectMember(value.type, value.value);
     }
 
     // mark heap
@@ -514,12 +551,14 @@ ObjectDescriptor::Member GC::addObjectMember(StringHandle nameHandle,
                                              ValueHandle value,
                                              bool isEmbedded)
 {
+    HandleScope scope(*this);
     assert(!immutable);
     assert(!nameHandle.empty());
     assert(object.object.index < objects.size());
     Object *originalObject = objects[object.object.index];
     assert(originalObject);
     ObjectDescriptorHandle<> originalObjectDescriptor(originalObject->objectDescriptor);
+    ObjectDescriptorHandle<> newObjectDescriptorHandle;
     assert(!originalObjectDescriptor.empty());
     assert(originalObjectDescriptor.get()->getNamedMember(readString(nameHandle)).kind
            == ObjectDescriptor::Member::Kind::Empty);
@@ -528,8 +567,9 @@ ObjectDescriptor::Member GC::addObjectMember(StringHandle nameHandle,
     ObjectDescriptor::Member member;
     if(transition.destDescriptor == nullptr)
     {
-        transition.destDescriptor =
-            transition.sourceDescriptor->duplicate(originalObjectDescriptor, *this).get();
+        newObjectDescriptorHandle =
+            transition.sourceDescriptor->duplicate(originalObjectDescriptor, *this);
+        transition.destDescriptor = newObjectDescriptorHandle.get();
         auto newDescriptor = const_cast<ObjectDescriptor *>(transition.destDescriptor);
         assert(newDescriptor);
         assert(newDescriptor->gc == this);
@@ -578,12 +618,14 @@ ObjectDescriptor::Member GC::addObjectMember(SymbolHandle nameHandle,
                                              ValueHandle value,
                                              bool isEmbedded)
 {
+    HandleScope scope(*this);
     assert(!immutable);
     assert(!nameHandle.empty());
     assert(object.object.index < objects.size());
     Object *originalObject = objects[object.object.index];
     assert(originalObject);
     ObjectDescriptorHandle<> originalObjectDescriptor(originalObject->objectDescriptor);
+    ObjectDescriptorHandle<> newObjectDescriptorHandle;
     assert(!originalObjectDescriptor.empty());
     assert(originalObjectDescriptor.get()->getSymbolMember(nameHandle.symbol).kind
            == ObjectDescriptor::Member::Kind::Empty);
@@ -592,8 +634,9 @@ ObjectDescriptor::Member GC::addObjectMember(SymbolHandle nameHandle,
     ObjectDescriptor::Member member;
     if(transition.destDescriptor == nullptr)
     {
-        transition.destDescriptor =
-            transition.sourceDescriptor->duplicate(originalObjectDescriptor, *this).get();
+        newObjectDescriptorHandle =
+            transition.sourceDescriptor->duplicate(originalObjectDescriptor, *this);
+        transition.destDescriptor = newObjectDescriptorHandle.get();
         auto newDescriptor = const_cast<ObjectDescriptor *>(transition.destDescriptor);
         assert(newDescriptor);
         assert(newDescriptor->gc == this);
@@ -666,6 +709,7 @@ StringHandle GC::internString(const String &value)
     std::size_t index = allocateStringIndex();
     StringOrSymbolReference stringReference(index);
     strings[index] = stringValue.release();
+    stringHashToStringReferenceMap.emplace(valueHash, stringReference);
     return StringHandle(*this, stringReference);
 }
 
@@ -680,6 +724,7 @@ StringHandle GC::internString(String &&value)
     std::size_t index = allocateStringIndex();
     StringOrSymbolReference stringReference(index);
     strings[index] = stringValue.release();
+    stringHashToStringReferenceMap.emplace(valueHash, stringReference);
     return StringHandle(*this, stringReference);
 }
 
@@ -718,30 +763,23 @@ GC::ObjectDescriptorStringOrSymbolTransition &GC::findOrAddObjectDescriptorStrin
     return transitionList.front();
 }
 
-ObjectHandle GC::create(ObjectDescriptorHandle<> objectDescriptor)
+ObjectHandle GC::create(ObjectDescriptorHandle<> objectDescriptor,
+                        std::unique_ptr<Object::ExtraData> extraData)
 {
     assert(!immutable);
     assert(!objectDescriptor.empty());
     ObjectReference objectReference = allocateObjectIndex();
     try
     {
-        Object *object = createInternal(objectDescriptor.get(), nullptr);
-        try
-        {
-            objects.push_back(object);
-        }
-        catch(...)
-        {
-            freeInternal(object);
-            throw;
-        }
-        return ObjectHandle(*this, objectReference);
+        auto object = createInternal(objectDescriptor.get(), std::move(extraData));
+        objects[objectReference.index] = object;
     }
     catch(...)
     {
         freeObjectIndex(objectReference);
         throw;
     }
+    return ObjectHandle(*this, objectReference);
 }
 
 ObjectDescriptorHandle<> ObjectDescriptor::duplicate(ObjectDescriptorHandle<> self, GC &gc) const
@@ -749,6 +787,55 @@ ObjectDescriptorHandle<> ObjectDescriptor::duplicate(ObjectDescriptorHandle<> se
     assert(self.get() == this);
     assert(typeid(*this) == typeid(ObjectDescriptor));
     return gc.createObjectDescriptor(self);
+}
+
+template <typename T>
+void HandleScope::expandArrayImp(std::size_t &allocated, T *&array, std::size_t count)
+{
+    if(allocated < initialDynamicAllocationSize + embeddedHandleCount)
+    {
+        allocated = initialDynamicAllocationSize + embeddedHandleCount;
+    }
+    else
+    {
+        allocated = 2 * allocated - embeddedHandleCount;
+        // equivalent to 2 * (allocated - embeddedHandleCount) + embeddedHandleCount
+    }
+    auto temp = new T[allocated - embeddedHandleCount];
+    for(std::size_t i = 0; i < count - embeddedHandleCount; i++)
+        temp[i] = array[i];
+    delete[] array;
+    array = temp;
+}
+
+void HandleScope::expandObjectReferences()
+{
+    expandArrayImp(objectReferencesAllocated, objectReferences, objectReferenceCount);
+}
+
+void HandleScope::expandStringOrSymbolReferences()
+{
+    expandArrayImp(
+        stringOrSymbolReferencesAllocated, stringOrSymbolReferences, stringOrSymbolReferenceCount);
+}
+
+void HandleScope::expandObjectDescriptors()
+{
+    expandArrayImp(objectDescriptorsAllocated, objectDescriptors, objectDescriptorCount);
+}
+
+ValueHandle GC::getGlobalValue(const void *key)
+{
+    auto iter = globalValuesMap.find(key);
+    if(iter == globalValuesMap.end())
+        return ValueHandle();
+    Value value = std::get<1>(*iter);
+    return ValueHandle(*this, value);
+}
+
+void GC::setGlobalValue(const void *key, ValueHandle valueHandle)
+{
+    globalValuesMap[key] = valueHandle;
 }
 }
 }

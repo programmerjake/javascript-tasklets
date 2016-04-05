@@ -305,7 +305,7 @@ protected:
 
 public:
     ObjectDescriptorHandle(GC &gc, const ObjectDescriptor *objectDescriptor);
-    constexpr ObjectDescriptorHandle() noexcept : value(nullptr)
+    constexpr ObjectDescriptorHandle(std::nullptr_t = nullptr) noexcept : value(nullptr)
     {
     }
     constexpr const ObjectDescriptor *get() const noexcept
@@ -585,8 +585,21 @@ struct ValueHandle final
     {
         value.stringOrSymbolValue = nullptr;
     }
+    ValueHandle(std::nullptr_t) : value(), type(ObjectMember::Type::Null)
+    {
+        value.stringOrSymbolValue = nullptr;
+    }
     inline ValueHandle(GC &gc, ObjectMember::Type type, ObjectMember value);
     ValueHandle(GC &gc, const Value &value) : ValueHandle(gc, value.type, value.value)
+    {
+    }
+    ValueHandle(StringHandle value) : ValueHandle(makeString(value))
+    {
+    }
+    ValueHandle(ObjectHandle value) : ValueHandle(makeObject(value))
+    {
+    }
+    ValueHandle(SymbolHandle value) : ValueHandle(makeSymbol(value))
     {
     }
     constexpr operator Value() const noexcept
@@ -788,37 +801,92 @@ class HandleScope final
     void *operator new(std::size_t) = delete;
 
 private:
-    HandleScope *parent;
+    HandleScope *parent = nullptr;
     GC &gc;
-    std::vector<ObjectReference> objectReferences;
-    std::vector<StringOrSymbolReference> stringOrSymbolReferences;
-    std::vector<const ObjectDescriptor *> objectDescriptors;
+    ObjectReference *objectReferences = nullptr;
+    StringOrSymbolReference *stringOrSymbolReferences = nullptr;
+    const ObjectDescriptor **objectDescriptors = nullptr;
+    static constexpr std::size_t embeddedHandleCount = 7, initialDynamicAllocationSize = 32;
+    std::size_t objectReferenceCount = 0;
+    std::size_t stringOrSymbolReferenceCount = 0;
+    std::size_t objectDescriptorCount = 0;
+    std::size_t objectReferencesAllocated = embeddedHandleCount;
+    std::size_t stringOrSymbolReferencesAllocated = embeddedHandleCount;
+    std::size_t objectDescriptorsAllocated = embeddedHandleCount;
+    ObjectReference embeddedObjectReferences[embeddedHandleCount];
+    StringOrSymbolReference embeddedStringOrSymbolReferences[embeddedHandleCount];
+    const ObjectDescriptor *embeddedObjectDescriptors[embeddedHandleCount];
     inline void addToGC();
     inline void removeFromGC();
-    void init(std::size_t objectReferenceCount, std::size_t stringOrSymbolReferenceCount)
+    void init()
     {
-        objectReferences.reserve(objectReferenceCount);
-        stringOrSymbolReferences.reserve(stringOrSymbolReferenceCount);
         addToGC();
     }
-    void init(std::size_t referenceCount = 20)
+    template <typename T>
+    static void expandArrayImp(std::size_t &allocated, T *&array, std::size_t count);
+    void expandObjectReferences();
+    void expandStringOrSymbolReferences();
+    void expandObjectDescriptors();
+    void addReference(ObjectReference reference)
     {
-        init(referenceCount, referenceCount);
+        assert(reference != nullptr);
+        if(objectReferenceCount < embeddedHandleCount)
+        {
+            embeddedObjectReferences[objectReferenceCount++] = reference;
+        }
+        else
+        {
+            if(objectReferenceCount >= objectReferencesAllocated)
+                expandObjectReferences();
+            objectReferences[objectReferenceCount++ - embeddedHandleCount] = reference;
+        }
+    }
+    void addReference(StringOrSymbolReference reference)
+    {
+        assert(reference != nullptr);
+        if(stringOrSymbolReferenceCount < embeddedHandleCount)
+        {
+            embeddedStringOrSymbolReferences[stringOrSymbolReferenceCount++] = reference;
+        }
+        else
+        {
+            if(stringOrSymbolReferenceCount >= stringOrSymbolReferencesAllocated)
+                expandStringOrSymbolReferences();
+            stringOrSymbolReferences[stringOrSymbolReferenceCount++ - embeddedHandleCount] =
+                reference;
+        }
+    }
+    void addReference(const ObjectDescriptor *reference)
+    {
+        assert(reference != nullptr);
+        if(objectDescriptorCount < embeddedHandleCount)
+        {
+            embeddedObjectDescriptors[objectDescriptorCount++] = reference;
+        }
+        else
+        {
+            if(objectDescriptorCount >= objectDescriptorsAllocated)
+                expandObjectDescriptors();
+            objectDescriptors[objectDescriptorCount++ - embeddedHandleCount] = reference;
+        }
     }
     void addHandle(const ObjectHandle &object)
     {
-        if(!object.empty())
-            objectReferences.push_back(object.object);
+        if(object.empty())
+            return;
+        addReference(object.object);
     }
     void addHandle(const StringHandle &string)
     {
-        if(!string.empty())
-            stringOrSymbolReferences.push_back(string.string);
+        if(string.empty())
+            return;
+        addReference(string.string);
     }
     void addHandle(const SymbolHandle &symbol)
     {
-        if(!symbol.empty())
-            stringOrSymbolReferences.push_back(symbol.symbol);
+        if(symbol.empty())
+            return;
+        addReference(symbol.symbol);
     }
     inline void addHandle(const ObjectDescriptorHandle<> &objectDescriptor);
     void addHandle(const ValueHandle &value)
@@ -826,8 +894,7 @@ private:
         switch(value.type)
         {
         case ObjectMember::Type::Object:
-            assert(value.value.objectValue != nullptr);
-            objectReferences.push_back(value.value.objectValue);
+            addReference(value.value.objectValue);
             return;
         case ObjectMember::Type::Double:
         case ObjectMember::Type::Int32:
@@ -837,30 +904,26 @@ private:
         case ObjectMember::Type::Symbol:
         case ObjectMember::Type::String:
             if(value.value.stringOrSymbolValue != nullptr)
-                stringOrSymbolReferences.push_back(value.value.stringOrSymbolValue);
+                addReference(value.value.stringOrSymbolValue);
             return;
         }
     }
 
 public:
     explicit HandleScope(GC &gc)
-        : parent(nullptr), gc(gc), objectReferences(), stringOrSymbolReferences()
+        : gc(gc),
+          embeddedObjectReferences(),
+          embeddedStringOrSymbolReferences(),
+          embeddedObjectDescriptors()
     {
         init();
-    }
-    HandleScope(GC &gc, std::size_t referenceCount)
-        : parent(nullptr), gc(gc), objectReferences(), stringOrSymbolReferences()
-    {
-        init(referenceCount);
-    }
-    HandleScope(GC &gc, std::size_t objectReferenceCount, std::size_t stringOrSymbolReferenceCount)
-        : parent(nullptr), gc(gc), objectReferences(), stringOrSymbolReferences()
-    {
-        init(objectReferenceCount, stringOrSymbolReferenceCount);
     }
     ~HandleScope()
     {
         removeFromGC();
+        delete[] objectReferences;
+        delete[] stringOrSymbolReferences;
+        delete[] objectDescriptors;
     }
     ObjectHandle escapeHandle(const ObjectHandle &handle)
     {
@@ -910,7 +973,8 @@ private:
     std::vector<Object *> objects, oldObjects;
     std::vector<std::size_t> freeObjectIndexesList;
     std::vector<ObjectReference> objectsWorklist;
-    std::vector<String *> strings, oldStrings;
+    std::vector<String *> strings;
+    std::vector<String *> oldStrings;
     std::vector<std::size_t> freeStringsIndexesList;
     std::vector<ObjectDescriptor *> objectDescriptors, oldObjectDescriptors;
     std::vector<std::size_t> freeObjectDescriptorIndexesList;
@@ -956,6 +1020,7 @@ private:
     std::vector<std::forward_list<ObjectDescriptorStringOrSymbolTransition>>
         objectDescriptorStringTransitions;
     std::unordered_multimap<std::size_t, StringOrSymbolReference> stringHashToStringReferenceMap;
+    std::unordered_map<const void *, Value> globalValuesMap;
 
 private:
     ObjectReference allocateObjectIndex();
@@ -980,6 +1045,14 @@ private:
         std::vector<std::forward_list<ObjectDescriptorStringOrSymbolTransition>> &transitions,
         StringOrSymbolReference stringOrSymbol,
         const ObjectDescriptor *sourceDescriptor);
+    template <typename Tag>
+    static const void *getGlobalValueMapKey() noexcept
+    {
+        static char key;
+        return &key;
+    }
+    ValueHandle getGlobalValue(const void *key);
+    void setGlobalValue(const void *key, ValueHandle);
 
 public:
     explicit GC(std::shared_ptr<const GC> parent = nullptr);
@@ -1044,14 +1117,16 @@ public:
     StringHandle internString(const String &value);
     StringHandle internString(String &&value);
     SymbolHandle createSymbol(String description);
-    ObjectHandle create(ObjectDescriptorHandle<> objectDescriptor);
-    template <typename T, typename... Args>
+    ObjectHandle create(ObjectDescriptorHandle<> objectDescriptor,
+                        std::unique_ptr<Object::ExtraData> extraData = nullptr);
+    template <typename T = ObjectDescriptor, typename... Args>
     ObjectDescriptorHandle<T> createObjectDescriptor(
         ObjectDescriptorHandle<T> parentObjectDescriptor, Args &&... args)
     {
         static_assert(std::is_base_of<ObjectDescriptor, T>::value,
                       "T is not derived from ObjectDescriptor");
-        assert(parentObjectDescriptor.empty() || typeid(parentObjectDescriptor.get()) == typeid(T));
+        assert(parentObjectDescriptor.empty()
+               || typeid(*parentObjectDescriptor.get()) == typeid(T));
         const ObjectDescriptor::ObjectDescriptorInitializer initializer(
             this, parentObjectDescriptor.get(), allocateObjectDescriptorIndex());
         T *retval;
@@ -1068,6 +1143,20 @@ public:
         }
         objectDescriptors[initializer.index] = retval;
         return ObjectDescriptorHandle<T>(*this, retval);
+    }
+    ObjectDescriptorHandle<> createObjectDescriptor()
+    {
+        return createObjectDescriptor(ObjectDescriptorHandle<>());
+    }
+    template <typename Tag>
+    ValueHandle getGlobalValue()
+    {
+        return getGlobalValue(getGlobalValueMapKey<Tag>());
+    }
+    template <typename Tag>
+    void setGlobalValue(ValueHandle value)
+    {
+        setGlobalValue(getGlobalValueMapKey<Tag>(), value);
     }
 };
 
@@ -1114,7 +1203,7 @@ inline void HandleScope::addHandle(const ObjectDescriptorHandle<> &objectDescrip
 {
     if(!objectDescriptor.empty() && objectDescriptor.get()->gc == &gc)
     {
-        objectDescriptors.push_back(objectDescriptor.get());
+        addReference(objectDescriptor.get());
     }
 }
 

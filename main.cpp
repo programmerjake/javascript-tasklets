@@ -21,12 +21,45 @@
 #include "javascript_tasklets/gc.h"
 #include "javascript_tasklets/string.h"
 #include <iostream>
+#include <sstream>
 
 using namespace javascript_tasklets;
 
+gc::ObjectHandle test(gc::GC &gc)
+{
+    struct MyExtraData final : public gc::Object::ExtraData
+    {
+        ~MyExtraData()
+        {
+            std::cout << "destroyed MyExtraData" << std::endl;
+        }
+        virtual std::unique_ptr<ExtraData> clone() const override
+        {
+            std::cout << "MyExtraData::clone" << std::endl;
+            return std::unique_ptr<MyExtraData>(new MyExtraData(*this));
+        }
+    };
+    gc::HandleScope scope(gc);
+    auto objectDescriptor = gc.createObjectDescriptor();
+    return scope.escapeHandle(
+        gc.create(objectDescriptor, std::unique_ptr<MyExtraData>(new MyExtraData)));
+}
+
 int main()
 {
-    String testString = u8"this is a test '\u1234''\uFEFF''\U0010FFFF'"_js;
-    std::cout << testString << std::endl;
+    {
+        gc::GC gc;
+        {
+            gc::HandleScope scope(gc);
+            std::cout << "before test" << std::endl;
+            auto object = test(gc);
+            gc.addObjectMember(gc.internString("member"_js), object, gc::ValueHandle());
+            std::cout << "after test" << std::endl;
+            gc.collect();
+            std::cout << "after first collect" << std::endl;
+        }
+        gc.collect();
+        std::cout << "after second collect" << std::endl;
+    }
     return 0;
 }

@@ -28,6 +28,7 @@
 #include <functional>
 #include <iosfwd>
 
+#if 0
 namespace javascript_tasklets
 {
 struct Char16Traits final
@@ -125,7 +126,34 @@ struct Char16Traits final
 };
 
 typedef std::basic_string<std::uint16_t, Char16Traits> String;
+}
 
+namespace std
+{
+template <>
+struct hash<javascript_tasklets::String> final
+{
+    std::size_t operator()(const javascript_tasklets::String &str) const
+    {
+        std::size_t retval = str.size();
+        for(auto ch : str)
+        {
+            retval *= 1361;
+            retval ^= ch;
+        }
+        return retval;
+    }
+};
+}
+#else
+namespace javascript_tasklets
+{
+typedef std::u16string String;
+}
+#endif
+
+namespace javascript_tasklets
+{
 template <typename Dest, typename Src>
 struct StringCastHelper final
 {
@@ -151,7 +179,7 @@ struct StringCastHelper<std::string, String> final
     {
         for(std::size_t i = 0; i < src.size(); i++)
         {
-            auto ch = src[i];
+            std::uint16_t ch = src[i];
             std::uint_fast32_t value = ch;
             if(ch >= 0xD800U && ch < 0xDC00U && i + 1 < src.size() && src[i + 1] >= 0xDC00U
                && src[i + 1] < 0xC000U)
@@ -213,8 +241,8 @@ private:
         if(value > 0x10000UL)
         {
             value -= 0x10000UL;
-            retval += static_cast<std::uint16_t>(((value >> 10) & 0x3FF) | 0xD800U);
-            retval += static_cast<std::uint16_t>((value & 0x3FF) | 0xDC00U);
+            retval += static_cast<String::value_type>(((value >> 10) & 0x3FF) | 0xD800U);
+            retval += static_cast<String::value_type>((value & 0x3FF) | 0xDC00U);
         }
         else
         {
@@ -360,25 +388,12 @@ inline String operator"" _js(const char *str, std::size_t length)
     return string_cast<String>(std::string(str, length));
 }
 
-std::ostream &operator<<(std::ostream &os, const String &string);
+inline String operator"" _js(const char16_t *str, std::size_t length)
+{
+    return string_cast<String>(std::u16string(str, length));
 }
 
-namespace std
-{
-template <>
-struct hash<javascript_tasklets::String> final
-{
-    std::size_t operator()(const javascript_tasklets::String &str) const
-    {
-        std::size_t retval = str.size();
-        for(auto ch : str)
-        {
-            retval *= 1361;
-            retval ^= ch;
-        }
-        return retval;
-    }
-};
+std::ostream &operator<<(std::ostream &os, const String &string);
 }
 
 #endif /* JAVASCRIPT_TASKLETS_STRING_H_ */
