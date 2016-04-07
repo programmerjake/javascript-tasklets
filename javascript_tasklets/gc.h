@@ -23,8 +23,8 @@
 #define JAVASCRIPT_TASKLETS_GC_H_
 
 #include "string.h"
+#include "constexpr_assert.h"
 
-#include <cassert>
 #include <iterator>
 #include <cstdint>
 #include <vector>
@@ -216,19 +216,18 @@ struct Value : private TypelessValue
     enum class Type : std::uint8_t
     {
         Undefined = 0, // undefined must be zero because that is the default value
-        Null = 1,
-        String = 2,
-        Symbol = 3,
-        Boolean = 4,
-        Double = 5,
-        Int32 = 6,
-        UInt32 = 7,
-        Object = 8
+        Null,
+        String,
+        Symbol,
+        Boolean,
+        Double,
+        Int32,
+        UInt32,
+        Object
     };
-    static constexpr std::size_t typeBitWidth = 4;
 
 private:
-    Type type : typeBitWidth;
+    Type type;
 
 public:
     constexpr Value(Type type, const TypelessValue &value) noexcept : TypelessValue(value),
@@ -252,11 +251,11 @@ public:
     }
     static constexpr Value String(StringOrSymbolReference value) noexcept
     {
-        return assert(value != nullptr), Value(Type::String, TypelessValue(value));
+        return constexpr_assert(value != nullptr), Value(Type::String, TypelessValue(value));
     }
     static constexpr Value Symbol(StringOrSymbolReference value) noexcept
     {
-        return assert(value != nullptr), Value(Type::Symbol, TypelessValue(value));
+        return constexpr_assert(value != nullptr), Value(Type::Symbol, TypelessValue(value));
     }
     static constexpr Value Boolean(bool value) noexcept
     {
@@ -276,35 +275,36 @@ public:
     }
     static constexpr Value Object(ObjectReference value) noexcept
     {
-        return assert(value != nullptr), Value(Type::Object, TypelessValue(value));
+        return constexpr_assert(value != nullptr), Value(Type::Object, TypelessValue(value));
     }
     constexpr ObjectReference getObject() const noexcept
     {
-        return assert(type == Type::Object), assert(valueObject != nullptr), valueObject;
+        return constexpr_assert(type == Type::Object), constexpr_assert(valueObject != nullptr),
+               valueObject;
     }
     constexpr double getDouble() const noexcept
     {
-        return assert(type == Type::Double), valueDouble;
+        return constexpr_assert(type == Type::Double), valueDouble;
     }
     constexpr std::int32_t getInt32() const noexcept
     {
-        return assert(type == Type::Int32), valueIntegerOrBoolean;
+        return constexpr_assert(type == Type::Int32), valueIntegerOrBoolean;
     }
     constexpr std::uint32_t getUInt32() const noexcept
     {
-        return assert(type == Type::UInt32), valueIntegerOrBoolean;
+        return constexpr_assert(type == Type::UInt32), valueIntegerOrBoolean;
     }
     constexpr bool getBoolean() const noexcept
     {
-        return assert(type == Type::Boolean), valueIntegerOrBoolean;
+        return constexpr_assert(type == Type::Boolean), valueIntegerOrBoolean;
     }
     constexpr StringOrSymbolReference getString() const noexcept
     {
-        return assert(type == Type::String), valueStringOrSymbol;
+        return constexpr_assert(type == Type::String), valueStringOrSymbol;
     }
     constexpr StringOrSymbolReference getSymbol() const noexcept
     {
-        return assert(type == Type::Symbol), valueStringOrSymbol;
+        return constexpr_assert(type == Type::Symbol), valueStringOrSymbol;
     }
     constexpr Type getType() const noexcept
     {
@@ -373,14 +373,13 @@ typedef InternalNameMaker::InternalName InternalName;
 
 struct Name final
 {
-    enum class Type : unsigned
+    enum class Type : std::uint8_t
     {
-        Empty = 0,
-        String = 1,
-        Symbol = 2,
-        InternalName = 3
+        Empty,
+        String,
+        Symbol,
+        InternalName
     };
-    static constexpr std::size_t typeBitWidth = 2;
 
 private:
     union
@@ -388,7 +387,7 @@ private:
         StringOrSymbolReference valueStringOrSymbol;
         InternalName valueInternalName;
     };
-    Type type : typeBitWidth;
+    Type type;
 
 public:
     constexpr Name() noexcept : valueInternalName(), type(Type::Empty)
@@ -397,11 +396,12 @@ public:
 
 private:
     constexpr Name(Type type, StringOrSymbolReference valueStringOrSymbol) noexcept
-        : valueStringOrSymbol((assert(valueStringOrSymbol != nullptr), valueStringOrSymbol)),
+        : valueStringOrSymbol((constexpr_assert(valueStringOrSymbol != nullptr),
+                               valueStringOrSymbol)),
           type(type)
     {
     }
-    constexpr Name(Type type, InternalName valueInternalName) noexcept
+    constexpr Name(Type type, gc::InternalName valueInternalName) noexcept
         : valueInternalName(valueInternalName),
           type(type)
     {
@@ -415,6 +415,22 @@ public:
     {
         return value.isString() ? Name(Type::String, value.getString()) :
                                   Name(Type::Symbol, value.getSymbol());
+    }
+    static constexpr Name InternalName(gc::InternalName name) noexcept
+    {
+        return constexpr_assert(name), Name(Type::InternalName, name);
+    }
+    static constexpr Name Empty() noexcept
+    {
+        return Name();
+    }
+    static constexpr Name String(StringOrSymbolReference name) noexcept
+    {
+        return constexpr_assert(name != nullptr), Name(Type::String, name);
+    }
+    static constexpr Name Symbol(StringOrSymbolReference name) noexcept
+    {
+        return constexpr_assert(name != nullptr), Name(Type::Symbol, name);
     }
     constexpr bool isPublicName() const noexcept
     {
@@ -446,20 +462,42 @@ public:
     }
     constexpr Value toValue() const noexcept
     {
-        return assert(isPublicName()), type == Type::String ? Value::String(valueStringOrSymbol) :
-                                                              Value::Symbol(valueStringOrSymbol);
+        return constexpr_assert(isPublicName()), type == Type::String ?
+                                                     Value::String(valueStringOrSymbol) :
+                                                     Value::Symbol(valueStringOrSymbol);
     }
     constexpr StringOrSymbolReference getString() const noexcept
     {
-        return assert(type == Type::String), valueStringOrSymbol;
+        return constexpr_assert(type == Type::String), valueStringOrSymbol;
     }
     constexpr StringOrSymbolReference getSymbol() const noexcept
     {
-        return assert(type == Type::Symbol), valueStringOrSymbol;
+        return constexpr_assert(type == Type::Symbol), valueStringOrSymbol;
     }
-    constexpr InternalName getInternalName() const noexcept
+    constexpr gc::InternalName getInternalName() const noexcept
     {
-        return assert(type == Type::InternalName), valueInternalName;
+        return constexpr_assert(type == Type::InternalName), valueInternalName;
+    }
+    bool operator==(const Name &rt) const noexcept
+    {
+        if(type != rt.type)
+            return false;
+        switch(type)
+        {
+        case Type::Empty:
+            return true;
+        case Type::String:
+        case Type::Symbol:
+            return valueStringOrSymbol == rt.valueStringOrSymbol;
+        case Type::InternalName:
+            return valueInternalName == rt.valueInternalName;
+        }
+        constexpr_assert(false);
+        return true;
+    }
+    bool operator!=(const Name &rt) const noexcept
+    {
+        return !operator==(rt);
     }
 };
 }
@@ -487,7 +525,7 @@ struct hash<javascript_tasklets::gc::Name> final
             return hash<InternalName>()(value.getInternalName())
                    + static_cast<std::size_t>(Name::Type::InternalName);
         }
-        assert(false);
+        constexpr_assert(false);
         return 0;
     }
 };
@@ -501,15 +539,15 @@ struct ObjectMemberDescriptor final
 {
     enum class Kind : unsigned
     {
-        DataInObject = 0,
-        DataInDescriptor = 1,
-        AccessorInDescriptor = 2,
+        DataInObject,
+        DataInDescriptor,
+        AccessorInDescriptor,
     };
 
 private:
     bool configurable : 1;
     bool enumerable : 1;
-    Kind kind : 2;
+    Kind kind;
     struct AccessorInDescriptorT final
     {
         ObjectReference getter;
@@ -658,27 +696,27 @@ public:
     }
     constexpr ObjectReference getGetter() const noexcept
     {
-        return assert(kind == Kind::AccessorInDescriptor), accessorInDescriptor.getter;
+        return constexpr_assert(kind == Kind::AccessorInDescriptor), accessorInDescriptor.getter;
     }
     void setGetter(ObjectReference value) noexcept
     {
-        assert(kind == Kind::AccessorInDescriptor);
+        constexpr_assert(kind == Kind::AccessorInDescriptor);
         accessorInDescriptor.getter = value;
     }
     constexpr ObjectReference getSetter() const noexcept
     {
-        return assert(kind == Kind::AccessorInDescriptor), accessorInDescriptor.setter;
+        return constexpr_assert(kind == Kind::AccessorInDescriptor), accessorInDescriptor.setter;
     }
     void setSetter(ObjectReference value) noexcept
     {
-        assert(kind == Kind::AccessorInDescriptor);
+        constexpr_assert(kind == Kind::AccessorInDescriptor);
         accessorInDescriptor.setter = value;
     }
     constexpr bool isWritable() const noexcept
     {
         return kind == Kind::DataInDescriptor ?
                    dataInDescriptor.writable :
-                   (assert(kind == Kind::DataInObject), dataInObject.writable);
+                   (constexpr_assert(kind == Kind::DataInObject), dataInObject.writable);
     }
     void setWritable(bool value) noexcept
     {
@@ -688,26 +726,26 @@ public:
         }
         else
         {
-            assert(kind == Kind::DataInObject);
+            constexpr_assert(kind == Kind::DataInObject);
             dataInObject.writable = value;
         }
     }
     constexpr ObjectMemberIndex getMemberIndex() const noexcept
     {
-        return assert(kind == Kind::DataInObject), dataInObject.memberIndex;
+        return constexpr_assert(kind == Kind::DataInObject), dataInObject.memberIndex;
     }
     void setMemberIndex(ObjectMemberIndex value) noexcept
     {
-        assert(kind == Kind::DataInObject);
+        constexpr_assert(kind == Kind::DataInObject);
         dataInObject.memberIndex = value;
     }
     constexpr Value getValueInDescriptor() const noexcept
     {
-        return assert(kind == Kind::DataInDescriptor), dataInDescriptor.value;
+        return constexpr_assert(kind == Kind::DataInDescriptor), dataInDescriptor.value;
     }
     void setValueInDescriptor(Value value) noexcept
     {
-        assert(kind == Kind::DataInDescriptor);
+        constexpr_assert(kind == Kind::DataInDescriptor);
         dataInDescriptor.value = value;
     }
 };
@@ -725,17 +763,18 @@ struct ObjectMemberGroup final
     }
     constexpr Value get(std::size_t index) const noexcept
     {
-        return assert(index < objectMembersPerGroup), Value(types[index], values[index]);
+        return constexpr_assert(index < objectMembersPerGroup), Value(types[index], values[index]);
     }
     void set(std::size_t index, Value value) noexcept
     {
-        assert(index < objectMembersPerGroup);
+        constexpr_assert(index < objectMembersPerGroup);
         types[index] = value.getType();
         values[index] = value.toTypelessValue();
     }
 };
 
 class GC;
+struct ObjectDescriptor;
 
 class Object final
 {
@@ -785,12 +824,12 @@ public:
     static std::size_t getMemberGroupCount(const ObjectDescriptor *objectDescriptor);
 };
 
-inline ObjectMemberGroup *Object::getMembersArray()
+inline ObjectMemberGroup *Object::getMembersArray() noexcept
 {
     return reinterpret_cast<ObjectMemberGroup *>(this + 1);
 }
 
-inline const ObjectMemberGroup *Object::getMembersArray() const
+inline const ObjectMemberGroup *Object::getMembersArray() const noexcept
 {
     return reinterpret_cast<const ObjectMemberGroup *>(this + 1);
 }
@@ -909,13 +948,13 @@ public:
     }
     const Member &getMember(std::size_t index) const noexcept
     {
-        assert(index < members.size());
+        constexpr_assert(index < members.size());
         return members[index];
     }
     void setMember(std::size_t index, const Member &member) noexcept
     {
-        assert(index < members.size());
-        assert(!member.empty());
+        constexpr_assert(index < members.size());
+        constexpr_assert(!member.empty());
         if(members[index].descriptor.isEmbedded())
             embeddedMemberCount--;
         if(member.descriptor.isEmbedded())
@@ -924,7 +963,7 @@ public:
     }
     std::size_t addMember(const Member &member)
     {
-        assert(!member.empty());
+        constexpr_assert(!member.empty());
         std::size_t retval = members.size();
         members.push_back(member);
         if(members.back().descriptor.isEmbedded())
@@ -937,37 +976,13 @@ public:
     static constexpr std::size_t npos = ~static_cast<std::size_t>(0);
     std::size_t findMember(const Name &name) const noexcept
     {
+        constexpr_assert(!name.empty());
         for(std::size_t index = 0; index < members.size(); index++)
         {
+            if(members[index].name == name)
+                return index;
         }
-    }
-
-    Member getInternalSlot(const InternalSlot *slot) const
-    {
-        assert(slot);
-        auto iter = internalSlots.find(slot);
-        if(iter == internalSlots.end())
-            return Member();
-        return std::get<1>(*iter);
-    }
-    void setInternalSlot(const InternalSlot *slot, Member member)
-    {
-        assert(slot);
-        internalSlots[slot] = member;
-    }
-    virtual Member getNamedMember(const String &name) const
-    {
-        auto iter = namedMembers.find(name);
-        if(iter == namedMembers.end())
-            return Member();
-        return std::get<1>(*iter);
-    }
-    virtual Member getSymbolMember(StringOrSymbolReference symbol) const
-    {
-        auto iter = symbolMembers.find(symbol);
-        if(iter == symbolMembers.end())
-            return Member();
-        return std::get<1>(*iter);
+        return npos;
     }
     virtual ObjectDescriptorHandle<> duplicate(ObjectDescriptorHandle<> self, GC &gc) const;
 };
@@ -1003,7 +1018,7 @@ public:
     }
     const T *get() const noexcept
     {
-        assert(dynamic_cast<T *>(getBase()) == getBase());
+        constexpr_assert(dynamic_cast<T *>(getBase()) == getBase());
         return static_cast<T *>(getBase());
     }
 };
@@ -1028,47 +1043,58 @@ inline std::size_t Object::getSize(const ObjectDescriptor *objectDescriptor)
 
 inline std::size_t Object::getMemberGroupCount(const ObjectDescriptor *objectDescriptor)
 {
-    assert(objectDescriptor);
+    constexpr_assert(objectDescriptor);
     return (objectDescriptor->getEmbeddedMemberCount() + ObjectMemberGroup::objectMembersPerGroup
             - 1) / ObjectMemberGroup::objectMembersPerGroup;
 }
 
-inline ObjectMember::Type &Object::getMemberType(std::size_t memberIndex)
+inline Value::Type &Object::getMemberType(ObjectMemberIndex memberIndex) noexcept
 {
-    assert(memberIndex < objectDescriptor->getEmbeddedMemberCount());
-    return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
-        .types[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
+    constexpr_assert(memberIndex.index < objectDescriptor->getEmbeddedMemberCount());
+    return getMembersArray()[memberIndex.index / ObjectMemberGroup::objectMembersPerGroup]
+        .types[memberIndex.index % ObjectMemberGroup::objectMembersPerGroup];
 }
 
-inline ObjectMember &Object::getMemberValue(std::size_t memberIndex)
+inline TypelessValue &Object::getMemberTypelessValue(ObjectMemberIndex memberIndex) noexcept
 {
-    assert(memberIndex < objectDescriptor->getEmbeddedMemberCount());
-    return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
-        .values[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
+    constexpr_assert(memberIndex.index < objectDescriptor->getEmbeddedMemberCount());
+    return getMembersArray()[memberIndex.index / ObjectMemberGroup::objectMembersPerGroup]
+        .values[memberIndex.index % ObjectMemberGroup::objectMembersPerGroup];
 }
 
-inline ObjectMember::Type Object::getMemberType(std::size_t memberIndex) const
+inline Value::Type Object::getMemberType(ObjectMemberIndex memberIndex) const noexcept
 {
-    assert(memberIndex < objectDescriptor->getEmbeddedMemberCount());
-    return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
-        .types[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
+    constexpr_assert(memberIndex.index < objectDescriptor->getEmbeddedMemberCount());
+    return getMembersArray()[memberIndex.index / ObjectMemberGroup::objectMembersPerGroup]
+        .types[memberIndex.index % ObjectMemberGroup::objectMembersPerGroup];
 }
 
-inline const ObjectMember &Object::getMemberValue(std::size_t memberIndex) const
+inline const TypelessValue &Object::getMemberTypelessValue(ObjectMemberIndex memberIndex) const
+    noexcept
 {
-    assert(memberIndex < objectDescriptor->getEmbeddedMemberCount());
-    return getMembersArray()[memberIndex / ObjectMemberGroup::objectMembersPerGroup]
-        .values[memberIndex % ObjectMemberGroup::objectMembersPerGroup];
+    constexpr_assert(memberIndex.index < objectDescriptor->getEmbeddedMemberCount());
+    return getMembersArray()[memberIndex.index / ObjectMemberGroup::objectMembersPerGroup]
+        .values[memberIndex.index % ObjectMemberGroup::objectMembersPerGroup];
 }
+
+struct ValueHandle;
 
 struct ObjectHandle final
 {
+    friend struct ValueHandle;
     ObjectReference object;
     inline ObjectHandle(GC &gc, ObjectReference object);
-    constexpr ObjectHandle() : object()
+    constexpr ObjectHandle() noexcept : object()
     {
     }
-    constexpr bool empty() const
+
+private:
+    constexpr ObjectHandle(ObjectReference object) noexcept : object(object)
+    {
+    }
+
+public:
+    constexpr bool empty() const noexcept
     {
         return object == ObjectReference();
     }
@@ -1076,12 +1102,20 @@ struct ObjectHandle final
 
 struct StringHandle final
 {
+    friend struct ValueHandle;
     StringOrSymbolReference string;
     inline StringHandle(GC &gc, StringOrSymbolReference string);
-    constexpr StringHandle() : string(nullptr)
+    constexpr StringHandle() noexcept : string(nullptr)
     {
     }
-    constexpr bool empty() const
+
+private:
+    constexpr StringHandle(StringOrSymbolReference string) noexcept : string(string)
+    {
+    }
+
+public:
+    constexpr bool empty() const noexcept
     {
         return string == nullptr;
     }
@@ -1089,12 +1123,20 @@ struct StringHandle final
 
 struct SymbolHandle final
 {
+    friend struct ValueHandle;
     StringOrSymbolReference symbol;
     inline SymbolHandle(GC &gc, StringOrSymbolReference symbol);
-    constexpr SymbolHandle() : symbol(nullptr)
+    constexpr SymbolHandle() noexcept : symbol(nullptr)
     {
     }
-    constexpr bool empty() const
+
+private:
+    constexpr SymbolHandle(StringOrSymbolReference symbol) noexcept : symbol(symbol)
+    {
+    }
+
+public:
+    constexpr bool empty() const noexcept
     {
         return symbol == nullptr;
     }
@@ -1102,212 +1144,162 @@ struct SymbolHandle final
 
 struct ValueHandle final
 {
-    ObjectMember value;
-    ObjectMember::Type type;
-    ValueHandle() : value(), type(ObjectMember::Type::Undefined)
-    {
-        value.stringOrSymbolValue = nullptr;
-    }
-    ValueHandle(std::nullptr_t) : value(), type(ObjectMember::Type::Null)
-    {
-        value.stringOrSymbolValue = nullptr;
-    }
-    inline ValueHandle(GC &gc, ObjectMember::Type type, ObjectMember value);
-    ValueHandle(GC &gc, const Value &value) : ValueHandle(gc, value.type, value.value)
+    Value value;
+    constexpr ValueHandle() : value()
     {
     }
-    ValueHandle(StringHandle value) : ValueHandle(makeString(value))
+    inline ValueHandle(GC &gc, const Value &value);
+    constexpr ValueHandle(StringHandle value) noexcept : ValueHandle(String(value))
     {
     }
-    ValueHandle(ObjectHandle value) : ValueHandle(makeObject(value))
+    constexpr ValueHandle(ObjectHandle value) noexcept : ValueHandle(Object(value))
     {
     }
-    ValueHandle(SymbolHandle value) : ValueHandle(makeSymbol(value))
+    constexpr ValueHandle(SymbolHandle value) noexcept : ValueHandle(Symbol(value))
     {
     }
     constexpr operator Value() const noexcept
     {
-        return Value(type, value);
+        return value;
     }
 
 private:
-    constexpr ValueHandle(ObjectMember::Type type, ObjectMember value) : value(value), type(type)
-    {
-    }
-    constexpr ValueHandle(const Value &value) : value(value.value), type(value.type)
+    constexpr ValueHandle(const Value &value) noexcept : value(value)
     {
     }
 
 public:
-    static ValueHandle makeUndefined()
+    constexpr Value::Type getType() const noexcept
     {
-        ObjectMember value;
-        value.stringOrSymbolValue = nullptr;
-        return ValueHandle(ObjectMember::Type::Undefined, value);
+        return value.getType();
     }
-    bool isUndefined() const
+    static constexpr ValueHandle Undefined() noexcept
     {
-        return value.isUndefined(type);
+        return ValueHandle(Value::Undefined());
     }
-    static ValueHandle makeNull()
+    constexpr bool isUndefined() const noexcept
     {
-        ObjectMember value;
-        value.stringOrSymbolValue = nullptr;
-        return ValueHandle(ObjectMember::Type::Null, value);
+        return value.isUndefined();
     }
-    bool isNull() const
+    static constexpr ValueHandle Null() noexcept
     {
-        return value.isNull(type);
+        return ValueHandle(Value::Null());
     }
-    static ValueHandle makeObject(ObjectHandle object)
+    constexpr bool isNull() const noexcept
     {
-        assert(!object.empty());
-        ObjectMember value;
-        value.objectValue = object.object;
-        return ValueHandle(ObjectMember::Type::Object, value);
+        return value.isNull();
     }
-    static ValueHandle makeObjectOrNull(ObjectHandle object)
+    static constexpr ValueHandle Object(ObjectHandle object) noexcept
     {
-        if(object.empty())
-            return makeNull();
-        return makeObject(object);
+        return ValueHandle(Value::Object(object.object));
     }
-    bool isObject() const
+    static constexpr ValueHandle ObjectOrNull(ObjectHandle object) noexcept
     {
-        return value.isObject(type);
+        return object.empty() ? Null() : Object(object);
     }
-    ObjectHandle getObject() const
+    constexpr bool isObject() const noexcept
     {
-        assert(isObject());
-        ObjectHandle retval;
-        retval.object = value.objectValue;
-        return retval;
+        return value.isObject();
     }
-    ObjectHandle getIfObject() const
+    constexpr ObjectHandle getObject() const noexcept
     {
-        if(isObject())
-            return getObject();
-        return ObjectHandle();
+        return ObjectHandle(value.getObject());
     }
-    static ValueHandle makeObject(GC &gc, ObjectReference object)
+    constexpr ObjectHandle getIfObject() const noexcept
     {
-        return makeObject(ObjectHandle(gc, object));
+        return isObject() ? getObject() : ObjectHandle();
     }
-    static ValueHandle makeDouble(double doubleValue)
+    static ValueHandle Object(GC &gc, ObjectReference object)
     {
-        ObjectMember value;
-        value.doubleValue = doubleValue;
-        return ValueHandle(ObjectMember::Type::Double, value);
+        return Object(ObjectHandle(gc, object));
     }
-    bool isDouble() const
+    static constexpr ValueHandle Double(double doubleValue) noexcept
     {
-        return value.isDouble(type);
+        return ValueHandle(Value::Double(doubleValue));
     }
-    double getDouble() const
+    constexpr bool isDouble() const noexcept
     {
-        assert(isDouble());
-        return value.doubleValue;
+        return value.isDouble();
     }
-    static ValueHandle makeInt32(std::int32_t intValue)
+    constexpr double getDouble() const noexcept
     {
-        ObjectMember value;
-        value.uint32Value = static_cast<std::uint32_t>(intValue);
-        return ValueHandle(ObjectMember::Type::Int32, value);
+        return value.getDouble();
     }
-    bool isInt32() const
+    static constexpr ValueHandle Int32(std::int32_t intValue) noexcept
     {
-        return value.isInt32(type);
+        return ValueHandle(Value::Int32(intValue));
     }
-    std::int32_t getInt32() const
+    constexpr bool isInt32() const noexcept
     {
-        assert(isInt32());
-        return static_cast<std::int32_t>(value.uint32Value);
+        return value.isInt32();
     }
-    static ValueHandle makeUInt32(std::uint32_t intValue)
+    constexpr std::int32_t getInt32() const noexcept
     {
-        ObjectMember value;
-        value.uint32Value = intValue;
-        return ValueHandle(ObjectMember::Type::UInt32, value);
+        return value.getInt32();
     }
-    bool isUInt32() const
+    static constexpr ValueHandle UInt32(std::uint32_t intValue) noexcept
     {
-        return value.isUInt32(type);
+        return ValueHandle(Value::UInt32(intValue));
     }
-    std::uint32_t getUInt32() const
+    constexpr bool isUInt32() const noexcept
     {
-        assert(isUInt32());
-        return value.uint32Value;
+        return value.isUInt32();
     }
-    static ValueHandle makeBoolean(bool boolValue)
+    constexpr std::uint32_t getUInt32() const noexcept
     {
-        ObjectMember value;
-        value.uint32Value = boolValue ? 1 : 0;
-        return ValueHandle(ObjectMember::Type::Boolean, value);
+        return value.getUInt32();
     }
-    bool isBoolean() const
+    static constexpr ValueHandle Boolean(bool boolValue) noexcept
     {
-        return value.isBoolean(type);
+        return ValueHandle(Value::Boolean(boolValue));
     }
-    bool getBoolean() const
+    constexpr bool isBoolean() const noexcept
     {
-        assert(isBoolean());
-        return value.uint32Value ? true : false;
+        return value.isBoolean();
     }
-    static ValueHandle makeSymbol(SymbolHandle symbol)
+    constexpr bool getBoolean() const noexcept
     {
-        assert(!symbol.empty());
-        ObjectMember value;
-        value.stringOrSymbolValue = symbol.symbol;
-        return ValueHandle(ObjectMember::Type::Symbol, value);
+        return value.getBoolean();
     }
-    bool isSymbol() const
+    static constexpr ValueHandle Symbol(SymbolHandle symbol) noexcept
     {
-        return value.isSymbol(type);
+        return ValueHandle(Value::Symbol(symbol.symbol));
     }
-    SymbolHandle getSymbol() const
+    constexpr bool isSymbol() const noexcept
     {
-        assert(isSymbol());
-        SymbolHandle retval;
-        retval.symbol = value.stringOrSymbolValue;
-        return retval;
+        return value.isSymbol();
     }
-    SymbolHandle getIfSymbol() const
+    constexpr SymbolHandle getSymbol() const noexcept
     {
-        if(isSymbol())
-            return getSymbol();
-        return SymbolHandle();
+        return SymbolHandle(value.getSymbol());
     }
-    static ValueHandle makeSymbol(GC &gc, StringOrSymbolReference symbol)
+    constexpr SymbolHandle getIfSymbol() const noexcept
     {
-        return makeSymbol(SymbolHandle(gc, symbol));
+        return isSymbol() ? getSymbol() : SymbolHandle();
     }
-    static ValueHandle makeString(StringHandle string)
+    static ValueHandle Symbol(GC &gc, StringOrSymbolReference symbol)
     {
-        assert(!string.empty());
-        ObjectMember value;
-        value.stringOrSymbolValue = string.string;
-        return ValueHandle(ObjectMember::Type::String, value);
+        return Symbol(SymbolHandle(gc, symbol));
     }
-    bool isString() const
+    static constexpr ValueHandle String(StringHandle string) noexcept
     {
-        return value.isString(type);
+        return ValueHandle(Value::String(string.string));
     }
-    StringHandle getString() const
+    constexpr bool isString() const noexcept
     {
-        assert(isString());
-        StringHandle retval;
-        retval.string = value.stringOrSymbolValue;
-        return retval;
+        return value.isString();
     }
-    StringHandle getIfString() const
+    constexpr StringHandle getString() const noexcept
     {
-        if(isString())
-            return getString();
-        return StringHandle();
+        return StringHandle(value.getString());
     }
-    static ValueHandle makeString(GC &gc, StringOrSymbolReference string)
+    constexpr StringHandle getIfString() const noexcept
     {
-        return makeString(StringHandle(gc, string));
+        return isString() ? getString() : StringHandle();
+    }
+    static ValueHandle String(GC &gc, StringOrSymbolReference string)
+    {
+        return String(StringHandle(gc, string));
     }
 };
 
@@ -1352,7 +1344,7 @@ private:
     void expandObjectDescriptors();
     void addReference(ObjectReference reference)
     {
-        assert(reference != nullptr);
+        constexpr_assert(reference != nullptr);
         if(objectReferenceCount < embeddedHandleCount)
         {
             embeddedObjectReferences[objectReferenceCount++] = reference;
@@ -1366,7 +1358,7 @@ private:
     }
     void addReference(StringOrSymbolReference reference)
     {
-        assert(reference != nullptr);
+        constexpr_assert(reference != nullptr);
         if(stringOrSymbolReferenceCount < embeddedHandleCount)
         {
             embeddedStringOrSymbolReferences[stringOrSymbolReferenceCount++] = reference;
@@ -1381,7 +1373,7 @@ private:
     }
     void addReference(const ObjectDescriptor *reference)
     {
-        assert(reference != nullptr);
+        constexpr_assert(reference != nullptr);
         if(objectDescriptorCount < embeddedHandleCount)
         {
             embeddedObjectDescriptors[objectDescriptorCount++] = reference;
@@ -1414,22 +1406,26 @@ private:
     inline void addHandle(const ObjectDescriptorHandle<> &objectDescriptor);
     void addHandle(const ValueHandle &value)
     {
-        switch(value.type)
+        switch(value.getType())
         {
-        case ObjectMember::Type::Object:
-            addReference(value.value.objectValue);
+        case Value::Type::Object:
+            addReference(value.getObject().object);
             return;
-        case ObjectMember::Type::Double:
-        case ObjectMember::Type::Int32:
-        case ObjectMember::Type::UInt32:
-        case ObjectMember::Type::Boolean:
+        case Value::Type::Double:
+        case Value::Type::Int32:
+        case Value::Type::UInt32:
+        case Value::Type::Boolean:
+        case Value::Type::Undefined:
+        case Value::Type::Null:
             return;
-        case ObjectMember::Type::Symbol:
-        case ObjectMember::Type::String:
-            if(value.value.stringOrSymbolValue != nullptr)
-                addReference(value.value.stringOrSymbolValue);
+        case Value::Type::Symbol:
+            addReference(value.getSymbol().symbol);
+            return;
+        case Value::Type::String:
+            addReference(value.getString().string);
             return;
         }
+        constexpr_assert(false);
     }
 
 public:
@@ -1450,32 +1446,32 @@ public:
     }
     ObjectHandle escapeHandle(const ObjectHandle &handle)
     {
-        assert(parent);
+        constexpr_assert(parent);
         parent->addHandle(handle);
         return handle;
     }
     SymbolHandle escapeHandle(const SymbolHandle &handle)
     {
-        assert(parent);
+        constexpr_assert(parent);
         parent->addHandle(handle);
         return handle;
     }
     StringHandle escapeHandle(const StringHandle &handle)
     {
-        assert(parent);
+        constexpr_assert(parent);
         parent->addHandle(handle);
         return handle;
     }
     ValueHandle escapeHandle(const ValueHandle &handle)
     {
-        assert(parent);
+        constexpr_assert(parent);
         parent->addHandle(handle);
         return handle;
     }
     template <typename T>
     ObjectDescriptorHandle<T> escapeHandle(const ObjectDescriptorHandle<T> &handle)
     {
-        assert(parent);
+        constexpr_assert(parent);
         parent->addHandle(handle);
         return handle;
     }
@@ -1559,7 +1555,7 @@ private:
     void collectorMarkObject(ObjectReference object) noexcept;
     void collectorMarkStringOrSymbol(StringOrSymbolReference stringOrSymbol) noexcept;
     void collectorMarkObjectDescriptor(const ObjectDescriptor *objectDescriptor) noexcept;
-    void collectorMarkObjectMember(ObjectMember::Type type, const ObjectMember &value) noexcept;
+    void collectorMarkObjectMember(Value::Type type, const TypelessValue &value) noexcept;
     void collectorMarkObjectDescriptorMember(const ObjectDescriptor::Member &value) noexcept;
     void collectorScanObject(ObjectReference objectReference) noexcept;
     void collectorScanObjectDescriptor(ObjectDescriptor *objectDescriptor) noexcept;
@@ -1595,18 +1591,18 @@ public:
     }
     const Object &readObject(ObjectHandle handle) const noexcept
     {
-        assert(handle.object.index < objects.size());
+        constexpr_assert(handle.object.index < objects.size());
         const Object *retval = objects[handle.object.index];
-        assert(retval);
+        constexpr_assert(retval);
         return *retval;
     }
     Object &writeObject(ObjectHandle handle)
     {
-        assert(!handle.empty());
-        assert(!immutable);
-        assert(handle.object.index < objects.size());
+        constexpr_assert(!handle.empty());
+        constexpr_assert(!immutable);
+        constexpr_assert(handle.object.index < objects.size());
         Object *&retval = objects[handle.object.index];
-        assert(retval);
+        constexpr_assert(retval);
         if(retval->gc == this)
             return *retval;
         return *objectCopyOnWrite(handle.object);
@@ -1625,16 +1621,16 @@ public:
                                              bool isEmbedded = true);
     const String &readString(StringHandle handle) const noexcept
     {
-        assert(handle.string.index < strings.size());
+        constexpr_assert(handle.string.index < strings.size());
         const String *retval = strings[handle.string.index];
-        assert(retval);
+        constexpr_assert(retval);
         return *retval;
     }
     const String &readSymbol(SymbolHandle handle) const noexcept
     {
-        assert(handle.symbol.index < strings.size());
+        constexpr_assert(handle.symbol.index < strings.size());
         const String *retval = strings[handle.symbol.index];
-        assert(retval);
+        constexpr_assert(retval);
         return *retval;
     }
     StringHandle internString(const String &value);
@@ -1648,8 +1644,8 @@ public:
     {
         static_assert(std::is_base_of<ObjectDescriptor, T>::value,
                       "T is not derived from ObjectDescriptor");
-        assert(parentObjectDescriptor.empty()
-               || typeid(*parentObjectDescriptor.get()) == typeid(T));
+        constexpr_assert(parentObjectDescriptor.empty()
+                         || typeid(*parentObjectDescriptor.get()) == typeid(T));
         const ObjectDescriptor::ObjectDescriptorInitializer initializer(
             this, parentObjectDescriptor.get(), allocateObjectDescriptorIndex());
         T *retval;
@@ -1685,39 +1681,39 @@ public:
 
 inline ObjectHandle::ObjectHandle(GC &gc, ObjectReference object) : object(object)
 {
-    assert(gc.handleScopesStack);
+    constexpr_assert(gc.handleScopesStack);
     gc.handleScopesStack->addHandle(*this);
 }
 
 inline StringHandle::StringHandle(GC &gc, StringOrSymbolReference string) : string(string)
 {
-    assert(gc.handleScopesStack);
+    constexpr_assert(gc.handleScopesStack);
     gc.handleScopesStack->addHandle(*this);
 }
 
 inline SymbolHandle::SymbolHandle(GC &gc, StringOrSymbolReference symbol) : symbol(symbol)
 {
-    assert(gc.handleScopesStack);
+    constexpr_assert(gc.handleScopesStack);
     gc.handleScopesStack->addHandle(*this);
 }
 
-inline ValueHandle::ValueHandle(GC &gc, ObjectMember::Type type, ObjectMember value)
-    : value(value), type(type)
+inline ValueHandle::ValueHandle(GC &gc, const Value &value)
+    : value(value)
 {
-    assert(gc.handleScopesStack);
+    constexpr_assert(gc.handleScopesStack);
     gc.handleScopesStack->addHandle(*this);
 }
 
 inline void HandleScope::addToGC()
 {
-    assert(!parent);
+    constexpr_assert(!parent);
     parent = gc.handleScopesStack;
     gc.handleScopesStack = this;
 }
 
 inline void HandleScope::removeFromGC()
 {
-    assert(this == gc.handleScopesStack);
+    constexpr_assert(this == gc.handleScopesStack);
     gc.handleScopesStack = parent;
     parent = nullptr;
 }
@@ -1734,7 +1730,7 @@ inline ObjectDescriptorHandle<ObjectDescriptor>::ObjectDescriptorHandle(
     GC &gc, const ObjectDescriptor *objectDescriptor)
     : value(objectDescriptor)
 {
-    assert(gc.handleScopesStack);
+    constexpr_assert(gc.handleScopesStack);
     gc.handleScopesStack->addHandle(*this);
 }
 }
