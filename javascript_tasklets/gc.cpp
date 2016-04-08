@@ -33,19 +33,17 @@ ObjectDescriptor::ObjectDescriptor(const ObjectDescriptorInitializer &initialize
       parent(initializer.parent),
       index(initializer.index),
       embeddedMemberCount(0),
-      namedMembers(),
-      symbolMembers(),
-      internalSlots()
+      members()
 {
 }
 
 Object *GC::objectCopyOnWrite(ObjectReference objectReference)
 {
-    assert(!immutable);
-    assert(objectReference.index < objects.size());
-    assert(parent);
+    constexpr_assert(!immutable);
+    constexpr_assert(objectReference.index < objects.size());
+    constexpr_assert(parent);
     const Object *oldObject = objects[objectReference.index];
-    assert(oldObject);
+    constexpr_assert(oldObject);
     std::unique_ptr<Object::ExtraData> newExtraData = nullptr;
     if(oldObject->extraData)
     {
@@ -83,7 +81,7 @@ GC::GC(std::shared_ptr<const GC> parent)
 {
     if(parent)
     {
-        assert(parent->immutable);
+        constexpr_assert(parent->immutable);
         objects = parent->objects;
         oldObjects.reserve(objects.capacity());
         freeObjectIndexesList = parent->freeObjectIndexesList;
@@ -117,7 +115,7 @@ GC::~GC()
     }
     if(parent)
     {
-        assert(strings.size() >= parent->strings.size());
+        constexpr_assert(strings.size() >= parent->strings.size());
         for(std::size_t i = 0; i < parent->strings.size(); i++)
         {
             if(parent->strings[i] == strings[i])
@@ -143,21 +141,21 @@ GC::~GC()
 void GC::collect() noexcept
 {
     // setup
-    assert(!immutable);
+    constexpr_assert(!immutable);
     allocationsLeftTillNextCollect = startingAllocationsLeftTillNextCollect;
     memoryLeftTillNextCollect = startingMemoryLeftTillNextCollect;
     oldObjects.swap(objects);
-    assert(objects.capacity() >= oldObjects.size());
+    constexpr_assert(objects.capacity() >= oldObjects.size());
     objects.resize(oldObjects.size());
     for(Object *&object : objects)
         object = nullptr;
     oldStrings.swap(strings);
-    assert(strings.capacity() >= oldStrings.size());
+    constexpr_assert(strings.capacity() >= oldStrings.size());
     strings.resize(oldStrings.size());
     for(String *&string : strings)
         string = nullptr;
     oldObjectDescriptors.swap(objectDescriptors);
-    assert(objectDescriptors.capacity() >= oldObjectDescriptors.size());
+    constexpr_assert(objectDescriptors.capacity() >= oldObjectDescriptors.size());
     objectDescriptors.resize(oldObjectDescriptors.size());
     for(ObjectDescriptor *&objectDescriptor : objectDescriptors)
         objectDescriptor = nullptr;
@@ -168,7 +166,7 @@ void GC::collect() noexcept
     for(const HandleScope *handleScope = handleScopesStack; handleScope != nullptr;
         handleScope = handleScope->parent)
     {
-        assert(&handleScope->gc == this);
+        constexpr_assert(&handleScope->gc == this);
         for(std::size_t i = 0;
             i < handleScope->objectReferenceCount && i < HandleScope::embeddedHandleCount;
             i++)
@@ -198,7 +196,7 @@ void GC::collect() noexcept
     for(const auto &globalValue : globalValuesMap)
     {
         const Value &value = std::get<1>(globalValue);
-        collectorMarkObjectMember(value.type, value.value);
+        collectorMarkValue(value);
     }
 
     // mark heap
@@ -242,14 +240,14 @@ void GC::collect() noexcept
             transitionList.remove_if(
                 [this](const ObjectDescriptorStringOrSymbolTransition &transition) -> bool
                 {
-                    assert(transition.stringOrSymbol.index < strings.size());
+                    constexpr_assert(transition.stringOrSymbol.index < strings.size());
                     if(strings[transition.stringOrSymbol.index] == nullptr)
                         return true;
-                    assert(transition.sourceDescriptor);
+                    constexpr_assert(transition.sourceDescriptor);
                     if(transition.sourceDescriptor->gc == this)
                     {
                         std::size_t index = transition.sourceDescriptor->index;
-                        assert(index < objectDescriptors.size());
+                        constexpr_assert(index < objectDescriptors.size());
                         if(objectDescriptors[index] == nullptr)
                             return true;
                     }
@@ -258,7 +256,7 @@ void GC::collect() noexcept
                         if(transition.destDescriptor->gc == this)
                         {
                             std::size_t index = transition.destDescriptor->index;
-                            assert(index < objectDescriptors.size());
+                            constexpr_assert(index < objectDescriptors.size());
                             if(objectDescriptors[index] == nullptr)
                                 return true;
                         }
@@ -284,7 +282,7 @@ void GC::collect() noexcept
         iter != stringHashToStringReferenceMap.end();)
     {
         StringOrSymbolReference stringReference = std::get<1>(*iter);
-        assert(stringReference.index < strings.size());
+        constexpr_assert(stringReference.index < strings.size());
         if(strings[stringReference.index] == nullptr)
             iter = stringHashToStringReferenceMap.erase(iter);
         else
@@ -314,8 +312,8 @@ void GC::collect() noexcept
 Object *GC::createInternal(const ObjectDescriptor *objectDescriptor,
                            std::unique_ptr<Object::ExtraData> extraData)
 {
-    assert(!immutable);
-    assert(objectDescriptor);
+    constexpr_assert(!immutable);
+    constexpr_assert(objectDescriptor);
     const std::size_t newObjectSize = Object::getSize(objectDescriptor);
     void *mem = ::operator new(newObjectSize);
     Object *retval;
@@ -346,9 +344,9 @@ Object *GC::createInternal(const ObjectDescriptor *objectDescriptor,
 
 void GC::freeInternal(Object *object) noexcept
 {
-    assert(!immutable);
-    assert(object);
-    assert(object->gc == this);
+    constexpr_assert(!immutable);
+    constexpr_assert(object);
+    constexpr_assert(object->gc == this);
     for(std::size_t i = Object::getMemberGroupCount(object->objectDescriptor); i > 0; i--)
     {
         object->getMembersArray()[i - 1].~ObjectMemberGroup();
@@ -359,7 +357,7 @@ void GC::freeInternal(Object *object) noexcept
 
 ObjectReference GC::allocateObjectIndex()
 {
-    assert(!immutable);
+    constexpr_assert(!immutable);
     if(!freeObjectIndexesList.empty())
     {
         ObjectReference retval(freeObjectIndexesList.back());
@@ -376,13 +374,13 @@ ObjectReference GC::allocateObjectIndex()
 
 void GC::freeObjectIndex(ObjectReference object) noexcept
 {
-    assert(!immutable);
+    constexpr_assert(!immutable);
     freeObjectIndexesList.push_back(object.index);
 }
 
 std::size_t GC::allocateStringIndex()
 {
-    assert(!immutable);
+    constexpr_assert(!immutable);
     if(!freeStringsIndexesList.empty())
     {
         std::size_t retval = freeStringsIndexesList.back();
@@ -398,13 +396,13 @@ std::size_t GC::allocateStringIndex()
 
 void GC::freeStringIndex(std::size_t stringIndex) noexcept
 {
-    assert(!immutable);
+    constexpr_assert(!immutable);
     freeStringsIndexesList.push_back(stringIndex);
 }
 
 std::size_t GC::allocateObjectDescriptorIndex()
 {
-    assert(!immutable);
+    constexpr_assert(!immutable);
     if(!freeObjectDescriptorIndexesList.empty())
     {
         std::size_t retval = freeObjectDescriptorIndexesList.back();
@@ -421,44 +419,45 @@ std::size_t GC::allocateObjectDescriptorIndex()
 
 void GC::freeObjectDescriptorIndex(std::size_t objectDescriptorIndex) noexcept
 {
-    assert(!immutable);
+    constexpr_assert(!immutable);
     freeObjectDescriptorIndexesList.push_back(objectDescriptorIndex);
 }
 
 void GC::collectorMarkObject(ObjectReference object) noexcept
 {
-    assert(object != nullptr);
-    assert(object.index < objects.size());
+    constexpr_assert(object != nullptr);
+    constexpr_assert(object.index < objects.size());
     if(objects[object.index] == nullptr)
     {
-        assert(objectsWorklist.size() < objectsWorklist.capacity());
+        constexpr_assert(objectsWorklist.size() < objectsWorklist.capacity());
         objectsWorklist.push_back(object);
         auto pObject = oldObjects[object.index];
-        assert(pObject);
+        constexpr_assert(pObject);
         objects[object.index] = pObject;
     }
 }
 
 void GC::collectorMarkStringOrSymbol(StringOrSymbolReference stringOrSymbol) noexcept
 {
-    assert(stringOrSymbol != nullptr);
-    assert(stringOrSymbol.index < strings.size());
+    constexpr_assert(stringOrSymbol != nullptr);
+    constexpr_assert(stringOrSymbol.index < strings.size());
     auto pString = oldStrings[stringOrSymbol.index];
-    assert(pString);
+    constexpr_assert(pString);
     strings[stringOrSymbol.index] = pString;
 }
 
 void GC::collectorMarkObjectDescriptor(const ObjectDescriptor *objectDescriptor) noexcept
 {
-    assert(objectDescriptor != nullptr);
+    constexpr_assert(objectDescriptor != nullptr);
     if(objectDescriptor->gc == this)
     {
         const std::size_t index = objectDescriptor->index;
-        assert(index < objectDescriptors.size());
-        assert(oldObjectDescriptors[index] == objectDescriptor);
+        constexpr_assert(index < objectDescriptors.size());
+        constexpr_assert(oldObjectDescriptors[index] == objectDescriptor);
         if(objectDescriptors[index] == nullptr)
         {
-            assert(objectDescriptorsWorklist.size() < objectDescriptorsWorklist.capacity());
+            constexpr_assert(objectDescriptorsWorklist.size()
+                             < objectDescriptorsWorklist.capacity());
             objectDescriptorsWorklist.push_back(index);
             objectDescriptors[index] = oldObjectDescriptors[index];
         }
@@ -467,83 +466,65 @@ void GC::collectorMarkObjectDescriptor(const ObjectDescriptor *objectDescriptor)
 
 void GC::collectorMarkObjectDescriptorMember(const ObjectDescriptor::Member &member) noexcept
 {
-    switch(member.kind)
-    {
-    case ObjectDescriptor::Member::Kind::Empty:
-        return;
-    case ObjectDescriptor::Member::Kind::Embedded:
-        return;
-    case ObjectDescriptor::Member::Kind::Constant:
-        collectorMarkObjectMember(member.value.constantMember.type,
-                                  member.value.constantMember.value);
-        return;
-    }
-    assert(false);
+    collectorMarkName(member.name);
+    collectorMarkObjectMemberDescriptor(member.descriptor);
 }
 
-void GC::collectorMarkObjectMember(ObjectMember::Type type, const ObjectMember &value) noexcept
+void GC::collectorMarkObjectMember(Value::Type type, const TypelessValue &value) noexcept
 {
-    switch(type)
+    collectorMarkValue(Value(type, value));
+}
+
+void GC::collectorMarkValue(const Value &value) noexcept
+{
+    switch(value.getType())
     {
-    case ObjectMember::Type::Object:
-        collectorMarkObject(value.objectValue);
+    case Value::Type::Object:
+        collectorMarkObject(value.getObject());
         return;
-    case ObjectMember::Type::Double:
-    case ObjectMember::Type::Int32:
-    case ObjectMember::Type::UInt32:
-    case ObjectMember::Type::Boolean:
+    case Value::Type::Double:
+    case Value::Type::Int32:
+    case Value::Type::UInt32:
+    case Value::Type::Boolean:
+    case Value::Type::Undefined:
+    case Value::Type::Null:
         return;
-    case ObjectMember::Type::Symbol:
-    case ObjectMember::Type::String:
-        if(value.stringOrSymbolValue != nullptr)
-        {
-            collectorMarkStringOrSymbol(value.stringOrSymbolValue);
-        }
+    case Value::Type::Symbol:
+        collectorMarkStringOrSymbol(value.getSymbol());
+        return;
+    case Value::Type::String:
+        collectorMarkStringOrSymbol(value.getString());
         return;
     }
-    assert(false);
+    constexpr_assert(false);
 }
 
 void GC::collectorScanObject(ObjectReference objectReference) noexcept
 {
-    assert(objectReference.index < objects.size());
+    constexpr_assert(objectReference.index < objects.size());
     const Object *object = objects[objectReference.index];
-    assert(object);
+    constexpr_assert(object);
     const ObjectDescriptor *objectDescriptor = object->objectDescriptor;
-    assert(objectDescriptor);
+    constexpr_assert(objectDescriptor);
     collectorMarkObjectDescriptor(objectDescriptor);
     for(std::size_t embeddedMemberIndex = 0;
         embeddedMemberIndex < objectDescriptor->getEmbeddedMemberCount();
         embeddedMemberIndex++)
     {
-        collectorMarkObjectMember(object->getMemberType(embeddedMemberIndex),
-                                  object->getMemberValue(embeddedMemberIndex));
+        collectorMarkValue(object->getMemberValue(ObjectMemberIndex(embeddedMemberIndex)));
     }
 }
 
 void GC::collectorScanObjectDescriptor(ObjectDescriptor *objectDescriptor) noexcept
 {
-    assert(objectDescriptor);
-    assert(objectDescriptor->gc == this);
+    constexpr_assert(objectDescriptor);
+    constexpr_assert(objectDescriptor->gc == this);
     if(objectDescriptor->parent)
         collectorMarkObjectDescriptor(objectDescriptor->parent);
-    for(const auto &keyAndMember : objectDescriptor->namedMembers)
+    for(const auto &member : objectDescriptor->members)
     {
-        const auto &member = std::get<1>(keyAndMember);
         collectorMarkObjectDescriptorMember(member);
     }
-    for(const auto &keyAndMember : objectDescriptor->symbolMembers)
-    {
-        const auto &member = std::get<1>(keyAndMember);
-        collectorMarkObjectDescriptorMember(member);
-        collectorMarkStringOrSymbol(std::get<0>(keyAndMember));
-    }
-    for(const auto &keyAndMember : objectDescriptor->internalSlots)
-    {
-        const auto &member = std::get<1>(keyAndMember);
-        collectorMarkObjectDescriptorMember(member);
-    }
-    // don't scan transition members; they are weakly referenced
 }
 
 ObjectDescriptor::Member GC::addObjectMember(StringHandle nameHandle,
@@ -552,16 +533,16 @@ ObjectDescriptor::Member GC::addObjectMember(StringHandle nameHandle,
                                              bool isEmbedded)
 {
     HandleScope scope(*this);
-    assert(!immutable);
-    assert(!nameHandle.empty());
-    assert(object.object.index < objects.size());
+    constexpr_assert(!immutable);
+    constexpr_assert(!nameHandle.empty());
+    constexpr_assert(object.object.index < objects.size());
     Object *originalObject = objects[object.object.index];
-    assert(originalObject);
+    constexpr_assert(originalObject);
     ObjectDescriptorHandle<> originalObjectDescriptor(originalObject->objectDescriptor);
     ObjectDescriptorHandle<> newObjectDescriptorHandle;
-    assert(!originalObjectDescriptor.empty());
-    assert(originalObjectDescriptor.get()->getNamedMember(readString(nameHandle)).kind
-           == ObjectDescriptor::Member::Kind::Empty);
+    constexpr_assert(!originalObjectDescriptor.empty());
+    constexpr_assert(originalObjectDescriptor.get()->findMember(Name())getNamedMember(readString(nameHandle)).kind
+                     == ObjectDescriptor::Member::Kind::Empty);
     auto &transition = findOrAddObjectDescriptorStringOrSymbolTransition(
         objectDescriptorStringTransitions, nameHandle.string, originalObjectDescriptor.get());
     ObjectDescriptor::Member member;
@@ -571,8 +552,8 @@ ObjectDescriptor::Member GC::addObjectMember(StringHandle nameHandle,
             transition.sourceDescriptor->duplicate(originalObjectDescriptor, *this);
         transition.destDescriptor = newObjectDescriptorHandle.get();
         auto newDescriptor = const_cast<ObjectDescriptor *>(transition.destDescriptor);
-        assert(newDescriptor);
-        assert(newDescriptor->gc == this);
+        constexpr_assert(newDescriptor);
+        constexpr_assert(newDescriptor->gc == this);
         if(isEmbedded)
         {
             member = ObjectDescriptor::Member::makeEmbedded(newDescriptor->embeddedMemberCount++);
@@ -619,16 +600,16 @@ ObjectDescriptor::Member GC::addObjectMember(SymbolHandle nameHandle,
                                              bool isEmbedded)
 {
     HandleScope scope(*this);
-    assert(!immutable);
-    assert(!nameHandle.empty());
-    assert(object.object.index < objects.size());
+    constexpr_assert(!immutable);
+    constexpr_assert(!nameHandle.empty());
+    constexpr_assert(object.object.index < objects.size());
     Object *originalObject = objects[object.object.index];
-    assert(originalObject);
+    constexpr_assert(originalObject);
     ObjectDescriptorHandle<> originalObjectDescriptor(originalObject->objectDescriptor);
     ObjectDescriptorHandle<> newObjectDescriptorHandle;
-    assert(!originalObjectDescriptor.empty());
-    assert(originalObjectDescriptor.get()->getSymbolMember(nameHandle.symbol).kind
-           == ObjectDescriptor::Member::Kind::Empty);
+    constexpr_assert(!originalObjectDescriptor.empty());
+    constexpr_assert(originalObjectDescriptor.get()->getSymbolMember(nameHandle.symbol).kind
+                     == ObjectDescriptor::Member::Kind::Empty);
     auto &transition = findOrAddObjectDescriptorStringOrSymbolTransition(
         objectDescriptorSymbolTransitions, nameHandle.symbol, originalObjectDescriptor.get());
     ObjectDescriptor::Member member;
@@ -638,8 +619,8 @@ ObjectDescriptor::Member GC::addObjectMember(SymbolHandle nameHandle,
             transition.sourceDescriptor->duplicate(originalObjectDescriptor, *this);
         transition.destDescriptor = newObjectDescriptorHandle.get();
         auto newDescriptor = const_cast<ObjectDescriptor *>(transition.destDescriptor);
-        assert(newDescriptor);
-        assert(newDescriptor->gc == this);
+        constexpr_assert(newDescriptor);
+        constexpr_assert(newDescriptor->gc == this);
         if(isEmbedded)
         {
             member = ObjectDescriptor::Member::makeEmbedded(newDescriptor->embeddedMemberCount++);
@@ -682,14 +663,14 @@ ObjectDescriptor::Member GC::addObjectMember(SymbolHandle nameHandle,
 
 StringHandle GC::internStringHelper(const String &value, std::size_t valueHash) noexcept
 {
-    assert(!immutable);
+    constexpr_assert(!immutable);
     auto iteratorRange = stringHashToStringReferenceMap.equal_range(valueHash);
     for(auto iter = std::get<0>(iteratorRange); iter != std::get<1>(iteratorRange); ++iter)
     {
         StringOrSymbolReference stringReference = std::get<1>(*iter);
-        assert(stringReference.index < strings.size());
+        constexpr_assert(stringReference.index < strings.size());
         const String *string = strings[stringReference.index];
-        assert(string);
+        constexpr_assert(string);
         if(*string == value)
         {
             return StringHandle(*this, stringReference);
@@ -700,7 +681,7 @@ StringHandle GC::internStringHelper(const String &value, std::size_t valueHash) 
 
 StringHandle GC::internString(const String &value)
 {
-    assert(!immutable);
+    constexpr_assert(!immutable);
     std::size_t valueHash = std::hash<String>()(value);
     StringHandle retval = internStringHelper(value, valueHash);
     if(!retval.empty())
@@ -715,7 +696,7 @@ StringHandle GC::internString(const String &value)
 
 StringHandle GC::internString(String &&value)
 {
-    assert(!immutable);
+    constexpr_assert(!immutable);
     std::size_t valueHash = std::hash<String>()(value);
     StringHandle retval = internStringHelper(value, valueHash);
     if(!retval.empty())
@@ -730,7 +711,7 @@ StringHandle GC::internString(String &&value)
 
 SymbolHandle GC::createSymbol(String description)
 {
-    assert(!immutable);
+    constexpr_assert(!immutable);
     std::unique_ptr<String> stringValue(new String(std::move(description)));
     std::size_t index = allocateStringIndex();
     StringOrSymbolReference stringReference(index);
@@ -743,10 +724,10 @@ GC::ObjectDescriptorStringOrSymbolTransition &GC::findOrAddObjectDescriptorStrin
     StringOrSymbolReference stringOrSymbol,
     const ObjectDescriptor *sourceDescriptor)
 {
-    assert(!immutable);
-    assert(!transitions.empty());
-    assert(stringOrSymbol != nullptr);
-    assert(sourceDescriptor != nullptr);
+    constexpr_assert(!immutable);
+    constexpr_assert(!transitions.empty());
+    constexpr_assert(stringOrSymbol != nullptr);
+    constexpr_assert(sourceDescriptor != nullptr);
     ObjectDescriptorStringOrSymbolTransition key(stringOrSymbol, sourceDescriptor);
     auto &transitionList = transitions[key.hash() % transitions.size()];
     for(auto prevIter = transitionList.before_begin(), iter = transitionList.begin();
@@ -766,8 +747,8 @@ GC::ObjectDescriptorStringOrSymbolTransition &GC::findOrAddObjectDescriptorStrin
 ObjectHandle GC::create(ObjectDescriptorHandle<> objectDescriptor,
                         std::unique_ptr<Object::ExtraData> extraData)
 {
-    assert(!immutable);
-    assert(!objectDescriptor.empty());
+    constexpr_assert(!immutable);
+    constexpr_assert(!objectDescriptor.empty());
     ObjectReference objectReference = allocateObjectIndex();
     try
     {
@@ -784,8 +765,8 @@ ObjectHandle GC::create(ObjectDescriptorHandle<> objectDescriptor,
 
 ObjectDescriptorHandle<> ObjectDescriptor::duplicate(ObjectDescriptorHandle<> self, GC &gc) const
 {
-    assert(self.get() == this);
-    assert(typeid(*this) == typeid(ObjectDescriptor));
+    constexpr_assert(self.get() == this);
+    constexpr_assert(typeid(*this) == typeid(ObjectDescriptor));
     return gc.createObjectDescriptor(self);
 }
 

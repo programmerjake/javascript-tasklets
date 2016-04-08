@@ -1124,6 +1124,7 @@ public:
 struct SymbolHandle final
 {
     friend struct ValueHandle;
+    friend struct NameHandle;
     StringOrSymbolReference symbol;
     inline SymbolHandle(GC &gc, StringOrSymbolReference symbol);
     constexpr SymbolHandle() noexcept : symbol(nullptr)
@@ -1142,6 +1143,89 @@ public:
     }
 };
 
+struct NameHandle final
+{
+    friend struct ValueHandle;
+    Name value;
+    inline NameHandle(GC &gc, Name value);
+    constexpr NameHandle() noexcept : value()
+    {
+    }
+    constexpr NameHandle(StringHandle value) noexcept : NameHandle(String(value))
+    {
+    }
+    constexpr NameHandle(SymbolHandle value) noexcept : NameHandle(Symbol(value))
+    {
+    }
+
+private:
+    constexpr NameHandle(Name value) noexcept : value(Name::Empty())
+    {
+    }
+
+public:
+    constexpr bool empty() const noexcept
+    {
+        return value.empty();
+    }
+    constexpr Name::Type getType() const noexcept
+    {
+        return value.getType();
+    }
+    static constexpr NameHandle Symbol(SymbolHandle symbol) noexcept
+    {
+        return NameHandle(Value::Symbol(symbol.symbol));
+    }
+    constexpr bool isSymbol() const noexcept
+    {
+        return value.isSymbol();
+    }
+    constexpr NameHandle getSymbol() const noexcept
+    {
+        return SymbolHandle(value.getSymbol());
+    }
+    constexpr SymbolHandle getIfSymbol() const noexcept
+    {
+        return isSymbol() ? getSymbol() : SymbolHandle();
+    }
+    static NameHandle Symbol(GC &gc, StringOrSymbolReference symbol)
+    {
+        return Symbol(SymbolHandle(gc, symbol));
+    }
+    static constexpr NameHandle String(StringHandle string) noexcept
+    {
+        return NameHandle(Value::String(string.string));
+    }
+    constexpr bool isString() const noexcept
+    {
+        return value.isString();
+    }
+    constexpr StringHandle getString() const noexcept
+    {
+        return StringHandle(value.getString());
+    }
+    constexpr StringHandle getIfString() const noexcept
+    {
+        return isString() ? getString() : StringHandle();
+    }
+    static NameHandle String(GC &gc, StringOrSymbolReference string)
+    {
+        return String(StringHandle(gc, string));
+    }
+    static constexpr NameHandle InternalName(gc::InternalName value) noexcept
+    {
+        return NameHandle(Name::InternalName(value));
+    }
+    constexpr bool isInternalName() const noexcept
+    {
+        return value.isInternalName();
+    }
+    constexpr gc::InternalName getInternalName() const noexcept
+    {
+        return value.getInternalName();
+    }
+};
+
 struct ValueHandle final
 {
     Value value;
@@ -1156,6 +1240,9 @@ struct ValueHandle final
     {
     }
     constexpr ValueHandle(SymbolHandle value) noexcept : ValueHandle(Symbol(value))
+    {
+    }
+    constexpr explicit ValueHandle(NameHandle value) noexcept : value(value.value.toValue())
     {
     }
     constexpr operator Value() const noexcept
@@ -1556,7 +1643,10 @@ private:
     void collectorMarkStringOrSymbol(StringOrSymbolReference stringOrSymbol) noexcept;
     void collectorMarkObjectDescriptor(const ObjectDescriptor *objectDescriptor) noexcept;
     void collectorMarkObjectMember(Value::Type type, const TypelessValue &value) noexcept;
+    void collectorMarkName(const Name &value) noexcept;
+    void collectorMarkValue(const Value &value) noexcept;
     void collectorMarkObjectDescriptorMember(const ObjectDescriptor::Member &value) noexcept;
+    void collectorMarkObjectMemberDescriptor(const ObjectMemberDescriptor &descriptor) noexcept;
     void collectorScanObject(ObjectReference objectReference) noexcept;
     void collectorScanObjectDescriptor(ObjectDescriptor *objectDescriptor) noexcept;
     StringHandle internStringHelper(const String &value, std::size_t valueHash) noexcept;
@@ -1611,7 +1701,7 @@ public:
     {
         return ObjectDescriptorHandle<>(readObject(handle).objectDescriptor);
     }
-    ObjectDescriptor::Member addObjectMember(StringHandle nameHandle,
+    ObjectDescriptor::Member addObjectMember(NameHandle nameHandle,
                                              ObjectHandle object,
                                              ValueHandle value,
                                              bool isEmbedded = true);
@@ -1697,8 +1787,7 @@ inline SymbolHandle::SymbolHandle(GC &gc, StringOrSymbolReference symbol) : symb
     gc.handleScopesStack->addHandle(*this);
 }
 
-inline ValueHandle::ValueHandle(GC &gc, const Value &value)
-    : value(value)
+inline ValueHandle::ValueHandle(GC &gc, const Value &value) : value(value)
 {
     constexpr_assert(gc.handleScopesStack);
     gc.handleScopesStack->addHandle(*this);

@@ -34,8 +34,7 @@ struct constexpr_assert_return_type final
                                                                 const char *func,
                                                                 const char *message) noexcept
     {
-        return condition ? constexpr_assert_return_type() :
-                           assert_failed(location, func, message);
+        return condition ? constexpr_assert_return_type() : assert_failed(location, func, message);
     }
 };
 }
@@ -48,7 +47,8 @@ struct constexpr_assert_return_type final
 #if __GNUC__ > 4
 #define constexpr_assert_func_name __PRETTY_FUNCTION__
 #else
-#define constexpr_assert_func_name nullptr // __PRETTY_FUNCTION__ and __func__ trigger a compiler bug in gcc versions before 5.x
+#define constexpr_assert_func_name \
+    nullptr // __PRETTY_FUNCTION__ and __func__ trigger a compiler bug in gcc versions before 5.x
 #endif
 #else
 #define constexpr_assert_func_name __func__
@@ -60,7 +60,7 @@ struct constexpr_assert_return_type final
 #endif
 #define constexpr_assert(v)                                                  \
     (::javascript_tasklets::constexpr_assert_return_type::assert_helper(     \
-        (v),                                                                 \
+        (v) ? true : false,                                                  \
         constexpr_assert_file_name ":" constexpr_assert_stringify(__LINE__), \
         constexpr_assert_func_name,                                          \
         "assertion '" constexpr_assert_stringify(v) "' failed."))
