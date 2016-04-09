@@ -25,9 +25,6 @@ namespace javascript_tasklets
 {
 namespace gc
 {
-static_assert(std::is_trivially_destructible<ObjectMemberGroup>::value,
-              "ObjectMemberGroup should be trivially destructable");
-
 ObjectDescriptor::ObjectDescriptor(const ObjectDescriptorInitializer &initializer)
     : gc(initializer.gc),
       parent(initializer.parent),
