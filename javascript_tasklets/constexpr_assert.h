@@ -40,10 +40,11 @@ struct constexpr_assert_return_type final
 }
 
 #define constexpr_assert_stringify(v) #v
+#define constexpr_assert_stringify2(v) constexpr_assert_stringify(v)
 #ifdef NDEBUG
 #define constexpr_assert(v) (::javascript_tasklets::constexpr_assert_return_type())
 #else
-#ifdef __GNUC__
+#if defined (__GNUC__) && !defined(__CDT_PARSER__)
 #if __GNUC__ > 4
 #define constexpr_assert_func_name __PRETTY_FUNCTION__
 #else
@@ -53,17 +54,12 @@ struct constexpr_assert_return_type final
 #else
 #define constexpr_assert_func_name __func__
 #endif
-#if defined(__GNUC__) && !defined(__CDT_PARSER__)
-#define constexpr_assert_file_name __BASE_FILE__
-#else
-#define constexpr_assert_file_name __FILE__
-#endif
 #define constexpr_assert(v)                                                  \
     (::javascript_tasklets::constexpr_assert_return_type::assert_helper(     \
         (v) ? true : false,                                                  \
-        constexpr_assert_file_name ":" constexpr_assert_stringify(__LINE__), \
+        __FILE__ ":" constexpr_assert_stringify2(__LINE__), \
         constexpr_assert_func_name,                                          \
-        "assertion '" constexpr_assert_stringify(v) "' failed."))
+        "assertion '" #v "' failed."))
 #endif
 
 #endif /* JAVASCRIPT_TASKLETS_CONSTEXPR_ASSERT_H_ */

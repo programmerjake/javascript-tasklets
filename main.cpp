@@ -25,7 +25,15 @@
 
 using namespace javascript_tasklets;
 
-gc::ObjectHandle test(gc::GC &gc)
+namespace test
+{
+#if 0
+void main()
+{
+
+}
+#else
+gc::Handle<gc::ObjectReference> testFn(gc::GC &gc)
 {
     struct MyExtraData final : public gc::Object::ExtraData
     {
@@ -45,21 +53,27 @@ gc::ObjectHandle test(gc::GC &gc)
         gc.create(objectDescriptor, std::unique_ptr<MyExtraData>(new MyExtraData)));
 }
 
+void main()
+{
+    gc::GC gc;
+    {
+        gc::HandleScope scope(gc);
+        std::cout << "before test" << std::endl;
+        auto object = testFn(gc);
+        gc.addObjectMemberDataInObject(
+            gc::Handle<gc::Name>(gc.internString("member"_js)), object, true, true, true);
+        std::cout << "after test" << std::endl;
+        gc.collect();
+        std::cout << "after first collect" << std::endl;
+    }
+    gc.collect();
+    std::cout << "after second collect" << std::endl;
+}
+#endif
+}
+
 int main()
 {
-    {
-        gc::GC gc;
-        {
-            gc::HandleScope scope(gc);
-            std::cout << "before test" << std::endl;
-            auto object = test(gc);
-            gc.addObjectMember(gc.internString("member"_js), object, gc::ValueHandle());
-            std::cout << "after test" << std::endl;
-            gc.collect();
-            std::cout << "after first collect" << std::endl;
-        }
-        gc.collect();
-        std::cout << "after second collect" << std::endl;
-    }
+    test::main();
     return 0;
 }

@@ -473,9 +473,22 @@ public:
         : value(std::move(value))
     {
     }
-    template <typename T2>
-    constexpr explicit Handle(Handle<T2> value) noexcept(noexcept(T(std::move(value.value))))
-        : value(std::move(value.value))
+    template <typename T2,
+              typename = typename std::enable_if<!std::is_convertible<T2, T>::value>::type>
+    constexpr explicit Handle(Handle<T2> value) noexcept(noexcept(T(std::move(value.get()))))
+        : value(std::move(value.get()))
+    {
+    }
+    template <typename T2,
+              typename = typename std::enable_if<std::is_convertible<T2, T>::value>::type>
+    constexpr Handle(const Handle<T2> &value) noexcept(noexcept(T(value.get())))
+        : value(value.get())
+    {
+    }
+    template <typename T2,
+              typename = typename std::enable_if<std::is_convertible<T2, T>::value>::type>
+    constexpr Handle(Handle<T2> &&value) noexcept(noexcept(T(std::move(value.get()))))
+        : value(std::move(value.get()))
     {
     }
     constexpr Handle() noexcept(noexcept(T())) : value()
@@ -506,8 +519,6 @@ Handle<Dest *> dynamic_handle_cast(Handle<Src *> src) noexcept
 {
     return Handle<Dest *>(src, dynamic_cast<Dest *>(src.get()));
 }
-
-#error finish
 
 struct ObjectDescriptor
 {
@@ -623,6 +634,8 @@ inline std::size_t Object::getMemberCount(ObjectDescriptorReference objectDescri
 class HandleScope final
 {
     friend class GC;
+    template <typename T>
+    friend class Handle;
     HandleScope(const HandleScope &rt) = delete;
     HandleScope &operator=(const HandleScope &rt) = delete;
     void *operator new(std::size_t) = delete;
@@ -642,7 +655,7 @@ private:
     std::size_t objectDescriptorReferencesAllocated = embeddedHandleCount;
     ObjectReference embeddedObjectReferences[embeddedHandleCount];
     StringOrSymbolReference embeddedStringOrSymbolReferences[embeddedHandleCount];
-    const ObjectDescriptor *embeddedObjectDescriptorReferences[embeddedHandleCount];
+    ObjectDescriptorReference embeddedObjectDescriptorReferences[embeddedHandleCount];
     inline void addToGC();
     inline void removeFromGC();
     void init()
@@ -717,27 +730,41 @@ private:
         addReference(handle.get());
     }
     void addHandle(const Handle<ObjectDescriptorReference> &handle);
+    void addHandle(const Handle<ObjectDescriptor *> &handle)
+    {
+        addHandle(Handle<ObjectDescriptorReference>(handle));
+    }
     template <typename T>
-    void addHandle(T &&) = delete;
-    void addHandle(std::int32_t)
+    void addHandle(const Handle<T> &) = delete;
+    template <typename T>
+    void addReference(T) = delete;
+    void addReference(std::int32_t)
     {
     }
-    void addHandle(std::uint32_t)
+    void addReference(std::uint32_t)
     {
     }
-    void addHandle(std::nullptr_t)
+    void addReference(std::nullptr_t)
     {
     }
-    void addHandle(bool)
+    void addReference(bool)
     {
     }
-    void addHandle(double)
+    void addReference(double)
     {
     }
-    struct HandleAdder final
+    void addReference(const StringReference &reference)
+    {
+        addReference(static_cast<const StringOrSymbolReference &>(reference));
+    }
+    void addReference(const SymbolReference &reference)
+    {
+        addReference(static_cast<const StringOrSymbolReference &>(reference));
+    }
+    struct ReferenceAdder final
     {
         HandleScope &scope;
-        explicit HandleAdder(HandleScope &scope) : scope(scope)
+        explicit ReferenceAdder(HandleScope &scope) : scope(scope)
         {
         }
         void operator()()
@@ -746,13 +773,18 @@ private:
         template <typename T>
         void operator()(T &&v)
         {
-            scope.addHandle(std::forward<T>(v));
+            scope.addReference(std::forward<T>(v));
         }
     };
     template <typename... Types>
     void addHandle(const Handle<variant<Types...>> &value)
     {
-        value.get().apply(HandleAdder(*this));
+        value.get().apply(ReferenceAdder(*this));
+    }
+    template <typename... Types>
+    void addReference(const variant<Types...> &value)
+    {
+        value.apply(ReferenceAdder(*this));
     }
 
 public:
@@ -789,6 +821,39 @@ class GC final : public std::enable_shared_from_this<GC>
     GC(const GC &) = delete;
 
 private:
+    struct ObjectDescriptorTransition final
+    {
+        Name name;
+        ObjectDescriptorReference sourceDescriptor;
+        ObjectDescriptorReference
+            destDescriptor; // destDescriptor is ignored for hash and equality comparison
+        ObjectDescriptorTransition(Name name,
+                                   ObjectDescriptorReference sourceDescriptor,
+                                   ObjectDescriptorReference destDescriptor = nullptr) noexcept
+            : name(name),
+              sourceDescriptor(sourceDescriptor),
+              destDescriptor(destDescriptor)
+        {
+        }
+        std::size_t hash() const noexcept
+        {
+            return std::hash<Name>()(name)
+                   + 3923 * std::hash<ObjectDescriptorReference>()(sourceDescriptor);
+        }
+        bool operator==(const ObjectDescriptorTransition &rt) const noexcept
+        {
+            return name == rt.name && sourceDescriptor == rt.sourceDescriptor;
+        }
+        bool operator!=(const ObjectDescriptorTransition &rt) const noexcept
+        {
+            return !operator==(rt);
+        }
+    };
+    struct CheckTransition;
+    struct ValueMarker;
+    struct ObjectMemberDescriptorMarker;
+
+private:
     std::vector<Object *> objects, oldObjects;
     std::vector<std::size_t> freeObjectIndexesList;
     std::vector<ObjectReference> objectsWorklist;
@@ -805,40 +870,8 @@ private:
     const std::size_t startingMemoryLeftTillNextCollect;
     std::size_t allocationsLeftTillNextCollect;
     std::size_t memoryLeftTillNextCollect;
-    struct ObjectDescriptorStringOrSymbolTransition final
-    {
-        StringOrSymbolReference stringOrSymbol;
-        const ObjectDescriptor *sourceDescriptor;
-        const ObjectDescriptor *
-            destDescriptor; // destDescriptor is ignored for hash and equality comparison
-        constexpr ObjectDescriptorStringOrSymbolTransition(
-            StringOrSymbolReference stringOrSymbol,
-            const ObjectDescriptor *sourceDescriptor,
-            const ObjectDescriptor *destDescriptor = nullptr) noexcept
-            : stringOrSymbol(stringOrSymbol),
-              sourceDescriptor(sourceDescriptor),
-              destDescriptor(destDescriptor)
-        {
-        }
-        std::size_t hash() const noexcept
-        {
-            return std::hash<StringOrSymbolReference>()(stringOrSymbol)
-                   + 3923 * std::hash<const ObjectDescriptor *>()(sourceDescriptor);
-        }
-        bool operator==(const ObjectDescriptorStringOrSymbolTransition &rt) const noexcept
-        {
-            return stringOrSymbol == rt.stringOrSymbol && sourceDescriptor == rt.sourceDescriptor;
-        }
-        bool operator!=(const ObjectDescriptorStringOrSymbolTransition &rt) const noexcept
-        {
-            return !operator==(rt);
-        }
-    };
-    std::vector<std::forward_list<ObjectDescriptorStringOrSymbolTransition>>
-        objectDescriptorSymbolTransitions;
-    std::vector<std::forward_list<ObjectDescriptorStringOrSymbolTransition>>
-        objectDescriptorStringTransitions;
-    std::unordered_multimap<std::size_t, StringOrSymbolReference> stringHashToStringReferenceMap;
+    std::vector<std::forward_list<ObjectDescriptorTransition>> objectDescriptorTransitions;
+    std::unordered_multimap<std::size_t, StringReference> stringHashToStringReferenceMap;
     std::unordered_map<const void *, Value> globalValuesMap;
 
 private:
@@ -849,12 +882,12 @@ private:
     std::size_t allocateObjectDescriptorIndex();
     void freeObjectDescriptorIndex(std::size_t objectDescriptorIndex) noexcept;
     Object *objectCopyOnWrite(ObjectReference objectReference);
-    Object *createInternal(const ObjectDescriptor *objectDescriptor,
+    Object *createInternal(ObjectDescriptorReference objectDescriptor,
                            std::unique_ptr<Object::ExtraData> extraData);
     void freeInternal(Object *object) noexcept;
     void collectorMarkObject(ObjectReference object) noexcept;
     void collectorMarkStringOrSymbol(StringOrSymbolReference stringOrSymbol) noexcept;
-    void collectorMarkObjectDescriptor(const ObjectDescriptor *objectDescriptor) noexcept;
+    void collectorMarkObjectDescriptor(ObjectDescriptorReference objectDescriptor) noexcept;
     void collectorMarkName(const Name &value) noexcept;
     void collectorMarkValue(const Value &value) noexcept;
     void collectorMarkObjectDescriptorMember(const ObjectDescriptor::Member &value) noexcept;
@@ -862,10 +895,10 @@ private:
     void collectorScanObject(ObjectReference objectReference) noexcept;
     void collectorScanObjectDescriptor(ObjectDescriptor *objectDescriptor) noexcept;
     Handle<StringReference> internStringHelper(const String &value, std::size_t valueHash) noexcept;
-    ObjectDescriptorStringOrSymbolTransition &findOrAddObjectDescriptorStringOrSymbolTransition(
-        std::vector<std::forward_list<ObjectDescriptorStringOrSymbolTransition>> &transitions,
-        StringOrSymbolReference stringOrSymbol,
-        const ObjectDescriptor *sourceDescriptor);
+    ObjectDescriptorTransition &findOrAddObjectDescriptorTransition(
+        std::vector<std::forward_list<ObjectDescriptorTransition>> &transitions,
+        Name name,
+        ObjectDescriptorReference sourceDescriptor);
     template <typename Tag>
     static const void *getGlobalValueMapKey() noexcept
     {
@@ -874,6 +907,9 @@ private:
     }
     Handle<Value> getGlobalValue(const void *key);
     void setGlobalValue(const void *key, Handle<Value> value);
+    ObjectDescriptor::Member addObjectMember(Handle<Name> nameHandle,
+                                             Handle<ObjectReference> object,
+                                             ObjectMemberDescriptor memberDescriptor);
 
 public:
     explicit GC(std::shared_ptr<const GC> parent = nullptr);
@@ -913,10 +949,6 @@ public:
     {
         return Handle<ObjectDescriptorReference>(readObject(handle).objectDescriptor);
     }
-    ObjectDescriptor::Member addObjectMember(Handle<Name> nameHandle,
-                                             Handle<ObjectDescriptor> object,
-                                             Handle<Value> value,
-                                             bool isEmbedded = true);
     const String &readString(Handle<StringReference> handle) const noexcept
     {
         constexpr_assert(handle.get().index < strings.size());
@@ -973,6 +1005,41 @@ public:
     void setGlobalValue(Handle<Value> value)
     {
         setGlobalValue(getGlobalValueMapKey<Tag>(), std::move(value));
+    }
+    ObjectDescriptor::Member addObjectMemberAccessorInDescriptor(Handle<Name> nameHandle,
+                                                                 Handle<ObjectReference> object,
+                                                                 bool configurable,
+                                                                 bool enumerable,
+                                                                 Handle<ObjectReference> getter,
+                                                                 Handle<ObjectReference> setter)
+    {
+        return addObjectMember(nameHandle,
+                               object,
+                               ObjectMemberDescriptor::AccessorInDescriptor(
+                                   configurable, enumerable, getter.get(), setter.get()));
+    }
+    ObjectDescriptor::Member addObjectMemberDataInDescriptor(Handle<Name> nameHandle,
+                                                                 Handle<ObjectReference> object,
+                                                                 bool configurable,
+                                                                 bool enumerable,
+                                                                 Handle<Value> value,
+                                                                 bool writable)
+    {
+        return addObjectMember(nameHandle,
+                               object,
+                               ObjectMemberDescriptor::DataInDescriptor(
+                                   configurable, enumerable, value.get(), writable));
+    }
+    ObjectDescriptor::Member addObjectMemberDataInObject(Handle<Name> nameHandle,
+                                                                 Handle<ObjectReference> object,
+                                                                 bool configurable,
+                                                                 bool enumerable,
+                                                                 bool writable)
+    {
+        return addObjectMember(nameHandle,
+                               object,
+                               ObjectMemberDescriptor::DataInObject(
+                                   configurable, enumerable, ObjectMemberIndex(), writable));
     }
 };
 

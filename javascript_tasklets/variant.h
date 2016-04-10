@@ -39,6 +39,7 @@ struct variant_base
     struct implementation;
     template <typename FindType, typename... Types>
     struct get;
+    struct test;
 };
 
 template <>
@@ -47,6 +48,9 @@ struct variant_base::implementation<> final
     implementation(const implementation &) = delete;
     implementation &operator=(const implementation &) = delete;
     implementation() noexcept
+    {
+    }
+    ~implementation() noexcept
     {
     }
     void assign(std::size_t id, const implementation &) noexcept
@@ -107,6 +111,9 @@ struct variant_base::implementation<T, Types...> final
     }
     implementation(const implementation &) = delete;
     implementation &operator=(const implementation &) = delete;
+    ~implementation() noexcept
+    {
+    }
     void assign(std::size_t id,
                 const implementation &rt) noexcept(noexcept(currentValue = rt.currentValue)
                                                    && noexcept(rest.assign(id - 1, rt.rest)))
@@ -218,18 +225,25 @@ struct variant_base::get<FindType, T2, Types...> final
 {
     static constexpr bool found = get<FindType, Types...>::found;
     static constexpr std::size_t id = get<FindType, Types...>::id + 1;
-    static FindType &&getValue(implementation<FindType, Types...> &&imp) noexcept
+    static FindType &&getValue(implementation<T2, Types...> &&imp) noexcept
     {
         return get<FindType, Types...>::getValue(std::move(imp.rest));
     }
-    static FindType &getValue(implementation<FindType, Types...> &imp) noexcept
+    static FindType &getValue(implementation<T2, Types...> &imp) noexcept
     {
         return get<FindType, Types...>::getValue(imp.rest);
     }
-    static const FindType &getValue(const implementation<FindType, Types...> &imp) noexcept
+    static const FindType &getValue(const implementation<T2, Types...> &imp) noexcept
     {
         return get<FindType, Types...>::getValue(imp.rest);
     }
+};
+
+template <typename T2, typename... Types>
+struct variant_base::get<void, T2, Types...> final
+{
+    static constexpr bool found = get<void, Types...>::found;
+    static constexpr std::size_t id = get<void, Types...>::id + 1;
 };
 
 template <typename... Types>
@@ -237,6 +251,7 @@ class variant final : private variant_base
 {
     template <typename...>
     friend class variant;
+    friend struct variant_base::test;
 
 private:
     std::size_t id;
@@ -253,14 +268,42 @@ private:
         {
         }
         template <typename T>
+        static constexpr bool isValidType()
+        {
+            return variant_base::get<typename std::decay<T>::type, Types...>::found;
+        }
+        template <typename T, typename = typename std::enable_if<isValidType<T>()>::type>
         void operator()(T &&rt) noexcept(
             noexcept(typename std::decay<T>::type(std::forward<T>(rt))))
         {
             typedef typename std::decay<T>::type construct_type;
-            ::new(&value.get<construct_type>()) construct_type(std::forward<T>(rt));
+            ::new(&value.getNoCheck<construct_type>()) construct_type(std::forward<T>(rt));
             value.id = idFor<construct_type>(); // if construction succeeds
         }
+        template <typename T, typename = typename std::enable_if<!isValidType<T>()>::type>
+        void operator()(T &&, int = 0) noexcept
+        {
+            constexpr_assert(!"invalid variant cast");
+#ifdef __GNUC__
+            __builtin_unreachable();
+#endif
+        }
     };
+    template <typename FindType>
+    const FindType &getNoCheck() const &noexcept
+    {
+        return variant_base::get<FindType, Types...>::getValue(values);
+    }
+    template <typename FindType>
+        FindType &getNoCheck() & noexcept
+    {
+        return variant_base::get<FindType, Types...>::getValue(values);
+    }
+    template <typename FindType>
+        FindType &&getNoCheck() && noexcept
+    {
+        return variant_base::get<FindType, Types...>::getValue(std::move(values));
+    }
 
 public:
     template <typename FindType>
@@ -322,6 +365,13 @@ public:
     {
         std::move(rt).apply(cast_helper<Types2...>(*this));
     }
+    template <typename T, typename = typename std::enable_if<variant_base::get<typename std::decay<T>::type, Types...>::found>::type>
+    explicit variant(T &&rt) noexcept(noexcept(typename std::decay<T>::type(std::declval<T &&>())))
+        : id(idFor<typename std::decay<T>::type>())
+    {
+        ::new(&getNoCheck<typename std::decay<T>::type>())
+            typename std::decay<T>::type(std::forward<T>(rt));
+    }
     ~variant() noexcept
     {
         values.destruct(id);
@@ -332,7 +382,7 @@ public:
         if(id != rt.id)
         {
             clear();
-            values.construct(id, rt.values);
+            values.construct(rt.id, rt.values);
             id = rt.id; // if construction succeeds
         }
         else
@@ -347,7 +397,7 @@ public:
         if(id != rt.id)
         {
             clear();
-            values.construct(id, std::move(rt.values));
+            values.construct(rt.id, std::move(rt.values));
             id = rt.id; // if construction succeeds
         }
         else
@@ -366,7 +416,7 @@ public:
         noexcept(MakeType(std::declval<ArgTypes &&>()...)))
     {
         variant retval;
-        ::new(&retval.get<MakeType>()) MakeType(std::forward<ArgTypes>(arg)...);
+        ::new(&retval.getNoCheck<MakeType>()) MakeType(std::forward<ArgTypes>(arg)...);
         retval.id = idFor<MakeType>(); // set id after construction succeeded
         return retval;
     }
