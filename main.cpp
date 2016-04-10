@@ -60,7 +60,7 @@ void main()
         gc::HandleScope scope(gc);
         std::cout << "before test" << std::endl;
         auto object = testFn(gc);
-        gc.addObjectMemberDataInObject(
+        gc.addOrChangeObjectMemberDataInObject(
             gc::Handle<gc::Name>(gc.internString("member"_js)), object, true, true, true);
         std::cout << "after test" << std::endl;
         gc.collect();

@@ -225,6 +225,19 @@ struct ObjectMemberDescriptor final
         constexpr AccessorInDescriptorT() noexcept : getter(), setter()
         {
         }
+        bool operator==(const AccessorInDescriptorT &rt) const noexcept
+        {
+            return getter == rt.getter && setter == rt.setter;
+        }
+        bool operator!=(const AccessorInDescriptorT &rt) const noexcept
+        {
+            return !operator==(rt);
+        }
+        std::size_t hash() const noexcept
+        {
+            return std::hash<ObjectReference>()(getter)
+                   + 12679U * std::hash<ObjectReference>()(setter);
+        }
     };
     struct Data
     {
@@ -241,6 +254,18 @@ struct ObjectMemberDescriptor final
               value(value)
         {
         }
+        bool operator==(const DataInDescriptorT &rt) const noexcept
+        {
+            return writable == rt.writable && value == rt.value;
+        }
+        bool operator!=(const DataInDescriptorT &rt) const noexcept
+        {
+            return !operator==(rt);
+        }
+        std::size_t hash() const noexcept
+        {
+            return std::hash<bool>()(writable) + 12679U * std::hash<Value>()(value);
+        }
     };
     struct DataInObjectT final : public Data
     {
@@ -249,6 +274,19 @@ struct ObjectMemberDescriptor final
                                          bool writable = false) noexcept : Data(writable),
                                                                            memberIndex(memberIndex)
         {
+        }
+        bool operator==(const DataInObjectT &rt) const noexcept
+        {
+            return writable == rt.writable && memberIndex == rt.memberIndex;
+        }
+        bool operator!=(const DataInObjectT &rt) const noexcept
+        {
+            return !operator==(rt);
+        }
+        std::size_t hash() const noexcept
+        {
+            return std::hash<bool>()(writable)
+                   + 12679U * std::hash<ObjectMemberIndex>()(memberIndex);
         }
     };
 
@@ -281,6 +319,10 @@ struct ObjectMemberDescriptor final
     ObjectMemberDescriptor() noexcept : configurable(false), enumerable(false), value()
     {
     }
+    static ObjectMemberDescriptor Empty() noexcept
+    {
+        return ObjectMemberDescriptor();
+    }
     static ObjectMemberDescriptor AccessorInDescriptor(bool configurable,
                                                        bool enumerable,
                                                        ObjectReference getter,
@@ -303,6 +345,10 @@ struct ObjectMemberDescriptor final
                                                    bool writable) noexcept
     {
         return ObjectMemberDescriptor(configurable, enumerable, DataInDescriptorT(value, writable));
+    }
+    bool empty() const noexcept
+    {
+        return value.empty();
     }
     bool isAccessorInDescriptor() const noexcept
     {
@@ -392,7 +438,72 @@ struct ObjectMemberDescriptor final
     {
         value.get<DataInDescriptorT>().value = newValue;
     }
+    std::size_t hash() const noexcept;
+    bool operator==(const ObjectMemberDescriptor &rt) const noexcept
+    {
+        return configurable == rt.configurable && enumerable == rt.enumerable && value == rt.value;
+    }
+    bool operator!=(const ObjectMemberDescriptor &rt) const noexcept
+    {
+        return !operator==(rt);
+    }
 };
+}
+}
+
+namespace std
+{
+template <>
+struct hash<javascript_tasklets::gc::ObjectMemberDescriptor> final
+{
+    std::size_t operator()(const javascript_tasklets::gc::ObjectMemberDescriptor &v) const noexcept
+    {
+        return v.hash();
+    }
+};
+
+template <>
+struct hash<javascript_tasklets::gc::ObjectMemberDescriptor::AccessorInDescriptorT> final
+{
+    std::size_t operator()(
+        const javascript_tasklets::gc::ObjectMemberDescriptor::AccessorInDescriptorT &v) const
+        noexcept
+    {
+        return v.hash();
+    }
+};
+
+template <>
+struct hash<javascript_tasklets::gc::ObjectMemberDescriptor::DataInDescriptorT> final
+{
+    std::size_t operator()(
+        const javascript_tasklets::gc::ObjectMemberDescriptor::DataInDescriptorT &v) const noexcept
+    {
+        return v.hash();
+    }
+};
+
+template <>
+struct hash<javascript_tasklets::gc::ObjectMemberDescriptor::DataInObjectT> final
+{
+    std::size_t operator()(
+        const javascript_tasklets::gc::ObjectMemberDescriptor::DataInObjectT &v) const noexcept
+    {
+        return v.hash();
+    }
+};
+}
+
+namespace javascript_tasklets
+{
+namespace gc
+{
+
+inline std::size_t ObjectMemberDescriptor::hash() const noexcept
+{
+    return std::hash<bool>()(configurable) * 126478UL + std::hash<bool>()(enumerable) * 12623U
+           + std::hash<ValueType>()(value);
+}
 
 class GC;
 struct ObjectDescriptor;
@@ -553,10 +664,15 @@ struct ObjectDescriptor
         Member(Name name, ObjectMemberDescriptor descriptor) noexcept : name(name),
                                                                         descriptor(descriptor)
         {
+            constexpr_assert(!name.empty() || descriptor.empty());
         }
         bool empty() const noexcept
         {
-            return name.empty();
+            return name.empty() && descriptor.empty();
+        }
+        bool isDeleted() const noexcept
+        {
+            return !name.empty() && descriptor.empty();
         }
     };
     const GC *const gc;
@@ -566,6 +682,19 @@ struct ObjectDescriptor
 private:
     std::size_t embeddedMemberCount;
     std::vector<Member> members;
+
+private:
+    void recalculateEmbeddedMembers() noexcept
+    {
+        embeddedMemberCount = 0;
+        for(Member &member : members)
+        {
+            if(member.descriptor.isEmbedded())
+            {
+                member.descriptor.setMemberIndex(ObjectMemberIndex(embeddedMemberCount++));
+            }
+        }
+    }
 
 public:
     explicit ObjectDescriptor(const ObjectDescriptorInitializer &initializer);
@@ -587,11 +716,26 @@ public:
     {
         constexpr_assert(index < members.size());
         constexpr_assert(!member.empty());
-        if(members[index].descriptor.isEmbedded())
-            embeddedMemberCount--;
-        if(member.descriptor.isEmbedded())
-            embeddedMemberCount++;
+        constexpr_assert(!member.isDeleted());
+        constexpr_assert(member.name == members[index].name);
+        bool embeddedMembersModified =
+            members[index].descriptor.isEmbedded() != member.descriptor.isEmbedded();
         members[index] = member;
+        if(embeddedMembersModified)
+            recalculateEmbeddedMembers();
+    }
+    void deleteMember(std::size_t index)
+    {
+        constexpr_assert(index < members.size());
+        if(members[index].descriptor.isEmbedded())
+        {
+            members.erase(members.begin() + index);
+            recalculateEmbeddedMembers();
+        }
+        else
+        {
+            members.erase(members.begin() + index);
+        }
     }
     std::size_t addMember(const Member &member)
     {
@@ -617,6 +761,7 @@ public:
         return npos;
     }
     virtual Handle<ObjectDescriptor *> duplicate(Handle<ObjectDescriptorReference> self,
+                                                 Handle<ObjectDescriptorReference> newParent,
                                                  GC &gc) const;
 };
 
@@ -823,26 +968,27 @@ class GC final : public std::enable_shared_from_this<GC>
 private:
     struct ObjectDescriptorTransition final
     {
-        Name name;
+        ObjectDescriptor::Member member;
         ObjectDescriptorReference sourceDescriptor;
         ObjectDescriptorReference
             destDescriptor; // destDescriptor is ignored for hash and equality comparison
-        ObjectDescriptorTransition(Name name,
+        ObjectDescriptorTransition(ObjectDescriptor::Member member,
                                    ObjectDescriptorReference sourceDescriptor,
                                    ObjectDescriptorReference destDescriptor = nullptr) noexcept
-            : name(name),
+            : member(member),
               sourceDescriptor(sourceDescriptor),
               destDescriptor(destDescriptor)
         {
         }
         std::size_t hash() const noexcept
         {
-            return std::hash<Name>()(name)
+            return std::hash<Name>()(member.name)
                    + 3923 * std::hash<ObjectDescriptorReference>()(sourceDescriptor);
         }
         bool operator==(const ObjectDescriptorTransition &rt) const noexcept
         {
-            return name == rt.name && sourceDescriptor == rt.sourceDescriptor;
+            return member.name == rt.member.name && member.descriptor == rt.member.descriptor
+                   && sourceDescriptor == rt.sourceDescriptor;
         }
         bool operator!=(const ObjectDescriptorTransition &rt) const noexcept
         {
@@ -897,7 +1043,7 @@ private:
     Handle<StringReference> internStringHelper(const String &value, std::size_t valueHash) noexcept;
     ObjectDescriptorTransition &findOrAddObjectDescriptorTransition(
         std::vector<std::forward_list<ObjectDescriptorTransition>> &transitions,
-        Name name,
+        const ObjectDescriptor::Member &member,
         ObjectDescriptorReference sourceDescriptor);
     template <typename Tag>
     static const void *getGlobalValueMapKey() noexcept
@@ -907,9 +1053,9 @@ private:
     }
     Handle<Value> getGlobalValue(const void *key);
     void setGlobalValue(const void *key, Handle<Value> value);
-    ObjectDescriptor::Member addObjectMember(Handle<Name> nameHandle,
-                                             Handle<ObjectReference> object,
-                                             ObjectMemberDescriptor memberDescriptor);
+    ObjectDescriptor::Member modifyObject(Handle<Name> nameHandle,
+                                          Handle<ObjectReference> object,
+                                          ObjectMemberDescriptor memberDescriptor);
 
 public:
     explicit GC(std::shared_ptr<const GC> parent = nullptr);
@@ -1006,40 +1152,45 @@ public:
     {
         setGlobalValue(getGlobalValueMapKey<Tag>(), std::move(value));
     }
-    ObjectDescriptor::Member addObjectMemberAccessorInDescriptor(Handle<Name> nameHandle,
-                                                                 Handle<ObjectReference> object,
-                                                                 bool configurable,
-                                                                 bool enumerable,
-                                                                 Handle<ObjectReference> getter,
-                                                                 Handle<ObjectReference> setter)
+    void removeObjectMember(Handle<Name> nameHandle, Handle<ObjectReference> object)
     {
-        return addObjectMember(nameHandle,
-                               object,
-                               ObjectMemberDescriptor::AccessorInDescriptor(
-                                   configurable, enumerable, getter.get(), setter.get()));
+        modifyObject(nameHandle, object, ObjectMemberDescriptor::Empty());
     }
-    ObjectDescriptor::Member addObjectMemberDataInDescriptor(Handle<Name> nameHandle,
+    ObjectDescriptor::Member addOrChangeObjectMemberAccessorInDescriptor(
+        Handle<Name> nameHandle,
+        Handle<ObjectReference> object,
+        bool configurable,
+        bool enumerable,
+        Handle<ObjectReference> getter,
+        Handle<ObjectReference> setter)
+    {
+        return modifyObject(nameHandle,
+                            object,
+                            ObjectMemberDescriptor::AccessorInDescriptor(
+                                configurable, enumerable, getter.get(), setter.get()));
+    }
+    ObjectDescriptor::Member addOrChangeObjectMemberDataInDescriptor(Handle<Name> nameHandle,
+                                                                     Handle<ObjectReference> object,
+                                                                     bool configurable,
+                                                                     bool enumerable,
+                                                                     Handle<Value> value,
+                                                                     bool writable)
+    {
+        return modifyObject(nameHandle,
+                            object,
+                            ObjectMemberDescriptor::DataInDescriptor(
+                                configurable, enumerable, value.get(), writable));
+    }
+    ObjectDescriptor::Member addOrChangeObjectMemberDataInObject(Handle<Name> nameHandle,
                                                                  Handle<ObjectReference> object,
                                                                  bool configurable,
                                                                  bool enumerable,
-                                                                 Handle<Value> value,
                                                                  bool writable)
     {
-        return addObjectMember(nameHandle,
-                               object,
-                               ObjectMemberDescriptor::DataInDescriptor(
-                                   configurable, enumerable, value.get(), writable));
-    }
-    ObjectDescriptor::Member addObjectMemberDataInObject(Handle<Name> nameHandle,
-                                                                 Handle<ObjectReference> object,
-                                                                 bool configurable,
-                                                                 bool enumerable,
-                                                                 bool writable)
-    {
-        return addObjectMember(nameHandle,
-                               object,
-                               ObjectMemberDescriptor::DataInObject(
-                                   configurable, enumerable, ObjectMemberIndex(), writable));
+        return modifyObject(nameHandle,
+                            object,
+                            ObjectMemberDescriptor::DataInObject(
+                                configurable, enumerable, ObjectMemberIndex(), writable));
     }
 };
 

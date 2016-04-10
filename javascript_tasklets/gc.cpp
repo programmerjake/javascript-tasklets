@@ -47,6 +47,10 @@ Object *GC::objectCopyOnWrite(ObjectReference objectReference)
         newExtraData = oldObject->extraData->clone();
     }
     Object *newObject = createInternal(oldObject->objectDescriptor, std::move(newExtraData));
+    for(std::size_t i = 0; i < Object::getMemberCount(oldObject->objectDescriptor); i++)
+    {
+        newObject->getMember(ObjectMemberIndex(i)) = oldObject->getMember(ObjectMemberIndex(i));
+    }
     objects[objectReference.index] = newObject;
     return newObject;
 }
@@ -101,6 +105,7 @@ GC::GC(std::shared_ptr<const GC> parent)
 
 GC::~GC()
 {
+    constexpr_assert(!handleScopesStack);
     for(Object *object : objects)
     {
         if(object && object->gc == this)
@@ -148,6 +153,21 @@ struct GC::CheckTransition final
     void operator()(InternalName)
     {
     }
+    void operator()(std::nullptr_t)
+    {
+    }
+    void operator()(std::uint32_t)
+    {
+    }
+    void operator()(std::int32_t)
+    {
+    }
+    void operator()(bool)
+    {
+    }
+    void operator()(double)
+    {
+    }
     void operator()(const StringReference &name)
     {
         constexpr_assert(name.index < gc.strings.size());
@@ -160,10 +180,31 @@ struct GC::CheckTransition final
         if(gc.strings[name.index] == nullptr)
             needRemoval = true;
     }
+    void operator()(const ObjectReference &value)
+    {
+        constexpr_assert(value.index < gc.objects.size());
+        if(gc.objects[value.index] == nullptr)
+            needRemoval = true;
+    }
+    void operator()(const ObjectMemberDescriptor::AccessorInDescriptorT &value)
+    {
+        if(value.getter != nullptr)
+            (*this)(value.getter);
+        if(value.setter != nullptr)
+            (*this)(value.setter);
+    }
+    void operator()(const ObjectMemberDescriptor::DataInDescriptorT &value)
+    {
+        value.value.apply(*this);
+    }
+    void operator()(const ObjectMemberDescriptor::DataInObjectT &value)
+    {
+    }
     bool operator()(const ObjectDescriptorTransition &transition)
     {
         needRemoval = false;
-        transition.name.apply(*this);
+        transition.member.name.apply(*this);
+        transition.member.descriptor.value.apply(*this);
         if(needRemoval)
             return true;
         constexpr_assert(transition.sourceDescriptor);
@@ -575,9 +616,9 @@ void GC::collectorScanObjectDescriptor(ObjectDescriptor *objectDescriptor) noexc
     }
 }
 
-ObjectDescriptor::Member GC::addObjectMember(Handle<Name> nameHandle,
-                                             Handle<ObjectReference> object,
-                                             ObjectMemberDescriptor memberDescriptor)
+ObjectDescriptor::Member GC::modifyObject(Handle<Name> nameHandle,
+                                          Handle<ObjectReference> object,
+                                          ObjectMemberDescriptor memberDescriptor)
 {
     HandleScope scope(*this);
     constexpr_assert(!immutable);
@@ -588,28 +629,42 @@ ObjectDescriptor::Member GC::addObjectMember(Handle<Name> nameHandle,
     Handle<ObjectDescriptorReference> originalObjectDescriptor(originalObject->objectDescriptor);
     Handle<ObjectDescriptor *> newObjectDescriptorHandle;
     constexpr_assert(originalObjectDescriptor.get() != nullptr);
-    constexpr_assert(originalObjectDescriptor.get()->findMember(nameHandle.get())
-                     == ObjectDescriptor::npos);
+    if(memberDescriptor.isEmbedded())
+        memberDescriptor.setMemberIndex(ObjectMemberIndex());
+    std::size_t memberIndex = originalObjectDescriptor.get()->findMember(nameHandle.get());
+    ObjectDescriptor::Member member(nameHandle.get(), memberDescriptor);
+    if(memberIndex == ObjectDescriptor::npos
+       && memberDescriptor.empty()) // deleting a nonexistent member
+    {
+        return member;
+    }
     auto &transition = findOrAddObjectDescriptorTransition(
-        objectDescriptorTransitions, nameHandle.get(), originalObjectDescriptor.get());
-    ObjectDescriptor::Member member;
+        objectDescriptorTransitions, member, originalObjectDescriptor.get());
     if(transition.destDescriptor == nullptr)
     {
-        newObjectDescriptorHandle =
-            transition.sourceDescriptor->duplicate(originalObjectDescriptor, *this);
+        newObjectDescriptorHandle = transition.sourceDescriptor->duplicate(
+            originalObjectDescriptor, originalObjectDescriptor, *this);
         transition.destDescriptor = newObjectDescriptorHandle.get();
         auto newDescriptor = const_cast<ObjectDescriptor *>(transition.destDescriptor);
         constexpr_assert(newDescriptor);
         constexpr_assert(newDescriptor->gc == this);
-        member = ObjectDescriptor::Member(nameHandle.get(), memberDescriptor);
-        if(member.descriptor.isEmbedded())
+        if(memberIndex == ObjectDescriptor::npos)
         {
-            member.descriptor.setMemberIndex(
-                ObjectMemberIndex(newDescriptor->embeddedMemberCount++));
+            member = newDescriptor->getMember(newDescriptor->addMember(member));
         }
-        newDescriptor->members.push_back(member);
+        else if(member.isDeleted())
+        {
+            newDescriptor->deleteMember(memberIndex);
+        }
+        else
+        {
+            newDescriptor->setMember(memberIndex, member);
+            member = newDescriptor->getMember(memberIndex);
+        }
     }
-    if(!member.descriptor.isEmbedded() && originalObject->gc == this)
+    if(transition.sourceDescriptor->getEmbeddedMemberCount()
+           == transition.destDescriptor->getEmbeddedMemberCount()
+       && originalObject->gc == this)
     {
         originalObject->objectDescriptor = transition.destDescriptor;
         return member;
@@ -624,14 +679,62 @@ ObjectDescriptor::Member GC::addObjectMember(Handle<Name> nameHandle,
         extraData = originalObject->extraData->clone();
     }
     Object *newObject = createInternal(transition.destDescriptor, std::move(extraData));
-    for(std::size_t i = 0; i < originalObjectDescriptor.get()->embeddedMemberCount; i++)
+    if(memberIndex == ObjectDescriptor::npos
+       || transition.sourceDescriptor->getEmbeddedMemberCount()
+              == transition.destDescriptor->getEmbeddedMemberCount()) // append embedded member or
+    // don't change embedded
+    // members
     {
-        newObject->getMember(ObjectMemberIndex(i)) =
-            originalObject->getMember(ObjectMemberIndex(i));
+        for(std::size_t i = 0; i < originalObjectDescriptor.get()->embeddedMemberCount; i++)
+        {
+            newObject->getMember(ObjectMemberIndex(i)) =
+                originalObject->getMember(ObjectMemberIndex(i));
+        }
+        if(member.descriptor.isEmbedded())
+        {
+            newObject->getMember(member.descriptor.getMemberIndex()) = Value();
+        }
     }
-    if(member.descriptor.isEmbedded())
+    else if(member.descriptor.isEmbedded()
+            && !transition.sourceDescriptor->getMember(memberIndex)
+                    .descriptor.isEmbedded()) // insert embedded member
     {
-        newObject->getMember(member.descriptor.getMemberIndex()) = Value();
+        std::size_t insertLocation = member.descriptor.getMemberIndex().index;
+        constexpr_assert(insertLocation
+                         <= originalObjectDescriptor.get()->getEmbeddedMemberCount());
+        for(std::size_t i = 0; i < insertLocation; i++)
+        {
+            newObject->getMember(ObjectMemberIndex(i)) =
+                originalObject->getMember(ObjectMemberIndex(i));
+        }
+        newObject->getMember(ObjectMemberIndex(insertLocation)) = Value();
+        for(std::size_t i = insertLocation;
+            i < originalObjectDescriptor.get()->getEmbeddedMemberCount();
+            i++)
+        {
+            newObject->getMember(ObjectMemberIndex(i + 1)) =
+                originalObject->getMember(ObjectMemberIndex(i));
+        }
+    }
+    else // delete embedded member
+    {
+        constexpr_assert(!member.descriptor.isEmbedded());
+        constexpr_assert(
+            transition.sourceDescriptor->getMember(memberIndex).descriptor.isEmbedded());
+        std::size_t deleteLocation =
+            transition.sourceDescriptor->getMember(memberIndex).descriptor.getMemberIndex().index;
+        constexpr_assert(deleteLocation < originalObjectDescriptor.get()->getEmbeddedMemberCount());
+        for(std::size_t i = 0; i < deleteLocation; i++)
+        {
+            newObject->getMember(ObjectMemberIndex(i)) =
+                originalObject->getMember(ObjectMemberIndex(i));
+        }
+        for(std::size_t i = deleteLocation; i < transition.destDescriptor->getEmbeddedMemberCount();
+            i++)
+        {
+            newObject->getMember(ObjectMemberIndex(i)) =
+                originalObject->getMember(ObjectMemberIndex(i + 1));
+        }
     }
     objects[object.get().index] = newObject;
     freeInternal(originalObject);
@@ -698,14 +801,14 @@ Handle<SymbolReference> GC::createSymbol(String description)
 
 GC::ObjectDescriptorTransition &GC::findOrAddObjectDescriptorTransition(
     std::vector<std::forward_list<ObjectDescriptorTransition>> &transitions,
-    Name name,
+    const ObjectDescriptor::Member &member,
     ObjectDescriptorReference sourceDescriptor)
 {
     constexpr_assert(!immutable);
     constexpr_assert(!transitions.empty());
-    constexpr_assert(!name.empty());
+    constexpr_assert(!member.name.empty());
     constexpr_assert(sourceDescriptor != nullptr);
-    ObjectDescriptorTransition key(name, sourceDescriptor);
+    ObjectDescriptorTransition key(member, sourceDescriptor);
     auto &transitionList = transitions[key.hash() % transitions.size()];
     for(auto prevIter = transitionList.before_begin(), iter = transitionList.begin();
         iter != transitionList.end();
@@ -741,11 +844,12 @@ Handle<ObjectReference> GC::create(Handle<ObjectDescriptorReference> objectDescr
 }
 
 Handle<ObjectDescriptor *> ObjectDescriptor::duplicate(Handle<ObjectDescriptorReference> self,
+                                                       Handle<ObjectDescriptorReference> newParent,
                                                        GC &gc) const
 {
     constexpr_assert(self.get() == this);
     constexpr_assert(typeid(*this) == typeid(ObjectDescriptor));
-    return gc.createObjectDescriptor(self);
+    return gc.createObjectDescriptor(newParent);
 }
 
 template <typename T>

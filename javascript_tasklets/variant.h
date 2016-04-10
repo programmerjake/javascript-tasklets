@@ -40,6 +40,26 @@ struct variant_base
     template <typename FindType, typename... Types>
     struct get;
     struct test;
+    template <typename T>
+    struct hash_helper;
+};
+
+template <typename T>
+struct variant_base::hash_helper final
+{
+    static std::size_t hash(const T &value) noexcept(noexcept(std::hash<T>()(value)))
+    {
+        return std::hash<T>()(value);
+    }
+};
+
+template <>
+struct variant_base::hash_helper<std::nullptr_t> final
+{
+    static std::size_t hash(std::nullptr_t) noexcept
+    {
+        return 0;
+    }
 };
 
 template <>
@@ -174,10 +194,10 @@ struct variant_base::implementation<T, Types...> final
                 id - 1, std::forward<ImpType>(imp).rest, std::forward<Fn>(fn));
     }
     std::size_t hash(std::size_t id) const
-        noexcept(noexcept(std::hash<T>()(currentValue)) && noexcept(rest.hash(id - 1)))
+        noexcept(noexcept(variant_base::hash_helper<T>::hash(currentValue)) && noexcept(rest.hash(id - 1)))
     {
         if(id == 0)
-            return std::hash<T>()(currentValue);
+            return variant_base::hash_helper<T>::hash(currentValue);
         else
             return rest.hash(id - 1);
     }
@@ -267,12 +287,9 @@ private:
         void operator()() noexcept
         {
         }
-        template <typename T>
-        static constexpr bool isValidType()
-        {
-            return variant_base::get<typename std::decay<T>::type, Types...>::found;
-        }
-        template <typename T, typename = typename std::enable_if<isValidType<T>()>::type>
+        template <typename T,
+                  typename = typename std::enable_if<variant_base::get<typename std::decay<T>::type,
+                                                                       Types...>::found>::type>
         void operator()(T &&rt) noexcept(
             noexcept(typename std::decay<T>::type(std::forward<T>(rt))))
         {
@@ -280,7 +297,10 @@ private:
             ::new(&value.getNoCheck<construct_type>()) construct_type(std::forward<T>(rt));
             value.id = idFor<construct_type>(); // if construction succeeds
         }
-        template <typename T, typename = typename std::enable_if<!isValidType<T>()>::type>
+        template <
+            typename T,
+            typename = typename std::enable_if<!variant_base::get<typename std::decay<T>::type,
+                                                                  Types...>::found>::type>
         void operator()(T &&, int = 0) noexcept
         {
             constexpr_assert(!"invalid variant cast");
@@ -365,7 +385,9 @@ public:
     {
         std::move(rt).apply(cast_helper<Types2...>(*this));
     }
-    template <typename T, typename = typename std::enable_if<variant_base::get<typename std::decay<T>::type, Types...>::found>::type>
+    template <typename T,
+              typename = typename std::enable_if<variant_base::get<typename std::decay<T>::type,
+                                                                   Types...>::found>::type>
     explicit variant(T &&rt) noexcept(noexcept(typename std::decay<T>::type(std::declval<T &&>())))
         : id(idFor<typename std::decay<T>::type>())
     {
