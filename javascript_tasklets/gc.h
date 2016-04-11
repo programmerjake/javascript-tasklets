@@ -498,7 +498,6 @@ namespace javascript_tasklets
 {
 namespace gc
 {
-
 inline std::size_t ObjectMemberDescriptor::hash() const noexcept
 {
     return std::hash<bool>()(configurable) * 126478UL + std::hash<bool>()(enumerable) * 12623U
@@ -776,6 +775,78 @@ inline std::size_t Object::getMemberCount(ObjectDescriptorReference objectDescri
     return objectDescriptor->getEmbeddedMemberCount();
 }
 
+class HandleScope;
+
+template <typename T>
+struct AddHandleToHandleScope final
+{
+    void operator()(HandleScope &handleScope, const T &value) const = delete;
+};
+
+template <>
+struct AddHandleToHandleScope<std::nullptr_t> final
+{
+    void operator()(HandleScope &handleScope, std::nullptr_t) const
+    {
+    }
+};
+
+template <>
+struct AddHandleToHandleScope<std::int32_t> final
+{
+    void operator()(HandleScope &handleScope, std::int32_t) const
+    {
+    }
+};
+
+template <>
+struct AddHandleToHandleScope<std::uint32_t> final
+{
+    void operator()(HandleScope &handleScope, std::uint32_t) const
+    {
+    }
+};
+
+template <>
+struct AddHandleToHandleScope<double> final
+{
+    void operator()(HandleScope &handleScope, double) const
+    {
+    }
+};
+
+template <>
+struct AddHandleToHandleScope<bool> final
+{
+    void operator()(HandleScope &handleScope, bool) const
+    {
+    }
+};
+
+template <typename... Types>
+struct AddHandleToHandleScope<variant<Types...>> final
+{
+    struct AddHandleFn final
+    {
+        HandleScope &handleScope;
+        AddHandleFn(HandleScope &handleScope) : handleScope(handleScope)
+        {
+        }
+        void operator()()
+        {
+        }
+        template <typename T>
+        void operator()(const T &value)
+        {
+            AddHandleToHandleScope<T>()(handleScope, value);
+        }
+    };
+    void operator()(HandleScope &handleScope, const variant<Types...> &value) const
+    {
+        value.apply(AddHandleFn(handleScope));
+    }
+};
+
 class HandleScope final
 {
     friend class GC;
@@ -814,7 +885,8 @@ private:
     void expandObjectDescriptorReferences();
     void addReference(ObjectReference reference)
     {
-        constexpr_assert(reference != nullptr);
+        if(reference == nullptr)
+            return;
         if(objectReferenceCount < embeddedHandleCount)
         {
             embeddedObjectReferences[objectReferenceCount++] = reference;
@@ -828,7 +900,8 @@ private:
     }
     void addReference(StringOrSymbolReference reference)
     {
-        constexpr_assert(reference != nullptr);
+        if(reference == nullptr)
+            return;
         if(stringOrSymbolReferenceCount < embeddedHandleCount)
         {
             embeddedStringOrSymbolReferences[stringOrSymbolReferenceCount++] = reference;
@@ -843,7 +916,8 @@ private:
     }
     void addReference(ObjectDescriptorReference reference)
     {
-        constexpr_assert(reference != nullptr);
+        if(reference == nullptr || reference->gc != &gc)
+            return;
         if(objectDescriptorReferenceCount < embeddedHandleCount)
         {
             embeddedObjectDescriptorReferences[objectDescriptorReferenceCount++] = reference;
@@ -856,48 +930,6 @@ private:
                 reference;
         }
     }
-    void addHandle(const Handle<ObjectReference> &handle)
-    {
-        if(handle.get() == nullptr)
-            return;
-        addReference(handle.get());
-    }
-    void addHandle(const Handle<StringReference> &handle)
-    {
-        if(handle.get() == nullptr)
-            return;
-        addReference(handle.get());
-    }
-    void addHandle(const Handle<SymbolReference> &handle)
-    {
-        if(handle.get() == nullptr)
-            return;
-        addReference(handle.get());
-    }
-    void addHandle(const Handle<ObjectDescriptorReference> &handle);
-    void addHandle(const Handle<ObjectDescriptor *> &handle)
-    {
-        addHandle(Handle<ObjectDescriptorReference>(handle));
-    }
-    template <typename T>
-    void addHandle(const Handle<T> &) = delete;
-    template <typename T>
-    void addReference(T) = delete;
-    void addReference(std::int32_t)
-    {
-    }
-    void addReference(std::uint32_t)
-    {
-    }
-    void addReference(std::nullptr_t)
-    {
-    }
-    void addReference(bool)
-    {
-    }
-    void addReference(double)
-    {
-    }
     void addReference(const StringReference &reference)
     {
         addReference(static_cast<const StringOrSymbolReference &>(reference));
@@ -905,31 +937,6 @@ private:
     void addReference(const SymbolReference &reference)
     {
         addReference(static_cast<const StringOrSymbolReference &>(reference));
-    }
-    struct ReferenceAdder final
-    {
-        HandleScope &scope;
-        explicit ReferenceAdder(HandleScope &scope) : scope(scope)
-        {
-        }
-        void operator()()
-        {
-        }
-        template <typename T>
-        void operator()(T &&v)
-        {
-            scope.addReference(std::forward<T>(v));
-        }
-    };
-    template <typename... Types>
-    void addHandle(const Handle<variant<Types...>> &value)
-    {
-        value.get().apply(ReferenceAdder(*this));
-    }
-    template <typename... Types>
-    void addReference(const variant<Types...> &value)
-    {
-        value.apply(ReferenceAdder(*this));
     }
 
 public:
@@ -952,9 +959,67 @@ public:
     Handle<T> escapeHandle(const Handle<T> &handle)
     {
         constexpr_assert(parent);
-        parent->addHandle(handle);
+        AddHandleToHandleScope<T>()(*parent, handle.get());
         return handle;
     }
+    struct ObjectHandleAdder
+    {
+        void operator()(HandleScope &handleScope, ObjectReference value) const
+        {
+            handleScope.addReference(value);
+        }
+    };
+    struct StringHandleAdder
+    {
+        void operator()(HandleScope &handleScope, StringReference value) const
+        {
+            handleScope.addReference(value);
+        }
+    };
+    struct SymbolHandleAdder
+    {
+        void operator()(HandleScope &handleScope, SymbolReference value) const
+        {
+            handleScope.addReference(value);
+        }
+    };
+    struct ObjectDescriptorHandleAdder
+    {
+        void operator()(HandleScope &handleScope, ObjectDescriptorReference value) const
+        {
+            handleScope.addReference(value);
+        }
+    };
+};
+
+template <>
+struct AddHandleToHandleScope<ObjectDescriptorReference> final
+    : public HandleScope::ObjectDescriptorHandleAdder
+{
+};
+
+template <>
+struct AddHandleToHandleScope<ObjectDescriptor *> final
+{
+    void operator()(HandleScope &handleScope, ObjectDescriptor *value) const
+    {
+        HandleScope::ObjectDescriptorHandleAdder()(handleScope, value);
+    }
+};
+
+template <>
+struct AddHandleToHandleScope<ObjectReference> final : public HandleScope::ObjectHandleAdder
+{
+};
+
+template <>
+struct AddHandleToHandleScope<StringReference> final : public HandleScope::StringHandleAdder
+{
+};
+
+template <>
+struct AddHandleToHandleScope<SymbolReference> final : public HandleScope::SymbolHandleAdder
+{
 };
 
 class GC final : public std::enable_shared_from_this<GC>
@@ -1199,7 +1264,7 @@ inline Handle<T>::Handle(GC &gc, T value)
     : value(std::move(value))
 {
     constexpr_assert(gc.handleScopesStack);
-    gc.handleScopesStack->addHandle(*this);
+    AddHandleToHandleScope<T>()(*gc.handleScopesStack, static_cast<const T &>(this->value));
 }
 inline void HandleScope::addToGC()
 {
@@ -1214,15 +1279,10 @@ inline void HandleScope::removeFromGC()
     gc.handleScopesStack = parent;
     parent = nullptr;
 }
-
-inline void HandleScope::addHandle(const Handle<ObjectDescriptorReference> &handle)
-{
-    if(handle.get() != nullptr && handle.get()->gc == &gc)
-    {
-        addReference(handle.get());
-    }
 }
-}
+using gc::GC;
+using gc::HandleScope;
+using gc::Handle;
 }
 
 #endif /* JAVASCRIPT_TASKLETS_GC_H_ */
