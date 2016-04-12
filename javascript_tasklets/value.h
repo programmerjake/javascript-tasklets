@@ -37,13 +37,13 @@ struct StringHandle;
 struct NameHandle;
 struct UndefinedHandle final
 {
-    void get(GC &gc) const noexcept
+    void get() const noexcept
     {
     }
 };
 struct NullHandle final
 {
-    std::nullptr_t get(GC &) const noexcept
+    std::nullptr_t get() const noexcept
     {
         return nullptr;
     }
@@ -170,7 +170,7 @@ struct ObjectHandle final
     ObjectHandle(Handle<gc::ObjectReference> value) noexcept : value(std::move(value))
     {
     }
-    Handle<gc::ObjectReference> get(GC &) const noexcept
+    Handle<gc::ObjectReference> get() const noexcept
     {
         return value;
     }
@@ -293,33 +293,82 @@ struct PropertyHandle final
             return true;
         return false;
     }
-    PropertyHandle &completePropertyDescriptor() noexcept
+    PropertyHandle &completePropertyDescriptor() noexcept;
+};
+
+struct SymbolHandle final
+{
+    Handle<gc::SymbolReference> value;
+    SymbolHandle(std::nullptr_t = nullptr) noexcept : value()
     {
-        if(isGenericDescriptor() || isDataDescriptor())
+    }
+    SymbolHandle(Handle<gc::SymbolReference> value) noexcept : value(std::move(value))
+    {
+    }
+
+private:
+    template <typename SymbolTag>
+    struct GetWellKnownHelper final
+    {
+    };
+
+public:
+    // SymbolTag must have a description static member variable that is a string or c-string
+    template <typename SymbolTag>
+    static SymbolHandle getWellKnown(GC &gc)
+    {
+        Handle<gc::Value> value = gc.getGlobalValue<GetWellKnownHelper<SymbolTag>>();
+        if(value.get().empty())
         {
-            if(!hasValue)
-                value = ValueHandle();
-            hasValue = true;
-            if(!hasWritable)
-                writable = false;
-            hasWritable = true;
+            String description = SymbolTag::description;
+            Handle<gc::SymbolReference> retval = gc.createSymbol(std::move(description));
+            value = retval;
+            gc.setGlobalValue<GetWellKnownHelper<SymbolTag>>(std::move(value));
+            return std::move(retval);
         }
-        else
-        {
-            if(!hasGet)
-                get = ObjectHandle();
-            hasGet = true;
-            if(!hasSet)
-                set = ObjectHandle();
-            hasSet = true;
-        }
-        if(!hasConfigurable)
-            configurable = false;
-        hasConfigurable = true;
-        if(!hasEnumerable)
-            enumerable = false;
-        hasEnumerable = true;
-        return *this;
+        return SymbolHandle(
+            Handle<gc::SymbolReference>(value, value.get().get<gc::SymbolReference>()));
+    }
+    Handle<gc::SymbolReference> get() const noexcept
+    {
+        return value;
+    }
+    bool empty() const noexcept
+    {
+        return value.get() == nullptr;
+    }
+    String getDescription(GC &gc) const noexcept
+    {
+        return gc.readSymbol(value);
+    }
+};
+
+struct StringHandle final
+{
+    Handle<gc::StringReference> value;
+    StringHandle(std::nullptr_t = nullptr) noexcept : value()
+    {
+    }
+    StringHandle(Handle<gc::StringReference> value) noexcept : value(std::move(value))
+    {
+    }
+    StringHandle(const String &string, GC &gc) : value(gc.internString(string))
+    {
+    }
+    StringHandle(String &&string, GC &gc) : value(gc.internString(std::move(string)))
+    {
+    }
+    Handle<gc::StringReference> get() const noexcept
+    {
+        return value;
+    }
+    bool empty() const noexcept
+    {
+        return value.get() == nullptr;
+    }
+    String getValue(GC &gc) const noexcept
+    {
+        return gc.readString(value);
     }
 };
 }
