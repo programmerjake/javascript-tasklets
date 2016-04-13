@@ -192,7 +192,7 @@ private:
     template <typename Tag>
     struct Implementation final
     {
-        static const char variable = 0;
+        static constexpr char variable = 0;
     };
 
 public:
@@ -205,7 +205,7 @@ public:
 };
 
 template <typename Tag>
-const char InternalNameMaker::Implementation<Tag>::variable;
+constexpr char InternalNameMaker::Implementation<Tag>::variable;
 
 typedef InternalNameMaker::InternalName InternalName;
 
@@ -783,6 +783,15 @@ struct AddHandleToHandleScope final
     void operator()(HandleScope &handleScope, const T &value) const = delete;
 };
 
+template <typename T>
+struct AddHandleToHandleScope<Handle<T>> final
+{
+    void operator()(HandleScope &handleScope, const Handle<T> &value) const
+    {
+        AddHandleToHandleScope<T>()(handleScope, value.get());
+    }
+};
+
 template <>
 struct AddHandleToHandleScope<std::nullptr_t> final
 {
@@ -956,10 +965,10 @@ public:
         delete[] objectDescriptorReferences;
     }
     template <typename T>
-    Handle<T> escapeHandle(const Handle<T> &handle)
+    T escapeHandle(const T &handle)
     {
         constexpr_assert(parent);
-        AddHandleToHandleScope<T>()(*parent, handle.get());
+        AddHandleToHandleScope<T>()(*parent, handle);
         return handle;
     }
     struct ObjectHandleAdder
@@ -1159,6 +1168,17 @@ public:
         noexcept
     {
         return Handle<ObjectDescriptorReference>(readObject(handle).objectDescriptor);
+    }
+    const ObjectDescriptor &readObjectDescriptor(Handle<ObjectDescriptorReference> handle) const
+        noexcept
+    {
+        constexpr_assert(handle.get());
+        return *handle.get();
+    }
+    ObjectDescriptor &writeObjectDescriptor(Handle<ObjectDescriptor *> handle) noexcept
+    {
+        constexpr_assert(handle.get());
+        return *handle.get();
     }
     const String &readString(Handle<StringReference> handle) const noexcept
     {
