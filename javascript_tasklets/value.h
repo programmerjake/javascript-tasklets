@@ -272,6 +272,7 @@ inline ValueHandle::ValueHandle(ObjectOrNullHandle value) noexcept : value(value
 
 inline ObjectOrNullHandle ValueHandle::getObjectOrNull() const noexcept
 {
+    constexpr_assert(isObjectOrNull());
     return ObjectOrNullHandle(Handle<ObjectOrNullHandle::ValueType>(value));
 }
 
@@ -747,6 +748,7 @@ inline ValueHandle::ValueHandle(NameHandle value) noexcept : value(value.get())
 
 inline NameHandle ValueHandle::getName() const noexcept
 {
+    constexpr_assert(isName());
     return NameHandle(Handle<NameHandle::ValueType>(value));
 }
 
@@ -798,6 +800,7 @@ inline ValueHandle::ValueHandle(IntegerHandle value) noexcept : value(value.get(
 
 inline IntegerHandle ValueHandle::getInteger() const noexcept
 {
+    constexpr_assert(isInteger());
     return IntegerHandle(Handle<IntegerHandle::ValueType>(value));
 }
 
@@ -861,6 +864,7 @@ struct NumberHandle final
     }
     IntegerHandle getInteger() const noexcept
     {
+        constexpr_assert(isInteger());
         return IntegerHandle(Handle<IntegerHandle::ValueType>(value));
     }
 };
@@ -871,6 +875,7 @@ inline ValueHandle::ValueHandle(NumberHandle value) noexcept : value(value.get()
 
 inline NumberHandle ValueHandle::getNumber() const noexcept
 {
+    constexpr_assert(isNumber());
     return NumberHandle(Handle<NumberHandle::ValueType>(value));
 }
 
@@ -975,6 +980,7 @@ struct PrimitiveHandle final
     }
     NameHandle getName() const noexcept
     {
+        constexpr_assert(isName());
         return NameHandle(Handle<NameHandle::ValueType>(value));
     }
     bool isDouble() const noexcept
@@ -1007,6 +1013,7 @@ struct PrimitiveHandle final
     }
     IntegerHandle getInteger() const noexcept
     {
+        constexpr_assert(isInteger());
         return IntegerHandle(Handle<IntegerHandle::ValueType>(value));
     }
     bool isNumber() const noexcept
@@ -1015,6 +1022,7 @@ struct PrimitiveHandle final
     }
     NumberHandle getNumber() const noexcept
     {
+        constexpr_assert(isNumber());
         return NumberHandle(Handle<NumberHandle::ValueType>(value));
     }
     bool isObjectOrNull() const noexcept
@@ -1023,7 +1031,8 @@ struct PrimitiveHandle final
     }
     ObjectOrNullHandle getObjectOrNull() const noexcept
     {
-        return ObjectOrNullHandle(nullptr);
+        constexpr_assert(isObjectOrNull());
+        return ObjectOrNullHandle(getNull());
     }
 };
 
@@ -1033,6 +1042,7 @@ inline ValueHandle::ValueHandle(PrimitiveHandle value) noexcept : value(value.ge
 
 inline PrimitiveHandle ValueHandle::getPrimitive() const noexcept
 {
+    constexpr_assert(isPrimitive());
     return PrimitiveHandle(Handle<PrimitiveHandle::ValueType>(value));
 }
 }
