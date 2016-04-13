@@ -25,6 +25,7 @@
 #include "gc.h"
 #include <utility>
 #include <cstdint>
+#include <vector>
 
 namespace javascript_tasklets
 {
@@ -200,11 +201,27 @@ struct ObjectHandle final
     BooleanHandle preventExtensions(GC &gc) const;
     PropertyHandle getOwnProperty(NameHandle name, GC &gc) const;
     PropertyHandle getOwnProperty(gc::InternalName name, GC &gc) const;
+    BooleanHandle hasOwnProperty(NameHandle name, GC &gc) const;
+    BooleanHandle hasOwnProperty(gc::InternalName name, GC &gc) const;
     BooleanHandle hasProperty(NameHandle name, GC &gc) const;
-    ValueHandle getValue(NameHandle name, GC &gc) const;
+    ValueHandle getValue(NameHandle name, ValueHandle reciever, GC &gc) const;
+    BooleanHandle setValue(NameHandle name,
+                           ValueHandle newValue,
+                           ValueHandle reciever,
+                           GC &gc) const;
+    BooleanHandle deleteProperty(NameHandle name, GC &gc) const;
+    BooleanHandle defineOwnProperty(NameHandle name, PropertyHandle property, GC &gc) const;
+    ObjectHandle enumerate(GC &gc) const;
+    std::vector<NameHandle> ownPropertyKeys(GC &gc) const;
+    ValueHandle call(ValueHandle thisValue, std::vector<ValueHandle> arguments, GC &gc) const;
+    ObjectHandle construct(std::vector<ValueHandle> arguments,
+                           ObjectHandle newTarget,
+                           GC &gc) const;
 
 private:
     PropertyHandle getOwnProperty(gc::Name name, GC &gc) const;
+    BooleanHandle hasOwnProperty(gc::Name name, GC &gc) const;
+    void deleteOwnProperty(gc::Name name, GC &gc) const;
     void setOwnProperty(gc::Name name,
                         const PropertyHandle &value,
                         GC &gc,
