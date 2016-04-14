@@ -234,6 +234,7 @@ struct ObjectHandle final
     BooleanHandle hasOwnProperty(NameHandle name, GC &gc) const;
     BooleanHandle hasOwnProperty(gc::InternalName name, GC &gc) const;
     BooleanHandle hasProperty(NameHandle name, GC &gc) const;
+    BooleanHandle ordinaryHasProperty(NameHandle name, GC &gc) const;
     ValueHandle getValue(NameHandle name, ValueHandle reciever, GC &gc) const;
     BooleanHandle setValue(NameHandle name,
                            ValueHandle newValue,
@@ -265,6 +266,11 @@ struct ObjectHandle final
         return value.get() == rt.value.get();
     }
     PrimitiveHandle toPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const;
+    static ObjectHandle create(ObjectOrNullHandle prototype, GC &gc);
+    static ObjectHandle create(Handle<gc::ObjectDescriptorReference> objectDescriptor,
+                               std::unique_ptr<gc::Object::ExtraData> extraData,
+                               ObjectOrNullHandle prototype,
+                               GC &gc);
 
 private:
     PropertyHandle getOwnProperty(gc::Name name, GC &gc) const;

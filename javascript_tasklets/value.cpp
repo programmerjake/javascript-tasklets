@@ -240,6 +240,50 @@ BooleanHandle ObjectHandle::setPrototype(ObjectOrNullHandle newPrototype, GC &gc
     return handleScope.escapeHandle(BooleanHandle(true, gc));
 }
 
+ObjectHandle ObjectHandle::create(ObjectOrNullHandle prototype, GC &gc)
+{
+    HandleScope handleScope(gc);
+    struct DefaultObjectTag final
+    {
+    };
+    Handle<gc::Value> defaultObject = gc.getGlobalValue<DefaultObjectTag>();
+    Handle<gc::ObjectDescriptorReference> objectDescriptor;
+    if(defaultObject.get().empty())
+    {
+        auto mutableObjectDescriptor = gc.createObjectDescriptor();
+        mutableObjectDescriptor.get()->addMember(gc::ObjectDescriptor::Member(
+            gc::Name(gc::InternalNameMaker::get<ObjectExtensibleInternalNameTag>()),
+            gc::ObjectMemberDescriptor::DataInDescriptor(
+                false, false, gc::Value::make<bool>(true), true)));
+        objectDescriptor = mutableObjectDescriptor;
+        defaultObject = Handle<gc::Value>(gc.create(objectDescriptor));
+        gc.setGlobalValue<DefaultObjectTag>(defaultObject);
+    }
+    else
+    {
+        objectDescriptor = gc.getObjectDescriptor(Handle<gc::ObjectReference>(
+            defaultObject, defaultObject.get().get<gc::ObjectReference>()));
+    }
+    ObjectHandle retval = gc.create(objectDescriptor);
+    retval.setPrototypeUnchecked(prototype, gc);
+    return handleScope.escapeHandle(retval);
+}
+
+ObjectHandle ObjectHandle::create(Handle<gc::ObjectDescriptorReference> objectDescriptor,
+                                  std::unique_ptr<gc::Object::ExtraData> extraData,
+                                  ObjectOrNullHandle prototype,
+                                  GC &gc)
+{
+    HandleScope handleScope(gc);
+    ObjectHandle retval = gc.create(objectDescriptor, std::move(extraData));
+    retval.setOwnProperty(gc::Name(gc::InternalNameMaker::get<ObjectExtensibleInternalNameTag>()),
+                          PropertyHandle(BooleanHandle(true, gc), true, false, false),
+                          gc,
+                          true);
+    retval.setPrototypeUnchecked(prototype, gc);
+    return handleScope.escapeHandle(retval);
+}
+
 void ObjectHandle::setOwnProperty(gc::Name name,
                                   const PropertyHandle &property,
                                   GC &gc,
