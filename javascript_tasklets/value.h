@@ -26,11 +26,19 @@
 #include <utility>
 #include <cstdint>
 #include <vector>
+#include <cmath>
 
 namespace javascript_tasklets
 {
 namespace value
 {
+enum class ToPrimitivePreferredType
+{
+    Default,
+    String,
+    Number
+};
+
 struct ObjectHandle;
 struct SymbolHandle;
 struct BooleanHandle;
@@ -41,12 +49,28 @@ struct UndefinedHandle final
     void get() const noexcept
     {
     }
+    bool isSameValue(UndefinedHandle) const noexcept
+    {
+        return true;
+    }
+    bool isSameValueZero(UndefinedHandle) const noexcept
+    {
+        return true;
+    }
 };
 struct NullHandle final
 {
     Handle<std::nullptr_t> get() const noexcept
     {
         return Handle<std::nullptr_t>();
+    }
+    bool isSameValue(NullHandle) const noexcept
+    {
+        return true;
+    }
+    bool isSameValueZero(NullHandle) const noexcept
+    {
+        return true;
     }
 };
 struct NumberHandle;
@@ -172,6 +196,9 @@ struct ValueHandle final
         return isObject() || isNull();
     }
     ObjectOrNullHandle getObjectOrNull() const noexcept;
+    bool isSameValueZero(const ValueHandle &rt) const noexcept;
+    bool isSameValue(const ValueHandle &rt) const noexcept;
+    PrimitiveHandle toPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const;
 };
 
 struct PropertyHandle;
@@ -194,9 +221,12 @@ struct ObjectHandle final
     {
         return value.get() == nullptr;
     }
+    ObjectOrNullHandle ordinaryGetPrototype(GC &gc) const;
     ObjectOrNullHandle getPrototype(GC &gc) const;
+    bool getPrototypeIsOrdinary(GC &gc) const;
     BooleanHandle setPrototype(ObjectOrNullHandle newPrototype, GC &gc) const;
     void setPrototypeUnchecked(ObjectOrNullHandle newPrototype, GC &gc) const;
+    BooleanHandle ordinaryIsExtensible(GC &gc) const;
     BooleanHandle isExtensible(GC &gc) const;
     BooleanHandle preventExtensions(GC &gc) const;
     PropertyHandle getOwnProperty(NameHandle name, GC &gc) const;
@@ -211,19 +241,37 @@ struct ObjectHandle final
                            GC &gc) const;
     BooleanHandle deleteProperty(NameHandle name, GC &gc) const;
     BooleanHandle defineOwnProperty(NameHandle name, PropertyHandle property, GC &gc) const;
+    BooleanHandle ordinaryDefineOwnProperty(NameHandle name, PropertyHandle property, GC &gc) const;
+    static bool validateAndApplyPropertyDescriptor(ObjectOrNullHandle object,
+                                                   NameHandle name,
+                                                   bool extensible,
+                                                   PropertyHandle newProperty,
+                                                   PropertyHandle currentProperty);
+    static bool isCompatiblePropertyDescriptor(bool extensible,
+                                               PropertyHandle newProperty,
+                                               PropertyHandle currentProperty);
     ObjectHandle enumerate(GC &gc) const;
     std::vector<NameHandle> ownPropertyKeys(GC &gc) const;
     ValueHandle call(ValueHandle thisValue, std::vector<ValueHandle> arguments, GC &gc) const;
     ObjectHandle construct(std::vector<ValueHandle> arguments,
                            ObjectHandle newTarget,
                            GC &gc) const;
+    bool isSameValueZero(const ObjectHandle &rt) const noexcept
+    {
+        return isSameValue(rt);
+    }
+    bool isSameValue(const ObjectHandle &rt) const noexcept
+    {
+        return value.get() == rt.value.get();
+    }
+    PrimitiveHandle toPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const;
 
 private:
     PropertyHandle getOwnProperty(gc::Name name, GC &gc) const;
     BooleanHandle hasOwnProperty(gc::Name name, GC &gc) const;
     void deleteOwnProperty(gc::Name name, GC &gc) const;
     void setOwnProperty(gc::Name name,
-                        const PropertyHandle &value,
+                        const PropertyHandle &property,
                         GC &gc,
                         bool putInObjectDescriptor) const;
 };
@@ -255,6 +303,17 @@ struct ObjectOrNullHandle final
     ObjectOrNullHandle(Handle<ValueType> value) noexcept : value(value)
     {
     }
+    ObjectOrNullHandle(Handle<gc::ObjectReference> value) noexcept : value()
+    {
+        if(value.get() == nullptr)
+        {
+            this->value.get() = ValueType::make<std::nullptr_t>(nullptr);
+        }
+        else
+        {
+            this->value.get() = ValueType::make<gc::ObjectReference>(value.get());
+        }
+    }
     bool empty() const noexcept
     {
         return value.get().empty();
@@ -272,6 +331,12 @@ struct ObjectOrNullHandle final
         return ObjectHandle(
             Handle<gc::ObjectReference>(value, value.get().get<gc::ObjectReference>()));
     }
+    Handle<gc::ObjectReference> toObjectReference() const noexcept
+    {
+        if(isObject())
+            return Handle<gc::ObjectReference>(value, value.get().get<gc::ObjectReference>());
+        return Handle<gc::ObjectReference>();
+    }
     bool isNull() const noexcept
     {
         return value.get().is<std::nullptr_t>();
@@ -281,6 +346,15 @@ struct ObjectOrNullHandle final
         constexpr_assert(isNull());
         return NullHandle();
     }
+    bool isSameValueZero(const ObjectOrNullHandle &rt) const noexcept
+    {
+        return isSameValue(rt);
+    }
+    bool isSameValue(const ObjectOrNullHandle &rt) const noexcept
+    {
+        return value.get() == rt.value.get();
+    }
+    PrimitiveHandle toPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(ObjectOrNullHandle value) noexcept : value(value.get())
@@ -488,6 +562,14 @@ struct PropertyHandle final
             return true;
         return false;
     }
+    bool isCompleteDescriptor() const noexcept
+    {
+        if(isDataDescriptor())
+        {
+            return hasConfigurable && hasEnumerable && hasValue && hasWritable;
+        }
+        return hasConfigurable && hasEnumerable && hasGet && hasSet;
+    }
     PropertyHandle &completePropertyDescriptor() noexcept;
 };
 
@@ -518,12 +600,99 @@ public:
         {
             String description = SymbolTag::description;
             Handle<gc::SymbolReference> retval = gc.createSymbol(std::move(description));
-            value = retval;
-            gc.setGlobalValue<GetWellKnownHelper<SymbolTag>>(std::move(value));
+            gc.setGlobalValue<GetWellKnownHelper<SymbolTag>>(Handle<gc::Value>(retval));
             return std::move(retval);
         }
         return SymbolHandle(
             Handle<gc::SymbolReference>(value, value.get().get<gc::SymbolReference>()));
+    }
+    struct HasInstanceTag final
+    {
+        static constexpr auto description = u"Symbol.hasInstance";
+    };
+    static SymbolHandle getHasInstance(GC &gc)
+    {
+        return getWellKnown<HasInstanceTag>(gc);
+    }
+    struct IsConcatSpreadableTag final
+    {
+        static constexpr auto description = u"Symbol.isConcatSpreadable";
+    };
+    static SymbolHandle getIsConcatSpreadable(GC &gc)
+    {
+        return getWellKnown<IsConcatSpreadableTag>(gc);
+    }
+    struct IteratorTag final
+    {
+        static constexpr auto description = u"Symbol.iterator";
+    };
+    static SymbolHandle getIterator(GC &gc)
+    {
+        return getWellKnown<IteratorTag>(gc);
+    }
+    struct MatchTag final
+    {
+        static constexpr auto description = u"Symbol.match";
+    };
+    static SymbolHandle getMatch(GC &gc)
+    {
+        return getWellKnown<MatchTag>(gc);
+    }
+    struct ReplaceTag final
+    {
+        static constexpr auto description = u"Symbol.replace";
+    };
+    static SymbolHandle getReplace(GC &gc)
+    {
+        return getWellKnown<ReplaceTag>(gc);
+    }
+    struct SearchTag final
+    {
+        static constexpr auto description = u"Symbol.search";
+    };
+    static SymbolHandle getSearch(GC &gc)
+    {
+        return getWellKnown<SearchTag>(gc);
+    }
+    struct SpeciesTag final
+    {
+        static constexpr auto description = u"Symbol.species";
+    };
+    static SymbolHandle getSpecies(GC &gc)
+    {
+        return getWellKnown<SpeciesTag>(gc);
+    }
+    struct SplitTag final
+    {
+        static constexpr auto description = u"Symbol.split";
+    };
+    static SymbolHandle getSplit(GC &gc)
+    {
+        return getWellKnown<SplitTag>(gc);
+    }
+    struct ToPrimitiveTag final
+    {
+        static constexpr auto description = u"Symbol.toPrimitive";
+    };
+    static SymbolHandle getToPrimitive(GC &gc)
+    {
+        return getWellKnown<ToPrimitiveTag>(gc);
+    }
+    struct ToStringTagTag final
+    {
+        static constexpr auto description = u"Symbol.toStringTag";
+    };
+    static SymbolHandle getToStringTag(GC &gc)
+    {
+        return getWellKnown<ToStringTagTag>(gc);
+    }
+    struct UnscopablesTag final
+    {
+        static constexpr auto description = u"Symbol.unscopables";
+    };
+    static SymbolHandle getUnscopables(GC &gc)
+    {
+        return getWellKnown<UnscopablesTag>(gc);
     }
     Handle<gc::SymbolReference> get() const noexcept
     {
@@ -536,6 +705,14 @@ public:
     String getDescription(GC &gc) const noexcept
     {
         return gc.readSymbol(value);
+    }
+    bool isSameValueZero(const SymbolHandle &rt) const noexcept
+    {
+        return isSameValue(rt);
+    }
+    bool isSameValue(const SymbolHandle &rt) const noexcept
+    {
+        return value.get() == rt.value.get();
     }
 };
 
@@ -576,6 +753,14 @@ struct StringHandle final
     {
         return gc.readString(value);
     }
+    bool isSameValueZero(const StringHandle &rt) const noexcept
+    {
+        return isSameValue(rt);
+    }
+    bool isSameValue(const StringHandle &rt) const noexcept
+    {
+        return value.get() == rt.value.get();
+    }
 };
 
 inline ValueHandle::ValueHandle(StringHandle value) noexcept : value(value.get())
@@ -607,6 +792,14 @@ struct BooleanHandle final
     bool getValue(GC &gc) const noexcept
     {
         return value.get();
+    }
+    bool isSameValueZero(const BooleanHandle &rt) const noexcept
+    {
+        return isSameValue(rt);
+    }
+    bool isSameValue(const BooleanHandle &rt) const noexcept
+    {
+        return value.get() == rt.value.get();
     }
 };
 
@@ -640,6 +833,14 @@ struct Int32Handle final
     {
         return value.get();
     }
+    bool isSameValueZero(const Int32Handle &rt) const noexcept
+    {
+        return isSameValue(rt);
+    }
+    bool isSameValue(const Int32Handle &rt) const noexcept
+    {
+        return value.get() == rt.value.get();
+    }
 };
 
 inline ValueHandle::ValueHandle(Int32Handle value) noexcept : value(value.get())
@@ -672,6 +873,14 @@ struct UInt32Handle final
     {
         return value.get();
     }
+    bool isSameValueZero(const UInt32Handle &rt) const noexcept
+    {
+        return isSameValue(rt);
+    }
+    bool isSameValue(const UInt32Handle &rt) const noexcept
+    {
+        return value.get() == rt.value.get();
+    }
 };
 
 inline ValueHandle::ValueHandle(UInt32Handle value) noexcept : value(value.get())
@@ -703,6 +912,24 @@ struct DoubleHandle final
     double getValue(GC &gc) const noexcept
     {
         return value.get();
+    }
+    bool isSameValueZero(const DoubleHandle &rt) const noexcept
+    {
+        if(std::isnan(value.get()))
+            return std::isnan(rt.value.get());
+        return value.get() == rt.value.get();
+    }
+    bool isSameValue(const DoubleHandle &rt) const noexcept
+    {
+        if(std::isnan(value.get()))
+            return std::isnan(rt.value.get());
+        if(value.get() == 0)
+        {
+            if(rt.value.get() != 0)
+                return false;
+            return std::signbit(value.get()) == std::signbit(rt.value.get());
+        }
+        return value.get() == rt.value.get();
     }
 };
 
@@ -757,6 +984,14 @@ struct NameHandle final
         return SymbolHandle(
             Handle<gc::SymbolReference>(value, value.get().get<gc::SymbolReference>()));
     }
+    bool isSameValueZero(const NameHandle &rt) const noexcept
+    {
+        return isSameValue(rt);
+    }
+    bool isSameValue(const NameHandle &rt) const noexcept
+    {
+        return value.get() == rt.value.get();
+    }
 };
 
 inline ValueHandle::ValueHandle(NameHandle value) noexcept : value(value.get())
@@ -808,6 +1043,31 @@ struct IntegerHandle final
     UInt32Handle getUInt32() const noexcept
     {
         return UInt32Handle(Handle<std::uint32_t>(value, value.get().get<std::uint32_t>()));
+    }
+    bool isSameValueZero(const IntegerHandle &rt) const noexcept
+    {
+        return isSameValue(rt);
+    }
+    bool isSameValue(const IntegerHandle &rt) const noexcept
+    {
+        if(isUInt32())
+        {
+            std::uint32_t lValue = value.get().get<std::uint32_t>();
+            if(rt.isUInt32())
+                return lValue == rt.value.get().get<std::uint32_t>();
+            std::int32_t rValue = rt.value.get().get<std::int32_t>();
+            if(rValue < 0)
+                return false;
+            return lValue == static_cast<std::uint32_t>(rValue);
+        }
+        constexpr_assert(isInt32());
+        std::int32_t lValue = value.get().get<std::int32_t>();
+        if(rt.isInt32())
+            return lValue == rt.value.get().get<std::int32_t>();
+        std::uint32_t rValue = rt.value.get().get<std::uint32_t>();
+        if(lValue < 0)
+            return false;
+        return static_cast<std::uint32_t>(lValue) == rValue;
     }
 };
 
@@ -884,6 +1144,77 @@ struct NumberHandle final
         constexpr_assert(isInteger());
         return IntegerHandle(Handle<IntegerHandle::ValueType>(value));
     }
+    bool isSameValueZero(const NumberHandle &rt) const noexcept
+    {
+        if(isInteger() && rt.isInteger())
+            return getInteger().isSameValueZero(rt.getInteger());
+        if(isDouble() && rt.isDouble())
+            return getDouble().isSameValueZero(rt.getDouble());
+        if(isUInt32())
+        {
+            return value.get().get<std::uint32_t>() == rt.value.get().get<double>();
+        }
+        if(isInt32())
+        {
+            return value.get().get<std::int32_t>() == rt.value.get().get<double>();
+        }
+        if(rt.isInt32())
+        {
+            return value.get().get<double>() == rt.value.get().get<std::int32_t>();
+        }
+        return value.get().get<double>() == rt.value.get().get<std::uint32_t>();
+    }
+    bool isSameValue(const NumberHandle &rt) const noexcept
+    {
+        if(isInteger() && rt.isInteger())
+            return getInteger().isSameValueZero(rt.getInteger());
+        if(isDouble() && rt.isDouble())
+            return getDouble().isSameValueZero(rt.getDouble());
+        if(isUInt32())
+        {
+            std::uint32_t lValue = value.get().get<std::uint32_t>();
+            double rValue = rt.value.get().get<double>();
+            if(lValue != 0)
+                return lValue == rValue;
+            if(rValue != 0)
+                return false;
+            if(std::signbit(rValue))
+                return false;
+            return true;
+        }
+        if(isInt32())
+        {
+            std::int32_t lValue = value.get().get<std::int32_t>();
+            double rValue = rt.value.get().get<double>();
+            if(lValue != 0)
+                return lValue == rValue;
+            if(rValue != 0)
+                return false;
+            if(std::signbit(rValue))
+                return false;
+            return true;
+        }
+        double lValue = value.get().get<double>();
+        if(rt.isInt32())
+        {
+            std::int32_t rValue = rt.value.get().get<std::int32_t>();
+            if(rValue != 0)
+                return lValue == rValue;
+            if(lValue != 0)
+                return false;
+            if(std::signbit(lValue))
+                return false;
+            return true;
+        }
+        std::uint32_t rValue = rt.value.get().get<std::uint32_t>();
+        if(rValue != 0)
+            return lValue == rValue;
+        if(lValue != 0)
+            return false;
+        if(std::signbit(lValue))
+            return false;
+        return true;
+    }
 };
 
 inline ValueHandle::ValueHandle(NumberHandle value) noexcept : value(value.get())
@@ -894,6 +1225,24 @@ inline NumberHandle ValueHandle::getNumber() const noexcept
 {
     constexpr_assert(isNumber());
     return NumberHandle(Handle<NumberHandle::ValueType>(value));
+}
+
+inline bool ValueHandle::isSameValue(const ValueHandle &rt) const noexcept
+{
+    if(!isNumber())
+        return value.get() == rt.value.get();
+    if(!rt.isNumber())
+        return false;
+    return getNumber().isSameValue(rt.getNumber());
+}
+
+inline bool ValueHandle::isSameValueZero(const ValueHandle &rt) const noexcept
+{
+    if(!isNumber())
+        return value.get() == rt.value.get();
+    if(!rt.isNumber())
+        return false;
+    return getNumber().isSameValueZero(rt.getNumber());
 }
 
 struct PrimitiveHandle final
@@ -1051,6 +1400,22 @@ struct PrimitiveHandle final
         constexpr_assert(isObjectOrNull());
         return ObjectOrNullHandle(getNull());
     }
+    bool isSameValue(const PrimitiveHandle &rt) const noexcept
+    {
+        if(!isNumber())
+            return value.get() == rt.value.get();
+        if(!rt.isNumber())
+            return false;
+        return getNumber().isSameValue(rt.getNumber());
+    }
+    bool isSameValueZero(const PrimitiveHandle &rt) const noexcept
+    {
+        if(!isNumber())
+            return value.get() == rt.value.get();
+        if(!rt.isNumber())
+            return false;
+        return getNumber().isSameValueZero(rt.getNumber());
+    }
 };
 
 inline ValueHandle::ValueHandle(PrimitiveHandle value) noexcept : value(value.get())
@@ -1061,6 +1426,22 @@ inline PrimitiveHandle ValueHandle::getPrimitive() const noexcept
 {
     constexpr_assert(isPrimitive());
     return PrimitiveHandle(Handle<PrimitiveHandle::ValueType>(value));
+}
+
+inline PrimitiveHandle ValueHandle::toPrimitive(ToPrimitivePreferredType preferredType,
+                                                GC &gc) const
+{
+    if(isObject())
+        return getObject().toPrimitive(preferredType, gc);
+    return getPrimitive();
+}
+
+inline PrimitiveHandle ObjectOrNullHandle::toPrimitive(ToPrimitivePreferredType preferredType,
+                                                       GC &gc) const
+{
+    if(isObject())
+        return getObject().toPrimitive(preferredType, gc);
+    return getNull();
 }
 }
 

@@ -20,6 +20,7 @@
  */
 
 #include "value.h"
+#include <cmath>
 
 namespace javascript_tasklets
 {
@@ -70,7 +71,7 @@ struct ObjectExtensibleInternalNameTag final
 };
 }
 
-ObjectOrNullHandle ObjectHandle::getPrototype(GC &gc) const
+ObjectOrNullHandle ObjectHandle::ordinaryGetPrototype(GC &gc) const
 {
     HandleScope handleScope(gc);
     PropertyHandle property =
@@ -82,6 +83,16 @@ ObjectOrNullHandle ObjectHandle::getPrototype(GC &gc) const
     return handleScope.escapeHandle(property.value.getObjectOrNull());
 }
 
+ObjectOrNullHandle ObjectHandle::getPrototype(GC &gc) const
+{
+    return ordinaryGetPrototype(gc);
+}
+
+bool ObjectHandle::getPrototypeIsOrdinary(GC &gc) const
+{
+    return true;
+}
+
 void ObjectHandle::setPrototypeUnchecked(ObjectOrNullHandle newPrototype, GC &gc) const
 {
     HandleScope handleScope(gc);
@@ -91,6 +102,11 @@ void ObjectHandle::setPrototypeUnchecked(ObjectOrNullHandle newPrototype, GC &gc
 }
 
 BooleanHandle ObjectHandle::isExtensible(GC &gc) const
+{
+    return ordinaryIsExtensible(gc);
+}
+
+BooleanHandle ObjectHandle::ordinaryIsExtensible(GC &gc) const
 {
     HandleScope handleScope(gc);
     PropertyHandle property =
@@ -129,7 +145,7 @@ PropertyHandle ObjectHandle::getOwnProperty(gc::InternalName name, GC &gc) const
     return getOwnProperty(gc::Name(name), gc);
 }
 
-ValueHandle ObjectHandle::getValue(NameHandle name, GC &gc) const
+ValueHandle ObjectHandle::getValue(NameHandle name, ValueHandle reciever, GC &gc) const
 {
     constexpr_assert(false);
 #warning finish
@@ -196,17 +212,75 @@ PropertyHandle ObjectHandle::getOwnProperty(gc::Name name, GC &gc) const
 
 BooleanHandle ObjectHandle::setPrototype(ObjectOrNullHandle newPrototype, GC &gc) const
 {
-    constexpr_assert(false);
-#warning finish
+    HandleScope handleScope(gc);
+    constexpr_assert(newPrototype.isObject() || newPrototype.isNull());
+    BooleanHandle extensible = ordinaryIsExtensible(gc);
+    ObjectOrNullHandle current = ordinaryGetPrototype(gc);
+    if(current.isSameValue(newPrototype))
+    {
+        return handleScope.escapeHandle(BooleanHandle(true, gc));
+    }
+    if(!extensible.getValue(gc))
+    {
+        return handleScope.escapeHandle(BooleanHandle(false, gc));
+    }
+    ObjectOrNullHandle prototype = newPrototype;
+    while(true)
+    {
+        if(!prototype.isObject())
+            break;
+        ObjectHandle prototypeObject = prototype.getObject();
+        if(prototypeObject.isSameValue(*this))
+            return handleScope.escapeHandle(BooleanHandle(false, gc));
+        if(!prototypeObject.getPrototypeIsOrdinary(gc))
+            break;
+        prototype = prototypeObject.ordinaryGetPrototype(gc);
+    }
+    setPrototypeUnchecked(newPrototype, gc);
+    return handleScope.escapeHandle(BooleanHandle(true, gc));
 }
 
 void ObjectHandle::setOwnProperty(gc::Name name,
-                                  const PropertyHandle &value,
+                                  const PropertyHandle &property,
                                   GC &gc,
                                   bool putInObjectDescriptor) const
 {
-    constexpr_assert(false);
-#warning finish
+    HandleScope handleScope(gc);
+    if(property.isAccessorDescriptor())
+    {
+        constexpr_assert(property.isCompleteDescriptor());
+        // putInObjectDescriptor = true;
+        gc.addOrChangeObjectMemberAccessorInDescriptor(Handle<gc::Name>(gc, name),
+                                                       value,
+                                                       property.configurable,
+                                                       property.enumerable,
+                                                       property.get.toObjectReference(),
+                                                       property.set.toObjectReference());
+    }
+    else
+    {
+        constexpr_assert(property.isDataDescriptor());
+        constexpr_assert(property.isCompleteDescriptor());
+        if(putInObjectDescriptor)
+        {
+            gc.addOrChangeObjectMemberDataInDescriptor(Handle<gc::Name>(gc, name),
+                                                       value,
+                                                       property.configurable,
+                                                       property.enumerable,
+                                                       property.value.get(),
+                                                       property.writable);
+        }
+        else
+        {
+            auto member = gc.addOrChangeObjectMemberDataInObject(Handle<gc::Name>(gc, name),
+                                                                 value,
+                                                                 property.configurable,
+                                                                 property.enumerable,
+                                                                 property.writable);
+            gc::ObjectMemberIndex memberIndex = member.descriptor.getMemberIndex();
+            gc.writeObject(value).getMember(memberIndex) = property.value.value.get();
+        }
+    }
 }
 }
 }

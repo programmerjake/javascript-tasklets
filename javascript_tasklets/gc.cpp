@@ -632,12 +632,21 @@ ObjectDescriptor::Member GC::modifyObject(Handle<Name> nameHandle,
     if(memberDescriptor.isEmbedded())
         memberDescriptor.setMemberIndex(ObjectMemberIndex());
     std::size_t memberIndex = originalObjectDescriptor.get()->findMember(nameHandle.get());
-    ObjectDescriptor::Member member(nameHandle.get(), memberDescriptor);
     if(memberIndex == ObjectDescriptor::npos
        && memberDescriptor.empty()) // deleting a nonexistent member
     {
-        return member;
+        return ObjectDescriptor::Member(nameHandle.get(), memberDescriptor);
     }
+    if(memberIndex != ObjectDescriptor::npos)
+    {
+        ObjectMemberDescriptor originalMemberDescriptor =
+            originalObjectDescriptor.get()->getMember(memberIndex).descriptor;
+        if(originalMemberDescriptor.isEmbedded() && memberDescriptor.isEmbedded())
+            memberDescriptor.setMemberIndex(originalMemberDescriptor.getMemberIndex());
+        if(originalMemberDescriptor == memberDescriptor)
+            return ObjectDescriptor::Member(nameHandle.get(), memberDescriptor);
+    }
+    ObjectDescriptor::Member member(nameHandle.get(), memberDescriptor);
     auto &transition = findOrAddObjectDescriptorTransition(
         objectDescriptorTransitions, member, originalObjectDescriptor.get());
     if(transition.destDescriptor == nullptr)

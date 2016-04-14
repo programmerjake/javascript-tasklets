@@ -801,6 +801,14 @@ struct AddHandleToHandleScope<std::nullptr_t> final
 };
 
 template <>
+struct AddHandleToHandleScope<InternalName> final
+{
+    void operator()(HandleScope &handleScope, InternalName) const
+    {
+    }
+};
+
+template <>
 struct AddHandleToHandleScope<std::int32_t> final
 {
     void operator()(HandleScope &handleScope, std::int32_t) const
