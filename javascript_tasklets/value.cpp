@@ -136,8 +136,25 @@ PropertyHandle ObjectHandle::getOwnProperty(NameHandle name, GC &gc) const
 
 BooleanHandle ObjectHandle::hasProperty(NameHandle name, GC &gc) const
 {
-    constexpr_assert(false);
-#warning finish
+    return ordinaryHasProperty(name, gc);
+}
+
+BooleanHandle ObjectHandle::ordinaryHasProperty(NameHandle name, GC &gc) const
+{
+    ObjectHandle parentObject;
+    {
+        HandleScope handleScope(gc);
+        BooleanHandle hasOwn = hasOwnProperty(name, gc);
+        if(hasOwn.get().get())
+        {
+            return handleScope.escapeHandle(hasOwn);
+        }
+        ObjectOrNullHandle parent = getPrototype(gc);
+        if(parent.isNull())
+            return handleScope.escapeHandle(BooleanHandle(false, gc));
+        parentObject = handleScope.escapeHandle(parent.getObject());
+    }
+    return parentObject.hasProperty(name, gc);
 }
 
 PropertyHandle ObjectHandle::getOwnProperty(gc::InternalName name, GC &gc) const
@@ -147,8 +164,26 @@ PropertyHandle ObjectHandle::getOwnProperty(gc::InternalName name, GC &gc) const
 
 ValueHandle ObjectHandle::getValue(NameHandle name, ValueHandle reciever, GC &gc) const
 {
-    constexpr_assert(false);
-#warning finish
+    HandleScope handleScope(gc);
+    PropertyHandle property = getOwnProperty(name, gc);
+    if(property.empty())
+    {
+        ObjectOrNullHandle parent = getPrototype(gc);
+        if(parent.isNull())
+            return ValueHandle();
+        return handleScope.escapeHandle(parent.getObject().getValue(name, reciever, gc));
+    }
+    if(property.isDataDescriptor())
+    {
+        constexpr_assert(property.hasValue);
+        return handleScope.escapeHandle(property.value);
+    }
+    constexpr_assert(property.isAccessorDescriptor());
+    constexpr_assert(property.hasGet);
+    if(property.get.isNull())
+        return ValueHandle();
+    return handleScope.escapeHandle(
+        property.get.getObject().call(reciever, std::vector<ValueHandle>(), gc));
 }
 
 namespace
@@ -282,6 +317,224 @@ ObjectHandle ObjectHandle::create(Handle<gc::ObjectDescriptorReference> objectDe
                           true);
     retval.setPrototypeUnchecked(prototype, gc);
     return handleScope.escapeHandle(retval);
+}
+
+BooleanHandle ObjectHandle::hasOwnProperty(NameHandle name, GC &gc) const
+{
+    return hasOwnProperty(gc::Name(name.get().get()), gc);
+}
+
+BooleanHandle ObjectHandle::hasOwnProperty(gc::InternalName name, GC &gc) const
+{
+    return hasOwnProperty(gc::Name(name), gc);
+}
+
+BooleanHandle ObjectHandle::hasOwnProperty(gc::Name name, GC &gc) const
+{
+    HandleScope handleScope(gc);
+    auto objectDescriptor = gc.getObjectDescriptor(value);
+    std::size_t memberIndex = gc.readObjectDescriptor(objectDescriptor).findMember(name);
+    if(memberIndex == gc::ObjectDescriptor::npos)
+        return handleScope.escapeHandle(BooleanHandle(false, gc));
+    return handleScope.escapeHandle(BooleanHandle(true, gc));
+}
+
+bool ObjectHandle::validateAndApplyPropertyDescriptor(ObjectOrNullHandle object,
+                                                      NameHandle name,
+                                                      bool extensible,
+                                                      PropertyHandle newProperty,
+                                                      PropertyHandle currentProperty,
+                                                      GC &gc)
+{
+    if(currentProperty.empty())
+    {
+        if(!extensible)
+            return false;
+        if(object.isNull())
+            return true;
+        newProperty.completePropertyDescriptor();
+        object.getObject().setOwnProperty(name, newProperty, gc);
+        return true;
+    }
+    constexpr_assert(currentProperty.isCompleteDescriptor());
+    if(newProperty.empty())
+        return true;
+    if(newProperty.isSameValue(currentProperty))
+        return true;
+    if(!currentProperty.configurable)
+    {
+        if(newProperty.hasConfigurable && newProperty.configurable)
+            return false;
+        if(newProperty.hasEnumerable && newProperty.enumerable != currentProperty.enumerable)
+            return false;
+    }
+    if(newProperty.isGenericDescriptor())
+    {
+        // no more verification needed
+    }
+    else if(currentProperty.isDataDescriptor() != newProperty.isDataDescriptor())
+    {
+        if(!currentProperty.configurable)
+            return false;
+    }
+    else if(currentProperty.isDataDescriptor() && newProperty.isDataDescriptor())
+    {
+        if(!currentProperty.configurable)
+        {
+            if(!currentProperty.writable && newProperty.hasWritable && newProperty.writable)
+                return false;
+            if(!currentProperty.writable && newProperty.hasValue
+               && !currentProperty.value.isSameValue(newProperty.value))
+                return false;
+        }
+    }
+    else
+    {
+        constexpr_assert(currentProperty.isAccessorDescriptor());
+        constexpr_assert(newProperty.isAccessorDescriptor());
+        if(!currentProperty.configurable)
+        {
+            if(newProperty.hasGet && !currentProperty.get.isSameValue(newProperty.get))
+                return false;
+            if(newProperty.hasSet && !currentProperty.set.isSameValue(newProperty.set))
+                return false;
+        }
+    }
+    if(object.isNull())
+        return true;
+    if(newProperty.isGenericDescriptor())
+    {
+        if(newProperty.hasConfigurable)
+            currentProperty.configurable = newProperty.configurable;
+        if(newProperty.hasEnumerable)
+            currentProperty.enumerable = newProperty.enumerable;
+        object.getObject().setOwnProperty(name, currentProperty, gc);
+        return true;
+    }
+    if(!newProperty.hasConfigurable)
+        newProperty.configurable = currentProperty.configurable;
+    newProperty.hasConfigurable = true;
+    if(!newProperty.hasEnumerable)
+        newProperty.enumerable = currentProperty.enumerable;
+    newProperty.hasEnumerable = true;
+    if(newProperty.isDataDescriptor())
+    {
+        if(!newProperty.hasWritable)
+            newProperty.writable = currentProperty.writable;
+        newProperty.hasWritable = true;
+        if(!newProperty.hasValue)
+            newProperty.value = currentProperty.value;
+        newProperty.hasValue = true;
+    }
+    else
+    {
+        constexpr_assert(newProperty.isAccessorDescriptor());
+        if(!newProperty.hasGet)
+            newProperty.get = currentProperty.get;
+        newProperty.hasGet = true;
+        if(!newProperty.hasSet)
+            newProperty.set = currentProperty.set;
+        newProperty.hasSet = true;
+    }
+    object.getObject().setOwnProperty(name, newProperty, gc);
+    return true;
+}
+
+bool ObjectHandle::isCompatiblePropertyDescriptor(bool extensible,
+                                                  PropertyHandle newProperty,
+                                                  PropertyHandle currentProperty,
+                                                  GC &gc)
+{
+    return validateAndApplyPropertyDescriptor(
+        ObjectOrNullHandle(nullptr), NameHandle(), extensible, newProperty, currentProperty, gc);
+}
+
+BooleanHandle ObjectHandle::ordinaryDefineOwnProperty(NameHandle name,
+                                                      PropertyHandle property,
+                                                      GC &gc) const
+{
+    PropertyHandle current = getOwnProperty(name, gc);
+    bool extensible = ordinaryIsExtensible(gc).get().get();
+    return validateAndApplyPropertyDescriptor(
+        ObjectOrNullHandle(*this), name, extensible, property, current, gc);
+}
+
+BooleanHandle ObjectHandle::defineOwnProperty(NameHandle name,
+                                              PropertyHandle property,
+                                              GC &gc) const
+{
+    return ordinaryDefineOwnProperty(name, property, gc);
+}
+
+BooleanHandle ObjectHandle::deleteProperty(NameHandle name, GC &gc) const
+{
+    return ordinaryDeleteProperty(name, gc);
+}
+
+BooleanHandle ObjectHandle::ordinaryDeleteProperty(NameHandle name, GC &gc) const
+{
+    HandleScope handleScope(gc);
+    PropertyHandle property = getOwnProperty(name, gc);
+    if(property.empty())
+        return handleScope.escapeHandle(BooleanHandle(true, gc));
+    if(property.configurable)
+    {
+        gc.removeObjectMember(Handle<gc::Name>(name.get()), value);
+        return handleScope.escapeHandle(BooleanHandle(true, gc));
+    }
+    return handleScope.escapeHandle(BooleanHandle(false, gc));
+}
+
+BooleanHandle ObjectHandle::setValue(NameHandle name,
+                                     ValueHandle newValue,
+                                     ValueHandle reciever,
+                                     GC &gc) const
+{
+    return ordinarySetValue(name, newValue, reciever, gc);
+}
+
+BooleanHandle ObjectHandle::ordinarySetValue(NameHandle name,
+                                             ValueHandle newValue,
+                                             ValueHandle reciever,
+                                             GC &gc) const
+{
+    HandleScope handleScope(gc);
+    PropertyHandle ownProperty = getOwnProperty(name, gc);
+    if(ownProperty.empty())
+    {
+        ObjectOrNullHandle parent = getPrototype(gc);
+        if(!parent.isNull())
+            return handleScope.escapeHandle(
+                parent.getObject().setValue(name, newValue, reciever, gc));
+        ownProperty = PropertyHandle(true, ValueHandle(), true, true, true, true, true, true);
+    }
+    constexpr_assert(ownProperty.isCompleteDescriptor());
+    if(ownProperty.isDataDescriptor())
+    {
+        if(!ownProperty.writable)
+            return handleScope.escapeHandle(BooleanHandle(false, gc));
+        if(!reciever.isObject())
+            return handleScope.escapeHandle(BooleanHandle(false, gc));
+        PropertyHandle existingProperty = reciever.getObject().getOwnProperty(name, gc);
+        if(!existingProperty.empty())
+        {
+            if(existingProperty.isAccessorDescriptor())
+                return handleScope.escapeHandle(BooleanHandle(false, gc));
+            if(existingProperty.writable)
+                return handleScope.escapeHandle(BooleanHandle(false, gc));
+            return handleScope.escapeHandle(reciever.getObject().defineOwnProperty(
+                name,
+                PropertyHandle(true, newValue, false, false, false, false, false, false),
+                gc));
+        }
+        return handleScope.escapeHandle(reciever.getObject().defineOwnProperty(
+            name, PropertyHandle(true, newValue, true, true, true, true, true, true), gc));
+    }
+    constexpr_assert(ownProperty.isAccessorDescriptor());
+    if(ownProperty.set.isNull())
+        return handleScope.escapeHandle(BooleanHandle(false, gc));
+    ownProperty.set.getObject().call(reciever, std::vector<ValueHandle>(1, newValue), gc);
+    return handleScope.escapeHandle(BooleanHandle(true, gc));
 }
 
 void ObjectHandle::setOwnProperty(gc::Name name,

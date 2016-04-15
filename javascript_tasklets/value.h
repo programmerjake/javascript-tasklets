@@ -236,10 +236,15 @@ struct ObjectHandle final
     BooleanHandle hasProperty(NameHandle name, GC &gc) const;
     BooleanHandle ordinaryHasProperty(NameHandle name, GC &gc) const;
     ValueHandle getValue(NameHandle name, ValueHandle reciever, GC &gc) const;
+    BooleanHandle ordinarySetValue(NameHandle name,
+                                   ValueHandle newValue,
+                                   ValueHandle reciever,
+                                   GC &gc) const;
     BooleanHandle setValue(NameHandle name,
                            ValueHandle newValue,
                            ValueHandle reciever,
                            GC &gc) const;
+    BooleanHandle ordinaryDeleteProperty(NameHandle name, GC &gc) const;
     BooleanHandle deleteProperty(NameHandle name, GC &gc) const;
     BooleanHandle defineOwnProperty(NameHandle name, PropertyHandle property, GC &gc) const;
     BooleanHandle ordinaryDefineOwnProperty(NameHandle name, PropertyHandle property, GC &gc) const;
@@ -247,10 +252,12 @@ struct ObjectHandle final
                                                    NameHandle name,
                                                    bool extensible,
                                                    PropertyHandle newProperty,
-                                                   PropertyHandle currentProperty);
+                                                   PropertyHandle currentProperty,
+                                                   GC &gc);
     static bool isCompatiblePropertyDescriptor(bool extensible,
                                                PropertyHandle newProperty,
-                                               PropertyHandle currentProperty);
+                                               PropertyHandle currentProperty,
+                                               GC &gc);
     ObjectHandle enumerate(GC &gc) const;
     std::vector<NameHandle> ownPropertyKeys(GC &gc) const;
     ValueHandle call(ValueHandle thisValue, std::vector<ValueHandle> arguments, GC &gc) const;
@@ -275,7 +282,12 @@ struct ObjectHandle final
 private:
     PropertyHandle getOwnProperty(gc::Name name, GC &gc) const;
     BooleanHandle hasOwnProperty(gc::Name name, GC &gc) const;
-    void deleteOwnProperty(gc::Name name, GC &gc) const;
+    void setOwnProperty(NameHandle name, const PropertyHandle &property, GC &gc) const;
+    void setOwnProperty(NameHandle name,
+                        const PropertyHandle &property,
+                        GC &gc,
+                        bool putInObjectDescriptor) const;
+    void setOwnProperty(gc::Name name, const PropertyHandle &property, GC &gc) const;
     void setOwnProperty(gc::Name name,
                         const PropertyHandle &property,
                         GC &gc,
@@ -577,6 +589,62 @@ struct PropertyHandle final
         return hasConfigurable && hasEnumerable && hasGet && hasSet;
     }
     PropertyHandle &completePropertyDescriptor() noexcept;
+    bool isSameValue(const PropertyHandle &rt) const noexcept
+    {
+        if(hasValue != rt.hasValue)
+            return false;
+        if(hasWritable != rt.hasWritable)
+            return false;
+        if(hasGet != rt.hasGet)
+            return false;
+        if(hasSet != rt.hasSet)
+            return false;
+        if(hasConfigurable != rt.hasConfigurable)
+            return false;
+        if(hasEnumerable != rt.hasEnumerable)
+            return false;
+        if(hasValue && !value.isSameValue(rt.value))
+            return false;
+        if(hasWritable && writable != rt.writable)
+            return false;
+        if(hasGet && !get.isSameValue(rt.get))
+            return false;
+        if(hasSet && !set.isSameValue(rt.set))
+            return false;
+        if(hasConfigurable && configurable != rt.configurable)
+            return false;
+        if(hasEnumerable && enumerable != rt.enumerable)
+            return false;
+        return true;
+    }
+    bool isSameValueZero(const PropertyHandle &rt) const noexcept
+    {
+        if(hasValue != rt.hasValue)
+            return false;
+        if(hasWritable != rt.hasWritable)
+            return false;
+        if(hasGet != rt.hasGet)
+            return false;
+        if(hasSet != rt.hasSet)
+            return false;
+        if(hasConfigurable != rt.hasConfigurable)
+            return false;
+        if(hasEnumerable != rt.hasEnumerable)
+            return false;
+        if(hasValue && !value.isSameValueZero(rt.value))
+            return false;
+        if(hasWritable && writable != rt.writable)
+            return false;
+        if(hasGet && !get.isSameValueZero(rt.get))
+            return false;
+        if(hasSet && !set.isSameValueZero(rt.set))
+            return false;
+        if(hasConfigurable && configurable != rt.configurable)
+            return false;
+        if(hasEnumerable && enumerable != rt.enumerable)
+            return false;
+        return true;
+    }
 };
 
 struct SymbolHandle final
