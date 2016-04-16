@@ -746,7 +746,8 @@ ObjectDescriptor::Member GC::modifyObject(Handle<Name> nameHandle,
         }
     }
     objects[object.get().index] = newObject;
-    freeInternal(originalObject);
+    if(originalObject->gc == this)
+        freeInternal(originalObject);
     return member;
 }
 
