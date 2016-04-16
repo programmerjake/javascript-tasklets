@@ -260,6 +260,7 @@ struct ObjectHandle final
                                                GC &gc);
     ObjectHandle enumerate(GC &gc) const;
     std::vector<NameHandle> ownPropertyKeys(GC &gc) const;
+    std::vector<NameHandle> ordinaryOwnPropertyKeys(GC &gc) const;
     ValueHandle call(ValueHandle thisValue, std::vector<ValueHandle> arguments, GC &gc) const;
     ObjectHandle construct(std::vector<ValueHandle> arguments,
                            ObjectHandle newTarget,
