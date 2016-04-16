@@ -453,10 +453,13 @@ BooleanHandle ObjectHandle::ordinaryDefineOwnProperty(NameHandle name,
                                                       PropertyHandle property,
                                                       GC &gc) const
 {
+    HandleScope handleScope(gc);
     PropertyHandle current = getOwnProperty(name, gc);
     bool extensible = ordinaryIsExtensible(gc).get().get();
-    return validateAndApplyPropertyDescriptor(
-        ObjectOrNullHandle(*this), name, extensible, property, current, gc);
+    return handleScope.escapeHandle(
+        BooleanHandle(validateAndApplyPropertyDescriptor(
+                          ObjectOrNullHandle(*this), name, extensible, property, current, gc),
+                      gc));
 }
 
 BooleanHandle ObjectHandle::defineOwnProperty(NameHandle name,

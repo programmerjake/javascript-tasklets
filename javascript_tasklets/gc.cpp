@@ -19,6 +19,7 @@
  *
  */
 #include "gc.h"
+#include "parser/source.h"
 #include <type_traits>
 
 namespace javascript_tasklets
@@ -258,32 +259,7 @@ void GC::collect() noexcept
     for(const HandleScope *handleScope = handleScopesStack; handleScope != nullptr;
         handleScope = handleScope->parent)
     {
-        constexpr_assert(&handleScope->gc == this);
-        for(std::size_t i = 0;
-            i < handleScope->objectReferenceCount && i < HandleScope::embeddedHandleCount;
-            i++)
-            collectorMarkObject(handleScope->embeddedObjectReferences[i]);
-        for(std::size_t i = HandleScope::embeddedHandleCount; i < handleScope->objectReferenceCount;
-            i++)
-            collectorMarkObject(handleScope->objectReferences[i]);
-
-        for(std::size_t i = 0;
-            i < handleScope->stringOrSymbolReferenceCount && i < HandleScope::embeddedHandleCount;
-            i++)
-            collectorMarkStringOrSymbol(handleScope->embeddedStringOrSymbolReferences[i]);
-        for(std::size_t i = HandleScope::embeddedHandleCount;
-            i < handleScope->stringOrSymbolReferenceCount;
-            i++)
-            collectorMarkStringOrSymbol(handleScope->stringOrSymbolReferences[i]);
-
-        for(std::size_t i = 0;
-            i < handleScope->objectDescriptorReferenceCount && i < HandleScope::embeddedHandleCount;
-            i++)
-            collectorMarkObjectDescriptor(handleScope->embeddedObjectDescriptorReferences[i]);
-        for(std::size_t i = HandleScope::embeddedHandleCount;
-            i < handleScope->objectDescriptorReferenceCount;
-            i++)
-            collectorMarkObjectDescriptor(handleScope->objectDescriptorReferences[i]);
+        collectorMarkHandleScope(*handleScope);
     }
     for(const auto &globalValue : globalValuesMap)
     {
@@ -470,6 +446,28 @@ void GC::freeStringIndex(std::size_t stringIndex) noexcept
     freeStringsIndexesList.push_back(stringIndex);
 }
 
+std::size_t GC::allocateSourceIndex()
+{
+    constexpr_assert(!immutable);
+    if(!freeSourcesIndexesList.empty())
+    {
+        std::size_t retval = freeSourcesIndexesList.back();
+        freeSourcesIndexesList.pop_back();
+        return retval;
+    }
+    std::size_t retval = strings.size();
+    sources.push_back(nullptr);
+    freeSourcesIndexesList.reserve(sources.capacity());
+    oldSources.reserve(sources.capacity());
+    return retval;
+}
+
+void GC::freeSourceIndex(std::size_t sourceIndex) noexcept
+{
+    constexpr_assert(!immutable);
+    freeSourcesIndexesList.push_back(sourceIndex);
+}
+
 std::size_t GC::allocateObjectDescriptorIndex()
 {
     constexpr_assert(!immutable);
@@ -601,6 +599,13 @@ void GC::collectorScanObject(ObjectReference objectReference) noexcept
         embeddedMemberIndex++)
     {
         collectorMarkValue(object->getMember(ObjectMemberIndex(embeddedMemberIndex)));
+    }
+    if(object->extraData)
+    {
+        HandleScope handleScope(*this);
+        GCReferencesCallback callback(handleScope);
+        object->extraData->getGCReferences(callback);
+        collectorMarkHandleScope(handleScope);
     }
 }
 
@@ -834,6 +839,48 @@ GC::ObjectDescriptorTransition &GC::findOrAddObjectDescriptorTransition(
     return transitionList.front();
 }
 
+void GC::collectorMarkHandleScope(const HandleScope &handleScope) noexcept
+{
+    constexpr_assert(&handleScope.gc == this);
+    handleScope.objectReferences.forEach([this](ObjectReference reference)
+                                         {
+                                             collectorMarkObject(reference);
+                                         });
+    handleScope.stringOrSymbolReferences.forEach([this](StringOrSymbolReference reference)
+                                                 {
+                                                     collectorMarkStringOrSymbol(reference);
+                                                 });
+    handleScope.objectDescriptorReferences.forEach([this](ObjectDescriptorReference reference)
+                                                   {
+                                                       collectorMarkObjectDescriptor(reference);
+                                                   });
+    handleScope.sourceReferences.forEach([this](SourceReference reference)
+                                         {
+                                             collectorMarkSource(reference);
+                                         });
+}
+
+void GC::collectorMarkSource(SourceReference source) noexcept
+{
+    constexpr_assert(source != nullptr);
+    constexpr_assert(source.index < sources.size());
+    auto pSource = oldSources[source.index];
+    constexpr_assert(pSource);
+    constexpr_assert(pSource == source.ptr);
+    sources[source.index] = pSource;
+}
+
+Handle<SourceReference> GC::createSource(String fileName, String contents)
+{
+    constexpr_assert(!immutable);
+    std::unique_ptr<parser::Source> sourceValue(
+        new parser::Source(std::move(fileName), std::move(contents)));
+    std::size_t index = allocateSourceIndex();
+    SourceReference sourceReference(index, sourceValue.get());
+    sources[index] = sourceValue.release();
+    return Handle<SourceReference>(*this, sourceReference);
+}
+
 Handle<ObjectReference> GC::create(Handle<ObjectDescriptorReference> objectDescriptor,
                                    std::unique_ptr<Object::ExtraData> extraData)
 {
@@ -860,43 +907,6 @@ Handle<ObjectDescriptor *> ObjectDescriptor::duplicate(Handle<ObjectDescriptorRe
     constexpr_assert(self.get() == this);
     constexpr_assert(typeid(*this) == typeid(ObjectDescriptor));
     return gc.createObjectDescriptor(newParent);
-}
-
-template <typename T>
-void HandleScope::expandArrayImp(std::size_t &allocated, T *&array, std::size_t count)
-{
-    if(allocated < initialDynamicAllocationSize + embeddedHandleCount)
-    {
-        allocated = initialDynamicAllocationSize + embeddedHandleCount;
-    }
-    else
-    {
-        allocated = 2 * allocated - embeddedHandleCount;
-        // equivalent to 2 * (allocated - embeddedHandleCount) + embeddedHandleCount
-    }
-    auto temp = new T[allocated - embeddedHandleCount];
-    for(std::size_t i = 0; i < count - embeddedHandleCount; i++)
-        temp[i] = array[i];
-    delete[] array;
-    array = temp;
-}
-
-void HandleScope::expandObjectReferences()
-{
-    expandArrayImp(objectReferencesAllocated, objectReferences, objectReferenceCount);
-}
-
-void HandleScope::expandStringOrSymbolReferences()
-{
-    expandArrayImp(
-        stringOrSymbolReferencesAllocated, stringOrSymbolReferences, stringOrSymbolReferenceCount);
-}
-
-void HandleScope::expandObjectDescriptorReferences()
-{
-    expandArrayImp(objectDescriptorReferencesAllocated,
-                   objectDescriptorReferences,
-                   objectDescriptorReferenceCount);
 }
 
 Handle<Value> GC::getGlobalValue(const void *key)

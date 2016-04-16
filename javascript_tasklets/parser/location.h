@@ -22,11 +22,43 @@
 #ifndef JAVASCRIPT_TASKLETS_PARSER_LOCATION_H_
 #define JAVASCRIPT_TASKLETS_PARSER_LOCATION_H_
 
+#include "source.h"
+#include "../gc.h"
+
 namespace javascript_tasklets
 {
 namespace parser
 {
-
+struct Location final
+{
+    gc::SourceReference source;
+    std::size_t position;
+    Location() noexcept : source(), position(0)
+    {
+    }
+    Location(SourceHandle source, std::size_t position) noexcept : source(source.get()),
+                                                                   position(position)
+    {
+    }
+    String toString() const
+    {
+        if(source == nullptr)
+            return u"<no-location>";
+        return source->getLocationString(position);
+    }
+};
+typedef Handle<Location> LocationHandle;
+}
+namespace gc
+{
+template <>
+struct AddHandleToHandleScope<parser::Location> final
+{
+    void operator()(HandleScope &handleScope, const parser::Location &value) const
+    {
+        AddHandleToHandleScope<gc::SourceReference>()(handleScope, value.source);
+    }
+};
 }
 }
 

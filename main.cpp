@@ -46,6 +46,9 @@ gc::Handle<gc::ObjectReference> testFn(gc::GC &gc)
             std::cout << "MyExtraData::clone" << std::endl;
             return std::unique_ptr<MyExtraData>(new MyExtraData(*this));
         }
+        virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
+        {
+        }
     };
     gc::HandleScope scope(gc);
     auto objectDescriptor = gc.createObjectDescriptor();

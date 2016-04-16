@@ -37,6 +37,10 @@
 
 namespace javascript_tasklets
 {
+namespace parser
+{
+class Source;
+}
 namespace gc
 {
 struct BaseReference
@@ -99,6 +103,28 @@ struct ObjectMemberIndex final : public BaseReference
     }
 };
 
+struct SourceReference final : public BaseReference
+{
+    const parser::Source *ptr;
+    constexpr explicit SourceReference(std::size_t index, const parser::Source *ptr) noexcept
+        : BaseReference(index),
+          ptr(ptr)
+    {
+    }
+    constexpr SourceReference(std::nullptr_t = nullptr) noexcept : BaseReference(nullptr),
+                                                                   ptr(nullptr)
+    {
+    }
+    const parser::Source *operator->() const noexcept
+    {
+        return ptr;
+    }
+    const parser::Source &operator*() const noexcept
+    {
+        return *ptr;
+    }
+};
+
 struct StringOrSymbolReference : public BaseReference
 {
     constexpr explicit StringOrSymbolReference(std::size_t index) noexcept : BaseReference(index)
@@ -156,6 +182,12 @@ struct hash<javascript_tasklets::gc::ObjectMemberIndex> final
 
 template <>
 struct hash<javascript_tasklets::gc::StringOrSymbolReference>
+    : public hash<javascript_tasklets::gc::BaseReference>
+{
+};
+
+template <>
+struct hash<javascript_tasklets::gc::SourceReference>
     : public hash<javascript_tasklets::gc::BaseReference>
 {
 };
@@ -507,6 +539,7 @@ inline std::size_t ObjectMemberDescriptor::hash() const noexcept
 class GC;
 struct ObjectDescriptor;
 typedef const ObjectDescriptor *ObjectDescriptorReference;
+class GCReferencesCallback;
 
 class Object final
 {
@@ -520,6 +553,7 @@ public:
         virtual ~ExtraData() = default;
         ExtraData() = default;
         virtual std::unique_ptr<ExtraData> clone() const = 0;
+        virtual void getGCReferences(GCReferencesCallback &callback) const = 0;
     };
 
 private:
@@ -874,78 +908,122 @@ class HandleScope final
     void *operator new(std::size_t) = delete;
 
 private:
-    HandleScope *parent = nullptr;
+    template <typename T,
+              std::size_t EmbeddedReferenceCount,
+              std::size_t InitialDynamicAllocationSize = 32>
+    class ReferenceList final
+    {
+        ReferenceList(const ReferenceList &) = delete;
+        ReferenceList &operator=(const ReferenceList &) = delete;
+
+    public:
+        static constexpr std::size_t embeddedReferenceCount = EmbeddedReferenceCount;
+        static constexpr std::size_t initialDynamicAllocationSize = InitialDynamicAllocationSize;
+
+    private:
+        T *references;
+        std::size_t referenceCount;
+        std::size_t referencesAllocated;
+        T embeddedReferences[embeddedReferenceCount];
+
+    public:
+        ReferenceList() noexcept : references(nullptr),
+                                   referenceCount(0),
+                                   referencesAllocated(embeddedReferenceCount),
+                                   embeddedReferences()
+        {
+        }
+        ~ReferenceList() noexcept
+        {
+            delete[] references;
+        }
+        template <typename Fn>
+        void forEach(Fn &&fn) const
+            noexcept(noexcept(std::forward<Fn>(fn)(std::declval<const T &>())))
+        {
+            for(std::size_t i = 0; i < referenceCount && i < embeddedReferenceCount; i++)
+            {
+                std::forward<Fn>(fn)(static_cast<const T &>(embeddedReferences[i]));
+            }
+            for(std::size_t i = embeddedReferenceCount; i < referenceCount; i++)
+            {
+                std::forward<Fn>(fn)(
+                    static_cast<const T &>(references[i - embeddedReferenceCount]));
+            }
+        }
+        void add(T value)
+        {
+            if(referenceCount >= referencesAllocated)
+                expandArray();
+            if(referenceCount >= embeddedReferenceCount)
+                references[referenceCount++ - embeddedReferenceCount] = value;
+            else
+                embeddedReferences[referenceCount++] = value;
+        }
+
+    private:
+        void expandArray()
+        {
+            std::size_t newReferencesAllocated;
+            if(referencesAllocated < initialDynamicAllocationSize + embeddedReferenceCount)
+            {
+                newReferencesAllocated = initialDynamicAllocationSize + embeddedReferenceCount;
+            }
+            else
+            {
+                newReferencesAllocated = 2 * referencesAllocated - embeddedReferenceCount;
+                // equivalent to
+                // 2 * (referencesAllocated - embeddedHandleCount) + embeddedReferenceCount
+            }
+            auto temp = new T[newReferencesAllocated - embeddedReferenceCount];
+            try
+            {
+                for(std::size_t i = 0; i < referenceCount - embeddedReferenceCount; i++)
+                    temp[i] = references[i];
+            }
+            catch(...)
+            {
+                delete[] temp;
+                throw;
+            }
+            delete[] references;
+            references = temp;
+            referencesAllocated = newReferencesAllocated;
+        }
+    };
+
+private:
+    ReferenceList<ObjectReference, 13> objectReferences;
+    ReferenceList<StringOrSymbolReference, 13> stringOrSymbolReferences;
+    ReferenceList<ObjectDescriptorReference, 5> objectDescriptorReferences;
+    ReferenceList<SourceReference, 2> sourceReferences;
+    HandleScope *parent;
     GC &gc;
-    ObjectReference *objectReferences = nullptr;
-    StringOrSymbolReference *stringOrSymbolReferences = nullptr;
-    ObjectDescriptorReference *objectDescriptorReferences = nullptr;
-    static constexpr std::size_t embeddedHandleCount = 7, initialDynamicAllocationSize = 32;
-    std::size_t objectReferenceCount = 0;
-    std::size_t stringOrSymbolReferenceCount = 0;
-    std::size_t objectDescriptorReferenceCount = 0;
-    std::size_t objectReferencesAllocated = embeddedHandleCount;
-    std::size_t stringOrSymbolReferencesAllocated = embeddedHandleCount;
-    std::size_t objectDescriptorReferencesAllocated = embeddedHandleCount;
-    ObjectReference embeddedObjectReferences[embeddedHandleCount];
-    StringOrSymbolReference embeddedStringOrSymbolReferences[embeddedHandleCount];
-    ObjectDescriptorReference embeddedObjectDescriptorReferences[embeddedHandleCount];
     inline void addToGC();
     inline void removeFromGC();
-    void init()
-    {
-        addToGC();
-    }
-    template <typename T>
-    static void expandArrayImp(std::size_t &allocated, T *&array, std::size_t count);
-    void expandObjectReferences();
-    void expandStringOrSymbolReferences();
-    void expandObjectDescriptorReferences();
     void addReference(ObjectReference reference)
     {
         if(reference == nullptr)
             return;
-        if(objectReferenceCount < embeddedHandleCount)
-        {
-            embeddedObjectReferences[objectReferenceCount++] = reference;
-        }
-        else
-        {
-            if(objectReferenceCount >= objectReferencesAllocated)
-                expandObjectReferences();
-            objectReferences[objectReferenceCount++ - embeddedHandleCount] = reference;
-        }
+        objectReferences.add(reference);
     }
     void addReference(StringOrSymbolReference reference)
     {
         if(reference == nullptr)
             return;
-        if(stringOrSymbolReferenceCount < embeddedHandleCount)
-        {
-            embeddedStringOrSymbolReferences[stringOrSymbolReferenceCount++] = reference;
-        }
-        else
-        {
-            if(stringOrSymbolReferenceCount >= stringOrSymbolReferencesAllocated)
-                expandStringOrSymbolReferences();
-            stringOrSymbolReferences[stringOrSymbolReferenceCount++ - embeddedHandleCount] =
-                reference;
-        }
+        stringOrSymbolReferences.add(reference);
+    }
+    void addReference(SourceReference reference)
+    {
+        if(reference == nullptr)
+            return;
+        sourceReferences.add(reference);
     }
     void addReference(ObjectDescriptorReference reference)
     {
         if(reference == nullptr || reference->gc != &gc)
             return;
-        if(objectDescriptorReferenceCount < embeddedHandleCount)
-        {
-            embeddedObjectDescriptorReferences[objectDescriptorReferenceCount++] = reference;
-        }
-        else
-        {
-            if(objectDescriptorReferenceCount >= objectDescriptorReferencesAllocated)
-                expandObjectDescriptorReferences();
-            objectDescriptorReferences[objectDescriptorReferenceCount++ - embeddedHandleCount] =
-                reference;
-        }
+        objectDescriptorReferences.add(reference);
     }
     void addReference(const StringReference &reference)
     {
@@ -958,19 +1036,18 @@ private:
 
 public:
     explicit HandleScope(GC &gc)
-        : gc(gc),
-          embeddedObjectReferences(),
-          embeddedStringOrSymbolReferences(),
-          embeddedObjectDescriptorReferences()
+        : objectReferences(),
+          stringOrSymbolReferences(),
+          objectDescriptorReferences(),
+          sourceReferences(),
+          parent(nullptr),
+          gc(gc)
     {
-        init();
+        addToGC();
     }
     ~HandleScope()
     {
         removeFromGC();
-        delete[] objectReferences;
-        delete[] stringOrSymbolReferences;
-        delete[] objectDescriptorReferences;
     }
     template <typename T>
     T escapeHandle(const T &handle)
@@ -996,6 +1073,13 @@ public:
     struct SymbolHandleAdder
     {
         void operator()(HandleScope &handleScope, SymbolReference value) const
+        {
+            handleScope.addReference(value);
+        }
+    };
+    struct SourceHandleAdder
+    {
+        void operator()(HandleScope &handleScope, SourceReference value) const
         {
             handleScope.addReference(value);
         }
@@ -1035,8 +1119,34 @@ struct AddHandleToHandleScope<StringReference> final : public HandleScope::Strin
 };
 
 template <>
+struct AddHandleToHandleScope<SourceReference> final : public HandleScope::SourceHandleAdder
+{
+};
+
+template <>
 struct AddHandleToHandleScope<SymbolReference> final : public HandleScope::SymbolHandleAdder
 {
+};
+
+class GCReferencesCallback final
+{
+    friend class GC;
+    GCReferencesCallback(const GCReferencesCallback &) = delete;
+    GCReferencesCallback &operator=(const GCReferencesCallback &) = delete;
+
+private:
+    HandleScope &handleScope;
+
+    explicit GCReferencesCallback(HandleScope &handleScope) noexcept : handleScope(handleScope)
+    {
+    }
+
+public:
+    template <typename T>
+    void operator()(const T &reference) const
+    {
+        AddHandleToHandleScope<T>()(handleScope, reference);
+    }
 };
 
 class GC final : public std::enable_shared_from_this<GC>
@@ -1088,6 +1198,9 @@ private:
     std::vector<String *> strings;
     std::vector<String *> oldStrings;
     std::vector<std::size_t> freeStringsIndexesList;
+    std::vector<parser::Source *> sources;
+    std::vector<parser::Source *> oldSources;
+    std::vector<std::size_t> freeSourcesIndexesList;
     std::vector<ObjectDescriptor *> objectDescriptors, oldObjectDescriptors;
     std::vector<std::size_t> freeObjectDescriptorIndexesList;
     std::vector<std::size_t> objectDescriptorsWorklist;
@@ -1107,13 +1220,17 @@ private:
     void freeObjectIndex(ObjectReference object) noexcept;
     std::size_t allocateStringIndex();
     void freeStringIndex(std::size_t stringIndex) noexcept;
+    std::size_t allocateSourceIndex();
+    void freeSourceIndex(std::size_t sourceIndex) noexcept;
     std::size_t allocateObjectDescriptorIndex();
     void freeObjectDescriptorIndex(std::size_t objectDescriptorIndex) noexcept;
     Object *objectCopyOnWrite(ObjectReference objectReference);
     Object *createInternal(ObjectDescriptorReference objectDescriptor,
                            std::unique_ptr<Object::ExtraData> extraData);
     void freeInternal(Object *object) noexcept;
+    void collectorMarkHandleScope(const HandleScope &handleScope) noexcept;
     void collectorMarkObject(ObjectReference object) noexcept;
+    void collectorMarkSource(SourceReference source) noexcept;
     void collectorMarkStringOrSymbol(StringOrSymbolReference stringOrSymbol) noexcept;
     void collectorMarkObjectDescriptor(ObjectDescriptorReference objectDescriptor) noexcept;
     void collectorMarkName(const Name &value) noexcept;
@@ -1204,6 +1321,7 @@ public:
     }
     Handle<StringReference> internString(const String &value);
     Handle<StringReference> internString(String &&value);
+    Handle<SourceReference> createSource(String fileName, String contents);
     Handle<SymbolReference> createSymbol(String description);
     Handle<ObjectReference> create(Handle<ObjectDescriptorReference> objectDescriptor,
                                    std::unique_ptr<Object::ExtraData> extraData = nullptr);

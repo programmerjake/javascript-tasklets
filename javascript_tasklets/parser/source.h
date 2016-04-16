@@ -23,18 +23,38 @@
 #define JAVASCRIPT_TASKLETS_PARSER_SOURCE_H_
 
 #include "../string.h"
-#include <memory>
+#include "../gc.h"
 #include <vector>
-#include <cstddef>
-#include <algorithm>
+#include <iosfwd>
 
 namespace javascript_tasklets
 {
 namespace parser
 {
+typedef Handle<gc::SourceReference> SourceHandle;
 class Source final
 {
-    String text;
+    Source(const Source &) = delete;
+    Source &operator =(const Source &) = delete;
+    friend class gc::GC;
+public:
+    String fileName;
+    String contents;
+    std::vector<std::size_t> lineStartingPositions;
+private:
+    Source(String fileName, String contents)
+        : fileName(std::move(fileName)),
+          contents(std::move(contents)),
+          lineStartingPositions(calculateLineStartingPositions(this->contents))
+    {
+    }
+public:
+    static std::vector<std::size_t> calculateLineStartingPositions(const String &text);
+    static SourceHandle load(String fileName, std::istream &is, GC &gc);
+    String getLocationString(std::size_t position) const;
+    void writeLocation(std::ostream &os, std::size_t position) const;
+    std::size_t getLineNumber(std::size_t position) const noexcept;
+    std::size_t getColumnNumber(std::size_t position) const noexcept;
 };
 }
 }
