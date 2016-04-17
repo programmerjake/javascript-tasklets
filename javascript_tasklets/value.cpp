@@ -540,6 +540,67 @@ BooleanHandle ObjectHandle::ordinarySetValue(NameHandle name,
     return handleScope.escapeHandle(BooleanHandle(true, gc));
 }
 
+ValueHandle ObjectHandle::call(ValueHandle thisValue,
+                               std::vector<ValueHandle> arguments,
+                               GC &gc) const
+{
+    constexpr_assert(false);
+#warning finish
+    return ValueHandle();
+}
+
+void ObjectHandle::setOwnProperty(NameHandle name, const PropertyHandle &property, GC &gc) const
+{
+    setOwnProperty(gc::Name(name.get().get()), property, gc);
+}
+
+void ObjectHandle::setOwnProperty(NameHandle name,
+                                  const PropertyHandle &property,
+                                  GC &gc,
+                                  bool putInObjectDescriptor) const
+{
+    setOwnProperty(gc::Name(name.get().get()), property, gc, putInObjectDescriptor);
+}
+
+void ObjectHandle::setOwnProperty(gc::Name name, const PropertyHandle &property, GC &gc) const
+{
+    HandleScope handleScope(gc);
+    if(property.isAccessorDescriptor())
+    {
+        constexpr_assert(property.isCompleteDescriptor());
+        gc.addOrChangeObjectMemberAccessorInDescriptor(Handle<gc::Name>(gc, name),
+                                                       value,
+                                                       property.configurable,
+                                                       property.enumerable,
+                                                       property.get.toObjectReference(),
+                                                       property.set.toObjectReference());
+    }
+    else
+    {
+        constexpr_assert(property.isDataDescriptor());
+        constexpr_assert(property.isCompleteDescriptor());
+        if(!hasOwnProperty(name, gc).get().get())
+        {
+            gc.addOrChangeObjectMemberDataInDescriptor(Handle<gc::Name>(gc, name),
+                                                       value,
+                                                       property.configurable,
+                                                       property.enumerable,
+                                                       property.value.get(),
+                                                       property.writable);
+        }
+        else
+        {
+            auto member = gc.addOrChangeObjectMemberDataInObject(Handle<gc::Name>(gc, name),
+                                                                 value,
+                                                                 property.configurable,
+                                                                 property.enumerable,
+                                                                 property.writable);
+            gc::ObjectMemberIndex memberIndex = member.descriptor.getMemberIndex();
+            gc.writeObject(value).getMember(memberIndex) = property.value.value.get();
+        }
+    }
+}
+
 void ObjectHandle::setOwnProperty(gc::Name name,
                                   const PropertyHandle &property,
                                   GC &gc,
