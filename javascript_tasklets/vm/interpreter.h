@@ -39,7 +39,7 @@ struct BaseIndex
         : index((constexpr_assert(index != noIndex), index))
     {
     }
-    explicit constexpr BaseIndex(std::nullptr_t = nullptr) noexcept : index(noIndex)
+    explicit constexpr BaseIndex() noexcept : index(noIndex)
     {
     }
     constexpr bool empty() const noexcept
@@ -62,11 +62,11 @@ struct BaseIndex
     {
         return !empty();
     }
-    friend constexpr bool operator==(std::nullptr_t, BaseIndex v) const noexcept
+    friend constexpr bool operator==(std::nullptr_t, BaseIndex v) noexcept
     {
         return v.empty();
     }
-    friend constexpr bool operator!=(std::nullptr_t, BaseIndex v) const noexcept
+    friend constexpr bool operator!=(std::nullptr_t, BaseIndex v) noexcept
     {
         return !v.empty();
     }
@@ -173,6 +173,7 @@ struct InstructionAddress final : public BaseIndex
     JAVASCRIPT_TASKLETS_JUMP(Jump) /* goto target */                                 \
     JAVASCRIPT_TASKLETS_COND_JUMP(JumpIfTrue) /* if(bool) goto target */             \
     JAVASCRIPT_TASKLETS_COND_JUMP(JumpIfFalse) /* if(!bool) goto target */           \
+    JAVASCRIPT_TASKLETS_RETURN(Return) /* return any */                              \
     JAVASCRIPT_TASKLETS_END()
 
 
@@ -184,6 +185,16 @@ struct Instruction
         constexpr explicit DestReg(RegisterIndex dest) : dest(dest)
         {
         }
+        template <typename Fn>
+        void forEachSourceRegister(Fn &&fn) const noexcept
+        {
+        }
+        template <typename Fn>
+        void forEachDestRegister(Fn &&fn) const
+            noexcept(noexcept(std::declval<Fn>()(std::declval<const RegisterIndex &>())))
+        {
+            std::forward<Fn>(fn)(dest);
+        }
     };
     struct UnaryOp : public DestReg
     {
@@ -191,6 +202,14 @@ struct Instruction
         constexpr UnaryOp(RegisterIndex dest, RegisterIndex source1) noexcept : DestReg(dest),
                                                                                 source1(source1)
         {
+        }
+        template <typename Fn>
+        void forEachSourceRegister(Fn &&fn) const
+            noexcept(noexcept(std::declval<DestReg>().forEachSourceRegister(std::declval<Fn>()))
+                     && noexcept(std::declval<Fn>()(std::declval<const RegisterIndex &>())))
+        {
+            DestReg::forEachSourceRegister(std::forward<Fn>(fn));
+            std::forward<Fn>(fn)(source1);
         }
     };
     struct BinaryOp : public UnaryOp
@@ -201,6 +220,14 @@ struct Instruction
                            RegisterIndex source2) noexcept : UnaryOp(dest, source1),
                                                              source2(source2)
         {
+        }
+        template <typename Fn>
+        void forEachSourceRegister(Fn &&fn) const
+            noexcept(noexcept(std::declval<UnaryOp>().forEachSourceRegister(std::declval<Fn>()))
+                     && noexcept(std::declval<Fn>()(std::declval<const RegisterIndex &>())))
+        {
+            UnaryOp::forEachSourceRegister(std::forward<Fn>(fn));
+            std::forward<Fn>(fn)(source2);
         }
     };
     struct UnaryOpThrow : public UnaryOp
@@ -240,6 +267,14 @@ struct Instruction
         constexpr explicit Jump(InstructionAddress jumpTarget) noexcept : jumpTarget(jumpTarget)
         {
         }
+        template <typename Fn>
+        void forEachSourceRegister(Fn &&fn) const noexcept
+        {
+        }
+        template <typename Fn>
+        void forEachDestRegister(Fn &&fn) const noexcept
+        {
+        }
     };
     struct ConditionalJump : public Jump
     {
@@ -247,6 +282,31 @@ struct Instruction
         constexpr ConditionalJump(RegisterIndex condition, InstructionAddress jumpTarget) noexcept
             : Jump(jumpTarget),
               condition(condition)
+        {
+        }
+        template <typename Fn>
+        void forEachSourceRegister(Fn &&fn) const
+            noexcept(noexcept(std::declval<Jump>().forEachSourceRegister(std::declval<Fn>()))
+                     && noexcept(std::declval<Fn>()(std::declval<const RegisterIndex &>())))
+        {
+            Jump::forEachSourceRegister(std::forward<Fn>(fn));
+            std::forward<Fn>(fn)(condition);
+        }
+    };
+    struct Return
+    {
+        RegisterIndex returnValue;
+        constexpr explicit Return(RegisterIndex returnValue) noexcept : returnValue(returnValue)
+        {
+        }
+        template <typename Fn>
+        void forEachSourceRegister(Fn &&fn) const
+            noexcept(noexcept(std::declval<Fn>()(std::declval<const RegisterIndex &>())))
+        {
+            std::forward<Fn>(fn)(returnValue);
+        }
+        template <typename Fn>
+        void forEachDestRegister(Fn &&fn) const noexcept
         {
         }
     };
@@ -290,6 +350,11 @@ struct Instruction
     {                                              \
         using ConditionalJump::ConditionalJump;    \
     };
+#define JAVASCRIPT_TASKLETS_RETURN(name)  \
+    struct Op##name final : public Return \
+    {                                     \
+        using Return::Return;             \
+    };
 #define JAVASCRIPT_TASKLETS_END()
     JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -300,6 +365,7 @@ struct Instruction
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
 
     enum class Type
@@ -312,6 +378,7 @@ struct Instruction
 #define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name) name,
 #define JAVASCRIPT_TASKLETS_JUMP(name) name,
 #define JAVASCRIPT_TASKLETS_COND_JUMP(name) name,
+#define JAVASCRIPT_TASKLETS_RETURN(name) name,
 #define JAVASCRIPT_TASKLETS_END()
         JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -322,6 +389,7 @@ struct Instruction
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
             Empty
     };
@@ -338,6 +406,7 @@ private:
 #define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name) Op##name value##name;
 #define JAVASCRIPT_TASKLETS_JUMP(name) Op##name value##name;
 #define JAVASCRIPT_TASKLETS_COND_JUMP(name) Op##name value##name;
+#define JAVASCRIPT_TASKLETS_RETURN(name) Op##name value##name;
 #define JAVASCRIPT_TASKLETS_END()
         JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -348,11 +417,16 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         char valueEmpty;
     };
 
 public:
+    constexpr Type getType() const noexcept
+    {
+        return type;
+    }
 #define JAVASCRIPT_TASKLETS_BINARY(name)                                \
     static Instruction make##name(parser::Location location,            \
                                   RegisterIndex dest,                   \
@@ -390,14 +464,13 @@ public:
     {                                                                                     \
         return Instruction(location, Op##name(dest, source1, source2, deoptimizeTarget)); \
     }
-#define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name)                                             \
-    static Instruction make##name(parser::Location location,                              \
-                                  RegisterIndex dest,                                     \
-                                  RegisterIndex source1,                                  \
-                                  RegisterIndex source2,                                  \
-                                  InstructionAddress deoptimizeTarget)                    \
-    {                                                                                     \
-        return Instruction(location, Op##name(dest, source1, source2, deoptimizeTarget)); \
+#define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name)                                    \
+    static Instruction make##name(parser::Location location,                     \
+                                  RegisterIndex dest,                            \
+                                  RegisterIndex source1,                         \
+                                  InstructionAddress deoptimizeTarget)           \
+    {                                                                            \
+        return Instruction(location, Op##name(dest, source1, deoptimizeTarget)); \
     }
 #define JAVASCRIPT_TASKLETS_JUMP(name)                                                      \
     static Instruction make##name(parser::Location location, InstructionAddress jumpTarget) \
@@ -410,6 +483,11 @@ public:
     {                                                                                      \
         return Instruction(location, Op##name(condition, jumpTarget));                     \
     }
+#define JAVASCRIPT_TASKLETS_RETURN(name)                                                \
+    static Instruction make##name(parser::Location location, RegisterIndex returnValue) \
+    {                                                                                   \
+        return Instruction(location, Op##name(returnValue));                            \
+    }
 #define JAVASCRIPT_TASKLETS_END()
     JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -420,6 +498,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
 
 #define JAVASCRIPT_TASKLETS_BINARY(name)                                            \
@@ -478,6 +557,13 @@ public:
           location(location)                                                        \
     {                                                                               \
     }
+#define JAVASCRIPT_TASKLETS_RETURN(name)                                            \
+    constexpr Instruction(parser::Location location, Op##name value##name) noexcept \
+        : type(Type::name),                                                         \
+          value##name(value##name),                                                 \
+          location(location)                                                        \
+    {                                                                               \
+    }
 #define JAVASCRIPT_TASKLETS_END()
     JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -488,6 +574,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
 
 private:
@@ -527,6 +614,10 @@ private:
     case Type::name:                        \
         value##name.~Op##name();            \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN(name) \
+    case Type::name:                     \
+        value##name.~Op##name();         \
+        return;
 #define JAVASCRIPT_TASKLETS_END()
             JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -537,6 +628,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
             return;
@@ -581,6 +673,10 @@ private:
     case Type::name:                                  \
         ::new(&value##name) Op##name(rt.value##name); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN(name)              \
+    case Type::name:                                  \
+        ::new(&value##name) Op##name(rt.value##name); \
+        return;
 #define JAVASCRIPT_TASKLETS_END()
             JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -591,6 +687,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
             return;
@@ -635,6 +732,10 @@ private:
     case Type::name:                                             \
         ::new(&value##name) Op##name(std::move(rt.value##name)); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN(name)                         \
+    case Type::name:                                             \
+        ::new(&value##name) Op##name(std::move(rt.value##name)); \
+        return;
 #define JAVASCRIPT_TASKLETS_END()
             JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -645,6 +746,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
             return;
@@ -689,6 +791,10 @@ private:
     case Type::name:                        \
         value##name = rt.value##name;       \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN(name) \
+    case Type::name:                     \
+        value##name = rt.value##name;    \
+        return;
 #define JAVASCRIPT_TASKLETS_END()
             JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -699,6 +805,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
             return;
@@ -743,6 +850,10 @@ private:
     case Type::name:                             \
         value##name = std::move(rt.value##name); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN(name)         \
+    case Type::name:                             \
+        value##name = std::move(rt.value##name); \
+        return;
 #define JAVASCRIPT_TASKLETS_END()
             JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -753,6 +864,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
             return;
@@ -808,7 +920,7 @@ public:
         return *this;
     }
     template <typename Fn>
-    void apply(Fn &&fn) noexcept(
+    void apply(Fn &&fn) noexcept(noexcept(std::forward<Fn>(fn)())
 #define JAVASCRIPT_TASKLETS_BINARY(name) \
     &&noexcept(std::declval<Fn>()(std::declval<parser::Location &>(), std::declval<Op##name &>()))
 #define JAVASCRIPT_TASKLETS_UNARY(name) \
@@ -825,8 +937,10 @@ public:
     &&noexcept(std::declval<Fn>()(std::declval<parser::Location &>(), std::declval<Op##name &>()))
 #define JAVASCRIPT_TASKLETS_COND_JUMP(name) \
     &&noexcept(std::declval<Fn>()(std::declval<parser::Location &>(), std::declval<Op##name &>()))
+#define JAVASCRIPT_TASKLETS_RETURN(name) \
+    &&noexcept(std::declval<Fn>()(std::declval<parser::Location &>(), std::declval<Op##name &>()))
 #define JAVASCRIPT_TASKLETS_END()
-        JAVASCRIPT_TASKLETS_INSTRUCTIONS()
+                                     JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
 #undef JAVASCRIPT_TASKLETS_UNARY
 #undef JAVASCRIPT_TASKLETS_BINARY_THROW
@@ -835,8 +949,9 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
-        && noexcept(std::forward<Fn>(fn)()))
+                                         )
     {
         switch(type)
         {
@@ -872,6 +987,10 @@ public:
     case Type::name:                                 \
         std::forward<Fn>(fn)(location, value##name); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN(name)             \
+    case Type::name:                                 \
+        std::forward<Fn>(fn)(location, value##name); \
+        return;
 #define JAVASCRIPT_TASKLETS_END()
             JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -882,6 +1001,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
             std::forward<Fn>(fn)();
@@ -890,7 +1010,7 @@ public:
         constexpr_assert(false);
     }
     template <typename Fn>
-    void apply(Fn &&fn) const noexcept(
+    void apply(Fn &&fn) const noexcept(noexcept(std::forward<Fn>(fn)())
 #define JAVASCRIPT_TASKLETS_BINARY(name)                                    \
     &&noexcept(std::declval<Fn>()(std::declval<const parser::Location &>(), \
                                   std::declval<const Op##name &>()))
@@ -915,8 +1035,11 @@ public:
 #define JAVASCRIPT_TASKLETS_COND_JUMP(name)                                 \
     &&noexcept(std::declval<Fn>()(std::declval<const parser::Location &>(), \
                                   std::declval<const Op##name &>()))
+#define JAVASCRIPT_TASKLETS_RETURN(name)                                    \
+    &&noexcept(std::declval<Fn>()(std::declval<const parser::Location &>(), \
+                                  std::declval<const Op##name &>()))
 #define JAVASCRIPT_TASKLETS_END()
-        JAVASCRIPT_TASKLETS_INSTRUCTIONS()
+                                           JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
 #undef JAVASCRIPT_TASKLETS_UNARY
 #undef JAVASCRIPT_TASKLETS_BINARY_THROW
@@ -925,8 +1048,9 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
-        && noexcept(std::forward<Fn>(fn)()))
+                                               )
     {
         switch(type)
         {
@@ -962,6 +1086,10 @@ public:
     case Type::name:                                 \
         std::forward<Fn>(fn)(location, value##name); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN(name)             \
+    case Type::name:                                 \
+        std::forward<Fn>(fn)(location, value##name); \
+        return;
 #define JAVASCRIPT_TASKLETS_END()
             JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -972,6 +1100,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
             std::forward<Fn>(fn)();
@@ -979,63 +1108,88 @@ public:
         }
         constexpr_assert(false);
     }
-    void addHandleToHandleScope(HandleScope &handleScope) const
+    void addHandleToHandleScope(HandleScope &handleScope) const;
+
+private:
+    template <typename Fn>
+    struct ForEachDestRegisterCallback final
     {
-        gc::AddHandleToHandleScope<parser::Location>()(handleScope, location);
-        switch(type)
+        Fn &&fn;
+        explicit constexpr ForEachDestRegisterCallback(Fn &&fn) noexcept : fn(std::forward<Fn>(fn))
         {
-#define JAVASCRIPT_TASKLETS_BINARY(name)                                  \
-    case Type::name:                                                      \
-        gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
-        return;
-#define JAVASCRIPT_TASKLETS_UNARY(name)                                   \
-    case Type::name:                                                      \
-        gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
-        return;
-#define JAVASCRIPT_TASKLETS_BINARY_THROW(name)                            \
-    case Type::name:                                                      \
-        gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
-        return;
-#define JAVASCRIPT_TASKLETS_UNARY_THROW(name)                             \
-    case Type::name:                                                      \
-        gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
-        return;
-#define JAVASCRIPT_TASKLETS_BINARY_DEOPT(name)                            \
-    case Type::name:                                                      \
-        gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
-        return;
-#define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name)                             \
-    case Type::name:                                                      \
-        gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
-        return;
-#define JAVASCRIPT_TASKLETS_JUMP(name)                                    \
-    case Type::name:                                                      \
-        gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
-        return;
-#define JAVASCRIPT_TASKLETS_COND_JUMP(name)                               \
-    case Type::name:                                                      \
-        gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
-        return;
-#define JAVASCRIPT_TASKLETS_END()
-            JAVASCRIPT_TASKLETS_INSTRUCTIONS()
-#undef JAVASCRIPT_TASKLETS_BINARY
-#undef JAVASCRIPT_TASKLETS_UNARY
-#undef JAVASCRIPT_TASKLETS_BINARY_THROW
-#undef JAVASCRIPT_TASKLETS_UNARY_THROW
-#undef JAVASCRIPT_TASKLETS_BINARY_DEOPT
-#undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
-#undef JAVASCRIPT_TASKLETS_JUMP
-#undef JAVASCRIPT_TASKLETS_COND_JUMP
-#undef JAVASCRIPT_TASKLETS_END
-        case Type::Empty:
-            return;
         }
-        constexpr_assert(false);
+        void operator()() const noexcept
+        {
+        }
+        template <typename T>
+        void operator()(const parser::Location &, const T &value) const
+            noexcept(noexcept(value.forEachDestRegister(std::declval<Fn>())))
+        {
+            value.forEachDestRegister(std::forward<Fn>(fn));
+        }
+    };
+
+    template <typename Fn>
+    struct ForEachSourceRegisterCallback final
+    {
+        Fn &&fn;
+        explicit constexpr ForEachSourceRegisterCallback(Fn &&fn) noexcept
+            : fn(std::forward<Fn>(fn))
+        {
+        }
+        void operator()() const noexcept
+        {
+        }
+        template <typename T>
+        void operator()(const parser::Location &, const T &value) const
+            noexcept(noexcept(value.forEachSourceRegister(std::declval<Fn>())))
+        {
+            value.forEachSourceRegister(std::forward<Fn>(fn));
+        }
+    };
+
+public:
+    template <typename Fn>
+    void forEachDestRegister(Fn &&fn) const noexcept(noexcept(
+        std::declval<const Instruction &>().apply(std::declval<ForEachDestRegisterCallback<Fn>>())))
+    {
+        apply(ForEachDestRegisterCallback<Fn>(std::forward<Fn>(fn)));
+    }
+    template <typename Fn>
+    void forEachSourceRegister(Fn &&fn) const
+        noexcept(noexcept(std::declval<const Instruction &>().apply(
+            std::declval<ForEachSourceRegisterCallback<Fn>>())))
+    {
+        apply(ForEachSourceRegisterCallback<Fn>(std::forward<Fn>(fn)));
+    }
+    template <typename Fn>
+    void forEachRegister(Fn &&fn) const noexcept(
+        noexcept(std::declval<const Instruction &>().forEachDestRegister(std::declval<Fn>()))
+        && noexcept(std::declval<const Instruction &>().forEachSourceRegister(std::declval<Fn>())))
+    {
+        forEachDestRegister(std::forward<Fn>(fn));
+        forEachSourceRegister(std::forward<Fn>(fn));
     }
 };
 struct FunctionCode final
 {
     std::vector<Instruction> instructions;
+    std::size_t registerCount;
+    std::size_t namedArgumentCount;
+    gc::ObjectDescriptorReference closureObjectDescriptor;
+    static Handle<gc::ObjectDescriptorReference> makeClosureObjectDescriptor(
+        GC &gc, std::size_t registerCount);
+    value::ValueHandle run(const std::vector<value::ValueHandle> &arguments, GC &gc) const;
+    FunctionCode(std::vector<Instruction> instructions,
+                 std::size_t registerCount,
+                 std::size_t namedArgumentCount,
+                 GC &gc)
+        : instructions(std::move(instructions)),
+          registerCount(registerCount),
+          namedArgumentCount(namedArgumentCount),
+          closureObjectDescriptor(makeClosureObjectDescriptor(gc, registerCount))
+    {
+    }
 };
 }
 }
@@ -1058,6 +1212,8 @@ struct AddHandleToHandleScope<vm::interpreter::FunctionCode> final
         {
             AddHandleToHandleScope<vm::interpreter::Instruction>()(handleScope, instruction);
         }
+        AddHandleToHandleScope<gc::ObjectDescriptorReference>()(handleScope,
+                                                                value.closureObjectDescriptor);
     }
 };
 template <>
@@ -1127,6 +1283,14 @@ struct AddHandleToHandleScope<vm::interpreter::Instruction::ConditionalJump> fin
                     const vm::interpreter::Instruction::ConditionalJump &value) const
     {
         AddHandleToHandleScope<vm::interpreter::Instruction::Jump>()(handleScope, value);
+    }
+};
+template <>
+struct AddHandleToHandleScope<vm::interpreter::Instruction::Return> final
+{
+    void operator()(HandleScope &handleScope,
+                    const vm::interpreter::Instruction::Return &value) const
+    {
     }
 };
 #define JAVASCRIPT_TASKLETS_BINARY(name)                                                          \
@@ -1214,6 +1378,16 @@ struct AddHandleToHandleScope<vm::interpreter::Instruction::ConditionalJump> fin
                                                                                     value);      \
         }                                                                                        \
     };
+#define JAVASCRIPT_TASKLETS_RETURN(name)                                                        \
+    template <>                                                                                 \
+    struct AddHandleToHandleScope<vm::interpreter::Instruction::Op##name> final                 \
+    {                                                                                           \
+        void operator()(HandleScope & handleScope,                                              \
+                        const vm::interpreter::Instruction::Op##name &value) const              \
+        {                                                                                       \
+            AddHandleToHandleScope<vm::interpreter::Instruction::Return>()(handleScope, value); \
+        }                                                                                       \
+    };
 #define JAVASCRIPT_TASKLETS_END()
 JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
@@ -1224,6 +1398,7 @@ JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
 }
 }

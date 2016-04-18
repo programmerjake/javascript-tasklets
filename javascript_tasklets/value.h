@@ -836,6 +836,11 @@ struct StringHandle final
     {
         return value.get() == rt.value.get();
     }
+    static constexpr char16_t getDigitCharacter(unsigned value) noexcept
+    {
+        return constexpr_assert(value < 36), value < 10 ? static_cast<char16_t>(value + '0') :
+                                                          static_cast<char16_t>(value - 10 + 'a');
+    }
 };
 
 inline ValueHandle::ValueHandle(StringHandle value) noexcept : value(value.get())
@@ -956,6 +961,7 @@ struct UInt32Handle final
     {
         return value.get() == rt.value.get();
     }
+    static String toStringValue(std::uint32_t value, unsigned base = 10);
 };
 
 inline ValueHandle::ValueHandle(UInt32Handle value) noexcept : value(value.get())
@@ -1006,6 +1012,7 @@ struct DoubleHandle final
         }
         return value.get() == rt.value.get();
     }
+    static String toStringValue(double value, unsigned base = 10);
 };
 
 inline ValueHandle::ValueHandle(DoubleHandle value) noexcept : value(value.get())

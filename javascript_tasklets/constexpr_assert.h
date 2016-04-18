@@ -42,10 +42,10 @@ struct constexpr_assert_return_type final
 #define constexpr_assert_stringify(v) #v
 #define constexpr_assert_stringify2(v) constexpr_assert_stringify(v)
 #ifdef NDEBUG
-#define constexpr_assert(v) (::javascript_tasklets::constexpr_assert_return_type())
+#define constexpr_assert(v) (sizeof(v), ::javascript_tasklets::constexpr_assert_return_type())
 #else
-#if defined (__GNUC__) && !defined(__CDT_PARSER__)
-#if __GNUC__ > 4
+#if defined(__GNUC__) && !defined(__CDT_PARSER__)
+#if __GNUC__ > 4 || defined(__clang__)
 #define constexpr_assert_func_name __PRETTY_FUNCTION__
 #else
 #define constexpr_assert_func_name \
@@ -54,11 +54,11 @@ struct constexpr_assert_return_type final
 #else
 #define constexpr_assert_func_name __func__
 #endif
-#define constexpr_assert(v)                                                  \
-    (::javascript_tasklets::constexpr_assert_return_type::assert_helper(     \
-        (v) ? true : false,                                                  \
-        __FILE__ ":" constexpr_assert_stringify2(__LINE__), \
-        constexpr_assert_func_name,                                          \
+#define constexpr_assert(v)                                              \
+    (::javascript_tasklets::constexpr_assert_return_type::assert_helper( \
+        (v) ? true : false,                                              \
+        __FILE__ ":" constexpr_assert_stringify2(__LINE__),              \
+        constexpr_assert_func_name,                                      \
         "assertion '" #v "' failed."))
 #endif
 

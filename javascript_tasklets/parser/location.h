@@ -33,7 +33,7 @@ struct Location final
 {
     gc::SourceReference source;
     std::size_t position;
-    Location() noexcept : source(), position(0)
+    constexpr Location() noexcept : source(), position(0)
     {
     }
     Location(SourceHandle source, std::size_t position) noexcept : source(source.get()),

@@ -21,6 +21,7 @@
 
 #include "value.h"
 #include <cmath>
+#include <algorithm>
 
 namespace javascript_tasklets
 {
@@ -642,6 +643,20 @@ void ObjectHandle::setOwnProperty(gc::Name name,
             gc.writeObject(value).getMember(memberIndex) = property.value.value.get();
         }
     }
+}
+
+String UInt32Handle::toStringValue(std::uint32_t value, unsigned base)
+{
+    constexpr_assert(base >= 2 && base <= 36);
+    String retval;
+    retval.reserve(32); // max number of digits is base 2 with 32 digits
+    do
+    {
+        retval += StringHandle::getDigitCharacter(value % base);
+        value /= base;
+    } while(value != 0);
+    std::reverse(retval.begin(), retval.end());
+    return retval;
 }
 }
 }
