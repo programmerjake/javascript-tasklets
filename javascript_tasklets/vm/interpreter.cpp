@@ -88,6 +88,45 @@ void Instruction::addHandleToHandleScope(HandleScope &handleScope) const
     constexpr_assert(false);
 }
 
+namespace
+{
+struct Registers final
+{
+    gc::Object &closure;
+    const std::size_t registerCount;
+    gc::Value &operator[](RegisterIndex index) noexcept
+    {
+        constexpr_assert(index.index < registerCount);
+        return closure.getMembersArray()[index.index];
+    }
+    std::uint32_t getIntegerAsUInt32(RegisterIndex index) noexcept
+    {
+        auto &value = operator[](index);
+        if(value.is<std::uint32_t>())
+            return value.get<std::uint32_t>();
+        return value.get<std::int32_t>();
+    }
+    std::int32_t getIntegerAsInt32(RegisterIndex index) noexcept
+    {
+        auto &value = operator[](index);
+        if(value.is<std::uint32_t>())
+            return value.get<std::uint32_t>();
+        return value.get<std::int32_t>();
+    }
+    template <typename T>
+    T &get(RegisterIndex index) noexcept
+    {
+        auto &value = operator[](index);
+        return value.get<T>();
+    }
+    Registers(gc::Object &closure, const std::size_t registerCount) noexcept
+        : closure(closure),
+          registerCount(registerCount)
+    {
+    }
+};
+}
+
 value::ValueHandle FunctionCode::run(const std::vector<value::ValueHandle> &arguments, GC &gc) const
 {
     HandleScope handleScope(gc);
@@ -96,41 +135,6 @@ value::ValueHandle FunctionCode::run(const std::vector<value::ValueHandle> &argu
     constexpr_assert(closureObjectDescriptor.get()->getEmbeddedMemberCount() == registerCount);
     const Handle<gc::ObjectReference> closureHandle = gc.create(closureObjectDescriptor);
     gc::Object &closure = gc.writeObject(closureHandle);
-    struct Registers final
-    {
-        gc::Object &closure;
-        const std::size_t registerCount;
-        gc::Value &operator[](RegisterIndex index) noexcept
-        {
-            constexpr_assert(index.index < registerCount);
-            return closure.getMembersArray()[index.index];
-        }
-        std::uint32_t getIntegerAsUInt32(RegisterIndex index) noexcept
-        {
-            auto &value = operator[](index);
-            if(value.is<std::uint32_t>())
-                return value.get<std::uint32_t>();
-            return value.get<std::int32_t>();
-        }
-        std::int32_t getIntegerAsInt32(RegisterIndex index) noexcept
-        {
-            auto &value = operator[](index);
-            if(value.is<std::uint32_t>())
-                return value.get<std::uint32_t>();
-            return value.get<std::int32_t>();
-        }
-        template <typename T>
-        T &get(RegisterIndex index) noexcept
-        {
-            auto &value = operator[](index);
-            return value.get<T>();
-        }
-        Registers(gc::Object &closure, const std::size_t registerCount) noexcept
-            : closure(closure),
-              registerCount(registerCount)
-        {
-        }
-    };
     Registers registers(closure, registerCount);
     for(;;)
     {
@@ -885,6 +889,8 @@ value::ValueHandle FunctionCode::run(const std::vector<value::ValueHandle> &argu
         }
         constexpr_assert(false);
     }
+    constexpr_assert(false);
+    return value::ValueHandle();
 }
 
 Handle<gc::ObjectDescriptorReference> FunctionCode::makeClosureObjectDescriptor(

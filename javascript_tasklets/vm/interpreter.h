@@ -1036,7 +1036,8 @@ public:
         return *this;
     }
     template <typename Fn>
-    void apply(Fn &&fn) noexcept(noexcept(std::forward<Fn>(fn)())
+    static void apply(Instruction &instruction,
+                      Fn &&fn) noexcept(noexcept(std::forward<Fn>(fn)())
 #define JAVASCRIPT_TASKLETS_BINARY(name) \
     &&noexcept(std::declval<Fn>()(std::declval<parser::Location &>(), std::declval<Op##name &>()))
 #define JAVASCRIPT_TASKLETS_UNARY(name) \
@@ -1056,7 +1057,7 @@ public:
 #define JAVASCRIPT_TASKLETS_RETURN(name) \
     &&noexcept(std::declval<Fn>()(std::declval<parser::Location &>(), std::declval<Op##name &>()))
 #define JAVASCRIPT_TASKLETS_END()
-                                     JAVASCRIPT_TASKLETS_INSTRUCTIONS()
+                                            JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
 #undef JAVASCRIPT_TASKLETS_UNARY
 #undef JAVASCRIPT_TASKLETS_BINARY_THROW
@@ -1067,45 +1068,45 @@ public:
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
-                                         )
+                                                )
     {
-        switch(type)
+        switch(instruction.type)
         {
-#define JAVASCRIPT_TASKLETS_BINARY(name)             \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_BINARY(name)                                     \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_UNARY(name)              \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_UNARY(name)                                      \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_BINARY_THROW(name)       \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_BINARY_THROW(name)                               \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_UNARY_THROW(name)        \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_UNARY_THROW(name)                                \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_BINARY_DEOPT(name)       \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_BINARY_DEOPT(name)                               \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name)        \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name)                                \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_JUMP(name)               \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_JUMP(name)                                       \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_COND_JUMP(name)          \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_COND_JUMP(name)                                  \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_RETURN(name)             \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_RETURN(name)                                     \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
 #define JAVASCRIPT_TASKLETS_END()
             JAVASCRIPT_TASKLETS_INSTRUCTIONS()
@@ -1126,7 +1127,8 @@ public:
         constexpr_assert(false);
     }
     template <typename Fn>
-    void apply(Fn &&fn) const noexcept(noexcept(std::forward<Fn>(fn)())
+    static void apply(const Instruction &instruction,
+                      Fn &&fn) noexcept(noexcept(std::forward<Fn>(fn)())
 #define JAVASCRIPT_TASKLETS_BINARY(name)                                    \
     &&noexcept(std::declval<Fn>()(std::declval<const parser::Location &>(), \
                                   std::declval<const Op##name &>()))
@@ -1155,7 +1157,7 @@ public:
     &&noexcept(std::declval<Fn>()(std::declval<const parser::Location &>(), \
                                   std::declval<const Op##name &>()))
 #define JAVASCRIPT_TASKLETS_END()
-                                           JAVASCRIPT_TASKLETS_INSTRUCTIONS()
+                                            JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_BINARY
 #undef JAVASCRIPT_TASKLETS_UNARY
 #undef JAVASCRIPT_TASKLETS_BINARY_THROW
@@ -1166,45 +1168,45 @@ public:
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
-                                               )
+                                                )
     {
-        switch(type)
+        switch(instruction.type)
         {
-#define JAVASCRIPT_TASKLETS_BINARY(name)             \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_BINARY(name)                                     \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_UNARY(name)              \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_UNARY(name)                                      \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_BINARY_THROW(name)       \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_BINARY_THROW(name)                               \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_UNARY_THROW(name)        \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_UNARY_THROW(name)                                \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_BINARY_DEOPT(name)       \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_BINARY_DEOPT(name)                               \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name)        \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name)                                \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_JUMP(name)               \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_JUMP(name)                                       \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_COND_JUMP(name)          \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_COND_JUMP(name)                                  \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
-#define JAVASCRIPT_TASKLETS_RETURN(name)             \
-    case Type::name:                                 \
-        std::forward<Fn>(fn)(location, value##name); \
+#define JAVASCRIPT_TASKLETS_RETURN(name)                                     \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
 #define JAVASCRIPT_TASKLETS_END()
             JAVASCRIPT_TASKLETS_INSTRUCTIONS()
@@ -1225,6 +1227,17 @@ public:
         constexpr_assert(false);
     }
     void addHandleToHandleScope(HandleScope &handleScope) const;
+    template <typename Fn>
+    void apply(Fn &&fn) noexcept(noexcept(apply(std::declval<Instruction &>(), std::declval<Fn>())))
+    {
+        apply(*this, std::forward<Fn>(fn));
+    }
+    template <typename Fn>
+    void apply(Fn &&fn) const
+        noexcept(noexcept(apply(std::declval<const Instruction &>(), std::declval<Fn>())))
+    {
+        apply(*this, std::forward<Fn>(fn));
+    }
 
 private:
     template <typename Fn>
@@ -1266,22 +1279,25 @@ private:
 
 public:
     template <typename Fn>
-    void forEachDestRegister(Fn &&fn) const noexcept(noexcept(
-        std::declval<const Instruction &>().apply(std::declval<ForEachDestRegisterCallback<Fn>>())))
+    void forEachDestRegister(Fn &&fn) const
+        noexcept(noexcept(apply(std::declval<const Instruction &>(),
+                                std::declval<ForEachDestRegisterCallback<Fn>>())))
     {
         apply(ForEachDestRegisterCallback<Fn>(std::forward<Fn>(fn)));
     }
     template <typename Fn>
     void forEachSourceRegister(Fn &&fn) const
-        noexcept(noexcept(std::declval<const Instruction &>().apply(
-            std::declval<ForEachSourceRegisterCallback<Fn>>())))
+        noexcept(noexcept(apply(std::declval<const Instruction &>(),
+                                std::declval<ForEachSourceRegisterCallback<Fn>>())))
     {
         apply(ForEachSourceRegisterCallback<Fn>(std::forward<Fn>(fn)));
     }
     template <typename Fn>
-    void forEachRegister(Fn &&fn) const noexcept(
-        noexcept(std::declval<const Instruction &>().forEachDestRegister(std::declval<Fn>()))
-        && noexcept(std::declval<const Instruction &>().forEachSourceRegister(std::declval<Fn>())))
+    void forEachRegister(Fn &&fn) const
+        noexcept(noexcept(apply(std::declval<const Instruction &>(),
+                                std::declval<ForEachDestRegisterCallback<Fn>>()))
+                 && noexcept(apply(std::declval<const Instruction &>(),
+                                   std::declval<ForEachSourceRegisterCallback<Fn>>())))
     {
         forEachDestRegister(std::forward<Fn>(fn));
         forEachSourceRegister(std::forward<Fn>(fn));
@@ -1328,8 +1344,8 @@ struct AddHandleToHandleScope<vm::interpreter::FunctionCode> final
         {
             AddHandleToHandleScope<vm::interpreter::Instruction>()(handleScope, instruction);
         }
-        AddHandleToHandleScope<gc::ObjectDescriptorReference>()(handleScope,
-                                                                value.closureObjectDescriptor);
+        AddHandleToHandleScope<Handle<gc::ObjectDescriptorReference>>()(
+            handleScope, value.closureObjectDescriptor);
     }
 };
 template <>
