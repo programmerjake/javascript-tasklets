@@ -21,6 +21,7 @@
 #define JAVASCRIPT_TASKLETS_VM_INTERPRETER_KEEP_INSTRUCTIONS
 #include "interpreter.h"
 #include "vm.h"
+#include "jsmath.h"
 
 namespace javascript_tasklets
 {
@@ -92,8 +93,50 @@ value::ValueHandle FunctionCode::run(const std::vector<value::ValueHandle> &argu
     HandleScope handleScope(gc);
     InstructionAddress pc(0);
     typedef Instruction::Type Type;
+    constexpr_assert(closureObjectDescriptor.get()->getEmbeddedMemberCount() == registerCount);
+    const Handle<gc::ObjectReference> closureHandle = gc.create(closureObjectDescriptor);
+    gc::Object &closure = gc.writeObject(closureHandle);
+    struct Registers final
+    {
+        gc::Object &closure;
+        const std::size_t registerCount;
+        gc::Value &operator[](RegisterIndex index) noexcept
+        {
+            constexpr_assert(index.index < registerCount);
+            return closure.getMembersArray()[index.index];
+        }
+        std::uint32_t getIntegerAsUInt32(RegisterIndex index) noexcept
+        {
+            auto &value = operator[](index);
+            if(value.is<std::uint32_t>())
+                return value.get<std::uint32_t>();
+            return value.get<std::int32_t>();
+        }
+        std::int32_t getIntegerAsInt32(RegisterIndex index) noexcept
+        {
+            auto &value = operator[](index);
+            if(value.is<std::uint32_t>())
+                return value.get<std::uint32_t>();
+            return value.get<std::int32_t>();
+        }
+        template <typename T>
+        T &get(RegisterIndex index) noexcept
+        {
+            auto &value = operator[](index);
+            return value.get<T>();
+        }
+        Registers(gc::Object &closure, const std::size_t registerCount) noexcept
+            : closure(closure),
+              registerCount(registerCount)
+        {
+        }
+    };
+    Registers registers(closure, registerCount);
     for(;;)
     {
+        constexpr_assert(&closure == &gc.writeObject(closureHandle));
+        constexpr_assert(gc.getObjectDescriptor(closureHandle).get()
+                         == closureObjectDescriptor.get());
         constexpr_assert(pc.index < instructions.size());
         const Instruction &instruction = instructions[pc.index++];
         switch(instruction.getType())
@@ -103,387 +146,488 @@ value::ValueHandle FunctionCode::run(const std::vector<value::ValueHandle> &argu
             continue;
         case Type::AddU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getAddU();
+            registers[args.dest] =
+                gc::Value::make<std::uint32_t>(registers.getIntegerAsUInt32(args.source1)
+                                               + registers.getIntegerAsUInt32(args.source2));
             continue;
         }
         case Type::AddI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getAddI();
+            registers[args.dest] =
+                gc::Value::make<std::int32_t>(registers.getIntegerAsInt32(args.source1)
+                                              + registers.getIntegerAsInt32(args.source2));
             continue;
         }
         case Type::AddD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getAddD();
+            registers[args.dest] = gc::Value::make<double>(registers.get<double>(args.source1)
+                                                           + registers.get<double>(args.source2));
             continue;
         }
         case Type::SubU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getSubU();
+            registers[args.dest] =
+                gc::Value::make<std::uint32_t>(registers.getIntegerAsUInt32(args.source1)
+                                               - registers.getIntegerAsUInt32(args.source2));
             continue;
         }
         case Type::SubI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getSubI();
+            registers[args.dest] =
+                gc::Value::make<std::int32_t>(registers.getIntegerAsInt32(args.source1)
+                                              - registers.getIntegerAsInt32(args.source2));
             continue;
         }
         case Type::SubD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getSubD();
+            registers[args.dest] = gc::Value::make<double>(registers.get<double>(args.source1)
+                                                           - registers.get<double>(args.source2));
             continue;
         }
         case Type::MulU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMulU();
+            registers[args.dest] =
+                gc::Value::make<std::uint32_t>(registers.getIntegerAsUInt32(args.source1)
+                                               * registers.getIntegerAsUInt32(args.source2));
             continue;
         }
         case Type::MulI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMulI();
+            registers[args.dest] =
+                gc::Value::make<std::int32_t>(registers.getIntegerAsUInt32(args.source1)
+                                              * registers.getIntegerAsUInt32(args.source2));
             continue;
         }
         case Type::MulD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMulD();
+            registers[args.dest] = gc::Value::make<double>(registers.get<double>(args.source1)
+                                                           * registers.get<double>(args.source2));
             continue;
         }
         case Type::DivU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getDivU();
+            registers[args.dest] = gc::Value::make<std::uint32_t>(
+                math::div(registers.getIntegerAsUInt32(args.source1),
+                          registers.getIntegerAsUInt32(args.source2)));
             continue;
         }
         case Type::DivI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getDivI();
+            registers[args.dest] =
+                gc::Value::make<std::int32_t>(math::div(registers.getIntegerAsInt32(args.source1),
+                                                        registers.getIntegerAsInt32(args.source2)));
             continue;
         }
         case Type::DivD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getDivD();
+            registers[args.dest] = gc::Value::make<double>(registers.get<double>(args.source1)
+                                                           / registers.get<double>(args.source2));
             continue;
         }
         case Type::ModU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getModU();
+            registers[args.dest] = gc::Value::make<std::uint32_t>(
+                math::mod(registers.getIntegerAsUInt32(args.source1),
+                          registers.getIntegerAsUInt32(args.source2)));
             continue;
         }
         case Type::ModI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getModI();
+            registers[args.dest] =
+                gc::Value::make<std::int32_t>(math::mod(registers.getIntegerAsInt32(args.source1),
+                                                        registers.getIntegerAsInt32(args.source2)));
             continue;
         }
         case Type::ModD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getModD();
+            registers[args.dest] = gc::Value::make<double>(math::mod(
+                registers.get<double>(args.source1), registers.get<double>(args.source2)));
             continue;
         }
         case Type::ShlU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getShlU();
+            registers[args.dest] = gc::Value::make<std::uint32_t>(
+                registers.getIntegerAsUInt32(args.source1)
+                << (0x1F & registers.getIntegerAsUInt32(args.source2)));
             continue;
         }
         case Type::ShlI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getShlI();
+            registers[args.dest] = gc::Value::make<std::int32_t>(
+                registers.getIntegerAsInt32(args.source1)
+                << (0x1F & registers.getIntegerAsInt32(args.source2)));
             continue;
         }
         case Type::ShrU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getShrU();
+            registers[args.dest] = gc::Value::make<std::uint32_t>(
+                registers.getIntegerAsUInt32(args.source1)
+                >> (0x1F & registers.getIntegerAsUInt32(args.source2)));
             continue;
         }
         case Type::ShrI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getShrI();
+            registers[args.dest] = gc::Value::make<std::int32_t>(
+                registers.getIntegerAsUInt32(args.source1)
+                >> (0x1F & registers.getIntegerAsInt32(args.source2)));
             continue;
         }
         case Type::SarU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getSarU();
+            registers[args.dest] = gc::Value::make<std::uint32_t>(
+                registers.getIntegerAsInt32(args.source1)
+                >> (0x1F & registers.getIntegerAsUInt32(args.source2)));
             continue;
         }
         case Type::SarI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getSarI();
+            registers[args.dest] = gc::Value::make<std::int32_t>(
+                registers.getIntegerAsInt32(args.source1)
+                >> (0x1F & registers.getIntegerAsInt32(args.source2)));
             continue;
         }
         case Type::AndU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getAndU();
+            registers[args.dest] =
+                gc::Value::make<std::uint32_t>(registers.getIntegerAsUInt32(args.source1)
+                                               & registers.getIntegerAsUInt32(args.source2));
             continue;
         }
         case Type::AndI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getAndI();
+            registers[args.dest] =
+                gc::Value::make<std::int32_t>(registers.getIntegerAsInt32(args.source1)
+                                              & registers.getIntegerAsInt32(args.source2));
             continue;
         }
         case Type::OrU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getOrU();
+            registers[args.dest] =
+                gc::Value::make<std::uint32_t>(registers.getIntegerAsUInt32(args.source1)
+                                               | registers.getIntegerAsUInt32(args.source2));
             continue;
         }
         case Type::OrI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getOrI();
+            registers[args.dest] =
+                gc::Value::make<std::int32_t>(registers.getIntegerAsInt32(args.source1)
+                                              | registers.getIntegerAsInt32(args.source2));
             continue;
         }
         case Type::XorU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getXorU();
+            registers[args.dest] =
+                gc::Value::make<std::uint32_t>(registers.getIntegerAsUInt32(args.source1)
+                                               ^ registers.getIntegerAsUInt32(args.source2));
             continue;
         }
         case Type::XorI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getXorI();
+            registers[args.dest] =
+                gc::Value::make<std::int32_t>(registers.getIntegerAsInt32(args.source1)
+                                              ^ registers.getIntegerAsInt32(args.source2));
             continue;
         }
         case Type::CmpEqI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpEqI();
+            registers[args.dest] =
+                gc::Value::make<bool>(registers.getIntegerAsInt32(args.source1)
+                                      == registers.getIntegerAsInt32(args.source2));
             continue;
         }
         case Type::CmpEqUI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpEqI();
+            auto source1 = registers.getIntegerAsUInt32(args.source1);
+            auto source2 = registers.getIntegerAsInt32(args.source2);
+            registers[args.dest] = gc::Value::make<bool>(
+                source2 >= 0 && source1 == static_cast<std::uint32_t>(source2));
             continue;
         }
         case Type::CmpEqD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpEqD();
+            registers[args.dest] = gc::Value::make<bool>(registers.get<double>(args.source1)
+                                                         == registers.get<double>(args.source2));
+            continue;
+        }
+        case Type::CmpEqS:
+        {
+            auto &args = instruction.getCmpEqS();
+            registers[args.dest] =
+                gc::Value::make<bool>(registers.get<gc::StringReference>(args.source1)
+                                      == registers.get<gc::StringReference>(args.source2));
+            continue;
+        }
+        case Type::CmpEqON:
+        {
+            auto &args = instruction.getCmpEqON();
+            const gc::Value &source1Value = registers[args.source1];
+            const gc::Value &source2Value = registers[args.source2];
+            gc::ObjectReference source1 = nullptr;
+            if(source1Value.is<gc::ObjectReference>())
+                source1 = source1Value.get<gc::ObjectReference>();
+            gc::ObjectReference source2 = nullptr;
+            if(source2Value.is<gc::ObjectReference>())
+                source2 = source2Value.get<gc::ObjectReference>();
+            registers[args.dest] = gc::Value::make<bool>(source1 == source2);
+            continue;
+        }
+        case Type::CmpEqSy:
+        {
+            auto &args = instruction.getCmpEqSy();
+            registers[args.dest] =
+                gc::Value::make<bool>(registers.get<gc::SymbolReference>(args.source1)
+                                      == registers.get<gc::SymbolReference>(args.source2));
             continue;
         }
         case Type::CmpNEI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpNEI();
+            registers[args.dest] =
+                gc::Value::make<bool>(registers.getIntegerAsInt32(args.source1)
+                                      != registers.getIntegerAsInt32(args.source2));
             continue;
         }
         case Type::CmpNEUI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpNEUI();
+            auto source1 = registers.getIntegerAsUInt32(args.source1);
+            auto source2 = registers.getIntegerAsInt32(args.source2);
+            registers[args.dest] = gc::Value::make<bool>(
+                source2 < 0 || source1 != static_cast<std::uint32_t>(source2));
             continue;
         }
         case Type::CmpNED:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpNED();
+            registers[args.dest] = gc::Value::make<bool>(registers.get<double>(args.source1)
+                                                         != registers.get<double>(args.source2));
+            continue;
+        }
+        case Type::CmpNES:
+        {
+            auto &args = instruction.getCmpNES();
+            registers[args.dest] =
+                gc::Value::make<bool>(registers.get<gc::StringReference>(args.source1)
+                                      != registers.get<gc::StringReference>(args.source2));
+            continue;
+        }
+        case Type::CmpNEON:
+        {
+            auto &args = instruction.getCmpNEON();
+            const gc::Value &source1Value = registers[args.source1];
+            const gc::Value &source2Value = registers[args.source2];
+            gc::ObjectReference source1 = nullptr;
+            if(source1Value.is<gc::ObjectReference>())
+                source1 = source1Value.get<gc::ObjectReference>();
+            gc::ObjectReference source2 = nullptr;
+            if(source2Value.is<gc::ObjectReference>())
+                source2 = source2Value.get<gc::ObjectReference>();
+            registers[args.dest] = gc::Value::make<bool>(source1 != source2);
+            continue;
+        }
+        case Type::CmpNESy:
+        {
+            auto &args = instruction.getCmpNESy();
+            registers[args.dest] =
+                gc::Value::make<bool>(registers.get<gc::SymbolReference>(args.source1)
+                                      != registers.get<gc::SymbolReference>(args.source2));
             continue;
         }
         case Type::CmpLTI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpLTI();
+            registers[args.dest] =
+                gc::Value::make<bool>(registers.getIntegerAsInt32(args.source1)
+                                      < registers.getIntegerAsInt32(args.source2));
             continue;
         }
         case Type::CmpLTUI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpLTUI();
+            auto source1 = registers.getIntegerAsUInt32(args.source1);
+            auto source2 = registers.getIntegerAsInt32(args.source2);
+            registers[args.dest] = gc::Value::make<bool>(
+                source2 >= 0 && source1 < static_cast<std::uint32_t>(source2));
             continue;
         }
         case Type::CmpLTIU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpLTIU();
+            auto source1 = registers.getIntegerAsInt32(args.source1);
+            auto source2 = registers.getIntegerAsUInt32(args.source2);
+            registers[args.dest] =
+                gc::Value::make<bool>(source1 < 0 || static_cast<std::uint32_t>(source1) < source2);
             continue;
         }
         case Type::CmpLTU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpLTU();
+            registers[args.dest] =
+                gc::Value::make<bool>(registers.getIntegerAsUInt32(args.source1)
+                                      < registers.getIntegerAsUInt32(args.source2));
             continue;
         }
         case Type::CmpLTD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpLTD();
+            registers[args.dest] = gc::Value::make<bool>(registers.get<double>(args.source1)
+                                                         < registers.get<double>(args.source2));
             continue;
         }
         case Type::CmpNLTD:
         {
+            auto &args = instruction.getCmpNLTD();
+            registers[args.dest] = gc::Value::make<bool>(
+                !(registers.get<double>(args.source1) < registers.get<double>(args.source2)));
+            continue;
+        }
+        case Type::CmpLTS:
+        {
+            auto &args = instruction.getCmpLTS();
             HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            Handle<gc::StringReference> source1(closureHandle,
+                                                registers.get<gc::StringReference>(args.source1));
+            Handle<gc::StringReference> source2(closureHandle,
+                                                registers.get<gc::StringReference>(args.source2));
+            registers[args.dest] =
+                gc::Value::make<bool>(gc.readString(source1) < gc.readString(source2));
             continue;
         }
         case Type::CmpLEI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpLEI();
+            registers[args.dest] =
+                gc::Value::make<bool>(registers.getIntegerAsInt32(args.source1)
+                                      <= registers.getIntegerAsInt32(args.source2));
             continue;
         }
         case Type::CmpLEUI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpLEUI();
+            auto source1 = registers.getIntegerAsUInt32(args.source1);
+            auto source2 = registers.getIntegerAsInt32(args.source2);
+            registers[args.dest] = gc::Value::make<bool>(
+                source2 >= 0 && source1 <= static_cast<std::uint32_t>(source2));
             continue;
         }
         case Type::CmpLEIU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpLEIU();
+            auto source1 = registers.getIntegerAsInt32(args.source1);
+            auto source2 = registers.getIntegerAsUInt32(args.source2);
+            registers[args.dest] = gc::Value::make<bool>(
+                source1 < 0 || static_cast<std::uint32_t>(source1) <= source2);
             continue;
         }
         case Type::CmpLEU:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpLEU();
+            registers[args.dest] =
+                gc::Value::make<bool>(registers.getIntegerAsUInt32(args.source1)
+                                      < registers.getIntegerAsUInt32(args.source2));
             continue;
         }
         case Type::CmpLED:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpLED();
+            registers[args.dest] = gc::Value::make<bool>(registers.get<double>(args.source1)
+                                                         <= registers.get<double>(args.source2));
             continue;
         }
         case Type::CmpNLED:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getCmpNLED();
+            registers[args.dest] = gc::Value::make<bool>(
+                !(registers.get<double>(args.source1) <= registers.get<double>(args.source2)));
             continue;
         }
-        case Type::CmpGTD:
+        case Type::CmpLES:
         {
+            auto &args = instruction.getCmpLES();
             HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
-            continue;
-        }
-        case Type::CmpNGTD:
-        {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
-            continue;
-        }
-        case Type::CmpGED:
-        {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
-            continue;
-        }
-        case Type::CmpNGED:
-        {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            Handle<gc::StringReference> source1(closureHandle,
+                                                registers.get<gc::StringReference>(args.source1));
+            Handle<gc::StringReference> source2(closureHandle,
+                                                registers.get<gc::StringReference>(args.source2));
+            registers[args.dest] =
+                gc::Value::make<bool>(gc.readString(source1) <= gc.readString(source2));
             continue;
         }
         case Type::ConcatS:
         {
+            auto &args = instruction.getConcatS();
             HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            Handle<gc::StringReference> source1(closureHandle,
+                                                registers.get<gc::StringReference>(args.source1));
+            Handle<gc::StringReference> source2(closureHandle,
+                                                registers.get<gc::StringReference>(args.source2));
+            registers[args.dest] = gc::Value::make<gc::StringReference>(
+                gc.internString(gc.readString(source1) + gc.readString(source2)).get());
             continue;
         }
         case Type::MathATan2D:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathATan2D();
+            registers[args.dest] = gc::Value::make<double>(math::atan2(
+                registers.get<double>(args.source1), registers.get<double>(args.source2)));
             continue;
         }
         case Type::MathAbsI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathAbsI();
+            registers[args.dest] =
+                gc::Value::make<std::int32_t>(math::abs(registers.get<std::int32_t>(args.source1)));
             continue;
         }
         case Type::MathAbsD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathAbsD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::abs(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathACosD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathACosD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::acos(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathACosHD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathACosHD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::acosh(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathASinD:
@@ -764,8 +908,7 @@ Handle<gc::ObjectDescriptorReference> FunctionCode::makeClosureObjectDescriptor(
             objectDescriptor.get()->getMember(memberIndex).descriptor.getMemberIndex().index
             == registerIndex.index);
     }
-    constexpr_assert(false);
-#warning finish
+    return handleScope.escapeHandle(Handle<gc::ObjectDescriptorReference>(objectDescriptor));
 }
 }
 }

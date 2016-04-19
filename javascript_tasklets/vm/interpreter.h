@@ -99,11 +99,11 @@ struct InstructionAddress final : public BaseIndex
     JAVASCRIPT_TASKLETS_BINARY(ModI) /* int32 % int32 -> int32 */                    \
     JAVASCRIPT_TASKLETS_BINARY(ModD) /* double % double -> double */                 \
     JAVASCRIPT_TASKLETS_BINARY(ShlU) /* uint32 << uint32 -> uint32 */                \
-    JAVASCRIPT_TASKLETS_BINARY(ShlI) /* int32 << uint32 -> int32 */                  \
+    JAVASCRIPT_TASKLETS_BINARY(ShlI) /* int32 << int32 -> int32 */                   \
     JAVASCRIPT_TASKLETS_BINARY(ShrU) /* uint32 >> uint32 -> uint32 */                \
-    JAVASCRIPT_TASKLETS_BINARY(ShrI) /* uint32 >> uint32 -> int32 */                 \
+    JAVASCRIPT_TASKLETS_BINARY(ShrI) /* uint32 >> int32 -> int32 */                  \
     JAVASCRIPT_TASKLETS_BINARY(SarU) /* int32 >> uint32 -> uint32 */                 \
-    JAVASCRIPT_TASKLETS_BINARY(SarI) /* int32 >> uint32 -> int32 */                  \
+    JAVASCRIPT_TASKLETS_BINARY(SarI) /* int32 >> int32 -> int32 */                   \
     JAVASCRIPT_TASKLETS_BINARY(AndU) /* uint32 & uint32 -> uint32 */                 \
     JAVASCRIPT_TASKLETS_BINARY(AndI) /* int32 & int32 -> int32 */                    \
     JAVASCRIPT_TASKLETS_BINARY(OrU) /* uint32 | uint32 -> uint32 */                  \
@@ -113,25 +113,29 @@ struct InstructionAddress final : public BaseIndex
     JAVASCRIPT_TASKLETS_BINARY(CmpEqI) /* int32 == int32 -> bool */                  \
     JAVASCRIPT_TASKLETS_BINARY(CmpEqUI) /* uint32 == int32 -> bool */                \
     JAVASCRIPT_TASKLETS_BINARY(CmpEqD) /* double == double -> bool */                \
+    JAVASCRIPT_TASKLETS_BINARY(CmpEqS) /* string == string -> bool */                \
+    JAVASCRIPT_TASKLETS_BINARY(CmpEqON) /* object|null == object|null -> bool */     \
+    JAVASCRIPT_TASKLETS_BINARY(CmpEqSy) /* symbol == symbol -> bool */               \
     JAVASCRIPT_TASKLETS_BINARY(CmpNEI) /* int32 != int32 -> bool */                  \
     JAVASCRIPT_TASKLETS_BINARY(CmpNEUI) /* uint32 != int32 -> bool */                \
     JAVASCRIPT_TASKLETS_BINARY(CmpNED) /* double != double -> bool */                \
+    JAVASCRIPT_TASKLETS_BINARY(CmpNES) /* string != string -> bool */                \
+    JAVASCRIPT_TASKLETS_BINARY(CmpNEON) /* object|null != object|null -> bool */     \
+    JAVASCRIPT_TASKLETS_BINARY(CmpNESy) /* symbol != symbol -> bool */               \
     JAVASCRIPT_TASKLETS_BINARY(CmpLTI) /* int32 < int32 -> bool */                   \
     JAVASCRIPT_TASKLETS_BINARY(CmpLTUI) /* uint32 < int32 -> bool */                 \
     JAVASCRIPT_TASKLETS_BINARY(CmpLTIU) /* int32 < uint32 -> bool */                 \
     JAVASCRIPT_TASKLETS_BINARY(CmpLTU) /* uint32 < uint32 -> bool */                 \
     JAVASCRIPT_TASKLETS_BINARY(CmpLTD) /* double < double -> bool */                 \
     JAVASCRIPT_TASKLETS_BINARY(CmpNLTD) /* !(double < double) -> bool */             \
+    JAVASCRIPT_TASKLETS_BINARY(CmpLTS) /* string < string -> bool */                 \
     JAVASCRIPT_TASKLETS_BINARY(CmpLEI) /* int32 <= int32 -> bool */                  \
     JAVASCRIPT_TASKLETS_BINARY(CmpLEUI) /* uint32 <= int32 -> bool */                \
     JAVASCRIPT_TASKLETS_BINARY(CmpLEIU) /* int32 <= uint32 -> bool */                \
     JAVASCRIPT_TASKLETS_BINARY(CmpLEU) /* uint32 <= uint32 -> bool */                \
     JAVASCRIPT_TASKLETS_BINARY(CmpLED) /* double <= double -> bool */                \
     JAVASCRIPT_TASKLETS_BINARY(CmpNLED) /* !(double <= double) -> bool */            \
-    JAVASCRIPT_TASKLETS_BINARY(CmpGTD) /* double > double -> bool */                 \
-    JAVASCRIPT_TASKLETS_BINARY(CmpNGTD) /* !(double > double) -> bool */             \
-    JAVASCRIPT_TASKLETS_BINARY(CmpGED) /* double >= double -> bool */                \
-    JAVASCRIPT_TASKLETS_BINARY(CmpNGED) /* !(double >= double) -> bool */            \
+    JAVASCRIPT_TASKLETS_BINARY(CmpLES) /* string <= string -> bool */                \
     JAVASCRIPT_TASKLETS_BINARY(ConcatS) /* string + string -> string */              \
     JAVASCRIPT_TASKLETS_BINARY(MathATan2D) /* Math.atan2(double, double -> double */ \
     JAVASCRIPT_TASKLETS_UNARY(MathAbsI) /* Math.abs(int32) -> int32 */               \
@@ -487,6 +491,118 @@ public:
     static Instruction make##name(parser::Location location, RegisterIndex returnValue) \
     {                                                                                   \
         return Instruction(location, Op##name(returnValue));                            \
+    }
+#define JAVASCRIPT_TASKLETS_END()
+    JAVASCRIPT_TASKLETS_INSTRUCTIONS()
+#undef JAVASCRIPT_TASKLETS_BINARY
+#undef JAVASCRIPT_TASKLETS_UNARY
+#undef JAVASCRIPT_TASKLETS_BINARY_THROW
+#undef JAVASCRIPT_TASKLETS_UNARY_THROW
+#undef JAVASCRIPT_TASKLETS_BINARY_DEOPT
+#undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
+#undef JAVASCRIPT_TASKLETS_JUMP
+#undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN
+#undef JAVASCRIPT_TASKLETS_END
+
+#define JAVASCRIPT_TASKLETS_BINARY(name)       \
+    Op##name &get##name() noexcept             \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }                                          \
+    const Op##name &get##name() const noexcept \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }
+#define JAVASCRIPT_TASKLETS_UNARY(name)        \
+    Op##name &get##name() noexcept             \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }                                          \
+    const Op##name &get##name() const noexcept \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }
+#define JAVASCRIPT_TASKLETS_BINARY_THROW(name) \
+    Op##name &get##name() noexcept             \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }                                          \
+    const Op##name &get##name() const noexcept \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }
+#define JAVASCRIPT_TASKLETS_UNARY_THROW(name)  \
+    Op##name &get##name() noexcept             \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }                                          \
+    const Op##name &get##name() const noexcept \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }
+#define JAVASCRIPT_TASKLETS_BINARY_DEOPT(name) \
+    Op##name &get##name() noexcept             \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }                                          \
+    const Op##name &get##name() const noexcept \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }
+#define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name)  \
+    Op##name &get##name() noexcept             \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }                                          \
+    const Op##name &get##name() const noexcept \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }
+#define JAVASCRIPT_TASKLETS_JUMP(name)         \
+    Op##name &get##name() noexcept             \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }                                          \
+    const Op##name &get##name() const noexcept \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }
+#define JAVASCRIPT_TASKLETS_COND_JUMP(name)    \
+    Op##name &get##name() noexcept             \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }                                          \
+    const Op##name &get##name() const noexcept \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }
+#define JAVASCRIPT_TASKLETS_RETURN(name)       \
+    Op##name &get##name() noexcept             \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }                                          \
+    const Op##name &get##name() const noexcept \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
     }
 #define JAVASCRIPT_TASKLETS_END()
     JAVASCRIPT_TASKLETS_INSTRUCTIONS()
@@ -1176,7 +1292,7 @@ struct FunctionCode final
     std::vector<Instruction> instructions;
     std::size_t registerCount;
     std::size_t namedArgumentCount;
-    gc::ObjectDescriptorReference closureObjectDescriptor;
+    Handle<gc::ObjectDescriptorReference> closureObjectDescriptor;
     static Handle<gc::ObjectDescriptorReference> makeClosureObjectDescriptor(
         GC &gc, std::size_t registerCount);
     value::ValueHandle run(const std::vector<value::ValueHandle> &arguments, GC &gc) const;
