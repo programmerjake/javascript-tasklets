@@ -136,6 +136,13 @@ value::ValueHandle FunctionCode::run(const std::vector<value::ValueHandle> &argu
     const Handle<gc::ObjectReference> closureHandle = gc.create(closureObjectDescriptor);
     gc::Object &closure = gc.writeObject(closureHandle);
     Registers registers(closure, registerCount);
+    for(RegisterIndex i(0); i.index < namedArgumentCount; i.index++)
+    {
+        if(i.index >= arguments.size())
+            registers[i] = gc::Value();
+        else
+            registers[i] = arguments[i.index].get().get();
+    }
     for(;;)
     {
         constexpr_assert(&closure == &gc.writeObject(closureHandle));

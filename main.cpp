@@ -20,6 +20,7 @@
  */
 #include "javascript_tasklets/gc.h"
 #include "javascript_tasklets/string.h"
+#include "javascript_tasklets/vm/interpreter.h"
 #include <iostream>
 #include <sstream>
 
@@ -27,52 +28,22 @@ using namespace javascript_tasklets;
 
 namespace test
 {
-#if 0
-void main()
-{
-
-}
-#else
-gc::Handle<gc::ObjectReference> testFn(gc::GC &gc)
-{
-    struct MyExtraData final : public gc::Object::ExtraData
-    {
-        ~MyExtraData()
-        {
-            std::cout << "destroyed MyExtraData" << std::endl;
-        }
-        virtual std::unique_ptr<ExtraData> clone() const override
-        {
-            std::cout << "MyExtraData::clone" << std::endl;
-            return std::unique_ptr<MyExtraData>(new MyExtraData(*this));
-        }
-        virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
-        {
-        }
-    };
-    gc::HandleScope scope(gc);
-    auto objectDescriptor = gc.createObjectDescriptor();
-    return scope.escapeHandle(
-        gc.create(objectDescriptor, std::unique_ptr<MyExtraData>(new MyExtraData)));
-}
-
 void main()
 {
     gc::GC gc;
-    {
-        gc::HandleScope scope(gc);
-        std::cout << "before test" << std::endl;
-        auto object = testFn(gc);
-        gc.addOrChangeObjectMemberDataInObject(
-            gc::Handle<gc::Name>(gc.internString("member"_js)), object, true, true, true);
-        std::cout << "after test" << std::endl;
-        gc.collect();
-        std::cout << "after first collect" << std::endl;
-    }
-    gc.collect();
-    std::cout << "after second collect" << std::endl;
+    HandleScope handleScope(gc);
+    typedef vm::interpreter::Instruction Instruction;
+    typedef vm::interpreter::RegisterIndex RegisterIndex;
+    typedef vm::interpreter::InstructionAddress InstructionAddress;
+    std::vector<Instruction> instructions;
+    instructions.push_back(
+        Instruction::makeMathATanHD(parser::Location(), RegisterIndex(0), RegisterIndex(0)));
+    instructions.push_back(Instruction::makeReturn(parser::Location(), RegisterIndex(0)));
+    vm::interpreter::FunctionCode fn(std::move(instructions), 1, 1, gc);
+    std::cout << fn.run(std::vector<value::ValueHandle>{value::DoubleHandle(0.2, gc)}, gc)
+                     .getDouble()
+                     .getValue(gc) << std::endl;
 }
-#endif
 }
 
 int main()
