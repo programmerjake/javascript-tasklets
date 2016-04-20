@@ -636,255 +636,260 @@ value::ValueHandle FunctionCode::run(const std::vector<value::ValueHandle> &argu
         }
         case Type::MathASinD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathASinD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::asin(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathASinHD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathASinHD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::asinh(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathATanD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathATanD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::atan(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathATanHD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathATanHD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::atanh(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathCbrtD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathCbrtD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::cbrt(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathCeilD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathCeilD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::ceil(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathClz32U:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathClz32U();
+            registers[args.dest] = gc::Value::make<std::uint32_t>(
+                math::clz32(registers.get<std::uint32_t>(args.source1)));
             continue;
         }
         case Type::MathCosD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathCosD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::cos(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathCosHD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathCosHD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::cosh(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathExpD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathExpD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::exp(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathExpM1D:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathExpM1D();
+            registers[args.dest] =
+                gc::Value::make<double>(math::expm1(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathFloorD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathFloorD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::floor(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathFRoundD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathFRoundD();
+            float v = static_cast<float>(registers.get<double>(args.source1));
+            registers[args.dest] = gc::Value::make<double>(v);
             continue;
         }
         case Type::MathLogD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathLogD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::log(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathLog1PD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathLog1PD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::log1p(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathLog10D:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathLog10D();
+            registers[args.dest] =
+                gc::Value::make<double>(math::log10(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathLog2D:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathLog2D();
+            registers[args.dest] =
+                gc::Value::make<double>(math::log2(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathMaxD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathMaxD();
+            registers[args.dest] = gc::Value::make<double>(math::max(
+                registers.get<double>(args.source1), registers.get<double>(args.source2)));
             continue;
         }
         case Type::MathMinD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathMinD();
+            registers[args.dest] = gc::Value::make<double>(math::min(
+                registers.get<double>(args.source1), registers.get<double>(args.source2)));
             continue;
         }
         case Type::MathPowD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathPowD();
+            registers[args.dest] = gc::Value::make<double>(math::pow(
+                registers.get<double>(args.source1), registers.get<double>(args.source2)));
             continue;
         }
         case Type::MathRoundD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathRoundD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::round(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathSignD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathSignD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::sign(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathSignI:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathSignI();
+            registers[args.dest] = gc::Value::make<std::int32_t>(
+                math::sign(registers.get<std::int32_t>(args.source1)));
             continue;
         }
         case Type::MathSinD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathSinD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::sin(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathSinHD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathSinHD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::sinh(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathSqrtD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathSqrtD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::sqrt(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathTanD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathTanD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::tan(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathTanHD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathTanHD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::tanh(registers.get<double>(args.source1)));
             continue;
         }
         case Type::MathTruncD:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMathTruncD();
+            registers[args.dest] =
+                gc::Value::make<double>(math::trunc(registers.get<double>(args.source1)));
             continue;
         }
         case Type::StringLengthU:
         {
+            auto &args = instruction.getStringLengthU();
             HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            Handle<gc::StringReference> source1(closureHandle,
+                                                registers.get<gc::StringReference>(args.source1));
+            std::size_t length = gc.readString(source1).size();
+            std::uint32_t lengthU32 = length;
+            registers[args.dest] = gc::Value::make<std::uint32_t>(lengthU32);
+            if(lengthU32 != length)
+                pc = args.deoptimizeTarget;
             continue;
         }
         case Type::StringLengthD:
         {
+            auto &args = instruction.getStringLengthD();
             HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            Handle<gc::StringReference> source1(closureHandle,
+                                                registers.get<gc::StringReference>(args.source1));
+            registers[args.dest] = gc::Value::make<double>(gc.readString(source1).size());
             continue;
         }
         case Type::Move:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getMove();
+            registers[args.dest] = registers[args.source1];
             continue;
         }
         case Type::Jump:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getJump();
+            pc = args.jumpTarget;
             continue;
         }
         case Type::JumpIfTrue:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getJumpIfTrue();
+            if(registers[args.condition].get<bool>())
+                pc = args.jumpTarget;
             continue;
         }
         case Type::JumpIfFalse:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
+            auto &args = instruction.getJumpIfTrue();
+            if(!registers[args.condition].get<bool>())
+                pc = args.jumpTarget;
             continue;
         }
         case Type::Return:
         {
-            HandleScope handleScope(gc);
-            constexpr_assert(!"finish");
-#warning finish
-            continue;
+            auto &args = instruction.getReturn();
+            return handleScope.escapeHandle(
+                value::ValueHandle(Handle<gc::Value>(closureHandle, registers[args.returnValue])));
         }
         }
         constexpr_assert(false);

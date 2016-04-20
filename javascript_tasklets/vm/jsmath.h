@@ -30,6 +30,11 @@ namespace javascript_tasklets
 {
 namespace vm
 {
+inline double cbrtHelper(double v) noexcept
+{
+    using namespace std;
+    return cbrt(v);
+}
 namespace math
 {
 constexpr double NaN() noexcept
@@ -131,6 +136,197 @@ inline double acos(double v) noexcept
 inline double acosh(double v) noexcept
 {
     return std::acosh(v);
+}
+inline double asin(double v) noexcept
+{
+    return std::asin(v);
+}
+inline double asinh(double v) noexcept
+{
+    return std::asinh(v);
+}
+inline double atan(double v) noexcept
+{
+    return std::atan(v);
+}
+inline double atanh(double v) noexcept
+{
+    return std::atanh(v);
+}
+inline double cbrt(double v) noexcept
+{
+    return cbrtHelper(v);
+}
+inline double ceil(double v) noexcept
+{
+    if(v < 0 && v > -1)
+        return -0.0;
+    return std::ceil(v);
+}
+inline double floor(double v) noexcept
+{
+    if(v > 0 && v < 1)
+        return 0.0;
+    return std::floor(v);
+}
+inline std::uint32_t clz32(std::uint32_t v) noexcept
+{
+#ifdef __GNUC__
+    if(sizeof(std::uint32_t) == sizeof(unsigned))
+        return __builtin_clz(v);
+    return __builtin_clzl(v); // long must be at least 32 bits
+#else
+    std::uint32_t retval = 0;
+    if((v & 0xFFFF0000UL) == 0)
+        retval += 0x10;
+    else
+        v >>= 0x10;
+    if((v & 0xFF00U) == 0)
+        retval += 8;
+    else
+        v >>= 8;
+    if((v & 0xF0) == 0)
+        retval += 4;
+    else
+        v >>= 4;
+    std::uint_fast8_t lookupTable[0x10] = {4, 3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
+    return retval + lookupTable[v];
+#endif
+}
+inline double cos(double v) noexcept
+{
+    return std::cos(v);
+}
+inline double cosh(double v) noexcept
+{
+    return std::cosh(v);
+}
+inline double exp(double v) noexcept
+{
+    return std::exp(v);
+}
+inline double expm1(double v) noexcept
+{
+    return std::expm1(v);
+}
+inline double log(double v) noexcept
+{
+    return std::log(v);
+}
+inline double log1p(double v) noexcept
+{
+    return std::log1p(v);
+}
+inline double log10(double v) noexcept
+{
+    return std::log10(v);
+}
+inline double log2(double v) noexcept
+{
+    return std::log2(v);
+}
+inline double max(double a, double b) noexcept
+{
+    if(std::isnan(a))
+        return a;
+    if(a > b) // false if b is NaN
+        return a;
+    return b;
+}
+inline double min(double a, double b) noexcept
+{
+    if(std::isnan(a))
+        return a;
+    if(a < b) // false if b is NaN
+        return a;
+    return b;
+}
+inline double pow(double a, double b) noexcept
+{
+    if(std::isnan(b))
+        return b;
+    if((a == 1 || a == -1) && std::isinf(b))
+        return NaN();
+    if(b == 0)
+        return 1;
+    if(a == 0)
+    {
+        if(std::signbit(a))
+        {
+            if(b > 0)
+            {
+                b *= 0.5;
+                if(b - std::floor(b) == 0.5)
+                {
+                    return -0.0;
+                }
+                return 0;
+            }
+            b *= 0.5;
+            if(b - std::floor(b) == 0.5)
+            {
+                return -Infinity();
+            }
+            return Infinity();
+        }
+        if(b > 0)
+            return 0;
+        return Infinity();
+    }
+    return std::pow(a, b);
+}
+inline double round(double v) noexcept
+{
+    double retval = std::round(v);
+    if(v < 0 && std::fabs(v - retval) == 0.5)
+        return std::ceil(v);
+    return retval;
+}
+inline double sign(double v) noexcept
+{
+    if(v < 0) // fall through for NaN and zero
+        return -1;
+    if(v > 0) // fall through for NaN and zero
+        return 1;
+    return v;
+}
+inline std::int32_t sign(std::int32_t v) noexcept
+{
+    if(v < 0)
+        return -1;
+    if(v > 0)
+        return 1;
+    return 0;
+}
+inline double sin(double v) noexcept
+{
+    return std::sin(v);
+}
+inline double sinh(double v) noexcept
+{
+    return std::sinh(v);
+}
+inline double sqrt(double v) noexcept
+{
+    return std::sqrt(v);
+}
+inline double tan(double v) noexcept
+{
+    return std::tan(v);
+}
+inline double tanh(double v) noexcept
+{
+    return std::tanh(v);
+}
+inline double trunc(double v) noexcept
+{
+    if(v > -1 && v < 1)
+    {
+        if(v > 0)
+            return 0;
+        return -0.0;
+    }
+    return std::trunc(v);
 }
 }
 }
