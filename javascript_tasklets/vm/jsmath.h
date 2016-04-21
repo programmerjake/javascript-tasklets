@@ -193,6 +193,36 @@ inline std::uint32_t clz32(std::uint32_t v) noexcept
     return retval + lookupTable[v];
 #endif
 }
+inline std::uint32_t clz64(std::uint64_t v) noexcept
+{
+#ifdef __GNUC__
+    if(sizeof(std::uint64_t) == sizeof(unsigned))
+        return __builtin_clz(v);
+    if(sizeof(std::uint64_t) == sizeof(unsigned long))
+        return __builtin_clzl(v);
+    return __builtin_clzll(v);
+#else
+    std::uint32_t retval = 0;
+    if((v & 0xFFFFFFFF00000000ULL) == 0)
+        retval += 0x20;
+    else
+        v >>= 0x20;
+    if((v & 0xFFFF0000UL) == 0)
+        retval += 0x10;
+    else
+        v >>= 0x10;
+    if((v & 0xFF00U) == 0)
+        retval += 8;
+    else
+        v >>= 8;
+    if((v & 0xF0) == 0)
+        retval += 4;
+    else
+        v >>= 4;
+    std::uint_fast8_t lookupTable[0x10] = {4, 3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
+    return retval + lookupTable[v];
+#endif
+}
 inline double cos(double v) noexcept
 {
     return std::cos(v);

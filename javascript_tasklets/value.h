@@ -921,6 +921,7 @@ struct Int32Handle final
     {
         return value.get() == rt.value.get();
     }
+    static String toStringValue(std::int32_t value, unsigned base = 10);
 };
 
 inline ValueHandle::ValueHandle(Int32Handle value) noexcept : value(value.get())
