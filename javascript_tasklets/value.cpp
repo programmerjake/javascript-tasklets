@@ -666,6 +666,7 @@ String UInt32Handle::toStringValue(std::uint32_t value, unsigned base)
     return retval;
 }
 
+#if 0
 String DoubleHandle::toStringValue(double value, unsigned base)
 {
     constexpr_assert(base >= 2 && base <= 36);
@@ -677,7 +678,7 @@ String DoubleHandle::toStringValue(double value, unsigned base)
         return u"-" + toStringValue(-value, base);
     if(std::isinf(value))
         return u"Infinity";
-    static const double logs[36] = {
+    static const double logs[37] = {
         0, // 0
         0, // 1
         1.00000000000000000000, // log2(2)
@@ -716,7 +717,7 @@ String DoubleHandle::toStringValue(double value, unsigned base)
         5.12928301694496645531, // log2(35)
         5.16992500144231236290, // log2(36)
     };
-    static const double invLogs[36] = {
+    static const double invLogs[37] = {
         0, // 0
         0, // 1
         1.00000000000000000000, // 1 / log2(2)
@@ -760,5 +761,6 @@ String DoubleHandle::toStringValue(double value, unsigned base)
     double baseToThePowerOf
     std::uint64_t
 }
+#endif
 }
 }

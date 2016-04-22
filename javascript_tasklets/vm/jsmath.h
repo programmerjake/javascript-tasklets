@@ -173,7 +173,7 @@ inline double floor(double v) noexcept
 constexpr std::uint32_t clz4(std::uint8_t v) noexcept
 {
 #ifdef __GNUC__
-    return __builtin_clz(v) - __builtin_clz(0x10U);
+    return __builtin_clz(v) - __builtin_clz(0x8U);
 #else
     typedef const std::uint_fast8_t LookupTableType[0x10];
     return LookupTableType{4, 3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0}[v];
@@ -183,7 +183,7 @@ constexpr std::uint32_t clz4(std::uint8_t v) noexcept
 constexpr std::uint32_t clz8(std::uint8_t v) noexcept
 {
 #ifdef __GNUC__
-    return __builtin_clz(v) - __builtin_clz(0x100U);
+    return __builtin_clz(v) - __builtin_clz(0x80U);
 #else
     return ((v & 0xF0) == 0) ? 4 + clz4(v) : clz4(v >> 4);
 #endif
