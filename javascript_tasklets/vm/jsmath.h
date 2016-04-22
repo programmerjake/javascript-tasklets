@@ -169,58 +169,95 @@ inline double floor(double v) noexcept
         return 0.0;
     return std::floor(v);
 }
-inline std::uint32_t clz32(std::uint32_t v) noexcept
+
+constexpr std::uint32_t clz4(std::uint8_t v) noexcept
 {
 #ifdef __GNUC__
-    if(sizeof(std::uint32_t) == sizeof(unsigned))
-        return __builtin_clz(v);
-    return __builtin_clzl(v); // long must be at least 32 bits
+    return __builtin_clz(v) - __builtin_clz(0x10U);
 #else
-    std::uint32_t retval = 0;
-    if((v & 0xFFFF0000UL) == 0)
-        retval += 0x10;
-    else
-        v >>= 0x10;
-    if((v & 0xFF00U) == 0)
-        retval += 8;
-    else
-        v >>= 8;
-    if((v & 0xF0) == 0)
-        retval += 4;
-    else
-        v >>= 4;
-    std::uint_fast8_t lookupTable[0x10] = {4, 3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
-    return retval + lookupTable[v];
+    typedef const std::uint_fast8_t LookupTableType[0x10];
+    return LookupTableType{4, 3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0}[v];
 #endif
 }
-inline std::uint32_t clz64(std::uint64_t v) noexcept
+
+constexpr std::uint32_t clz8(std::uint8_t v) noexcept
 {
 #ifdef __GNUC__
-    if(sizeof(std::uint64_t) == sizeof(unsigned))
-        return __builtin_clz(v);
-    if(sizeof(std::uint64_t) == sizeof(unsigned long))
-        return __builtin_clzl(v);
-    return __builtin_clzll(v);
+    return __builtin_clz(v) - __builtin_clz(0x100U);
 #else
-    std::uint32_t retval = 0;
-    if((v & 0xFFFFFFFF00000000ULL) == 0)
-        retval += 0x20;
-    else
-        v >>= 0x20;
-    if((v & 0xFFFF0000UL) == 0)
-        retval += 0x10;
-    else
-        v >>= 0x10;
-    if((v & 0xFF00U) == 0)
-        retval += 8;
-    else
-        v >>= 8;
-    if((v & 0xF0) == 0)
-        retval += 4;
-    else
-        v >>= 4;
-    std::uint_fast8_t lookupTable[0x10] = {4, 3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
-    return retval + lookupTable[v];
+    return ((v & 0xF0) == 0) ? 4 + clz4(v) : clz4(v >> 4);
+#endif
+}
+
+constexpr std::uint32_t clz16(std::uint16_t v) noexcept
+{
+#ifdef __GNUC__
+    return __builtin_clz(v) - (__builtin_clz(0) - 16);
+#else
+    return ((v & 0xFF00U) == 0) ? 8 + clz8(v) : clz8(v >> 8);
+#endif
+}
+
+constexpr std::uint32_t clz32(std::uint32_t v) noexcept
+{
+#ifdef __GNUC__
+    return __builtin_clzl(v) - (__builtin_clzl(0) - 32);
+#else
+    return ((v & 0xFFFF0000UL) == 0) ? 16 + clz16(v) : clz16(v >> 16);
+#endif
+}
+
+constexpr std::uint32_t clz64(std::uint64_t v) noexcept
+{
+#ifdef __GNUC__
+    return __builtin_clzll(v) - (__builtin_clzll(0) - 64);
+#else
+    return ((v & 0xFFFFFFFF00000000ULL) == 0) ? 32 + clz32(v) : clz32(v >> 32);
+#endif
+}
+constexpr std::uint32_t ctz4(std::uint8_t v) noexcept
+{
+#ifdef __GNUC__
+    return v == 0 ? 4 : __builtin_ctz(v);
+#else
+    typedef const std::uint_fast8_t LookupTableType[0x10];
+    return LookupTableType{4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0}[v];
+#endif
+}
+
+constexpr std::uint32_t ctz8(std::uint8_t v) noexcept
+{
+#ifdef __GNUC__
+    return v == 0 ? 8 : __builtin_ctz(v);
+#else
+    return ((v & 0xF0) == 0) ? ctz4(v) : 4 + ctz4(v >> 4);
+#endif
+}
+
+constexpr std::uint32_t ctz16(std::uint16_t v) noexcept
+{
+#ifdef __GNUC__
+    return v == 0 ? 16 : __builtin_ctz(v);
+#else
+    return ((v & 0xFF00U) == 0) ? ctz8(v) : 8 + ctz8(v >> 8);
+#endif
+}
+
+constexpr std::uint32_t ctz32(std::uint32_t v) noexcept
+{
+#ifdef __GNUC__
+    return v == 0 ? 32 : __builtin_ctzl(v);
+#else
+    return ((v & 0xFFFF0000UL) == 0) ? ctz16(v) : 16 + ctz16(v >> 16);
+#endif
+}
+
+constexpr std::uint32_t ctz64(std::uint64_t v) noexcept
+{
+#ifdef __GNUC__
+    return v == 0 ? 64 : __builtin_ctzll(v);
+#else
+    return ((v & 0xFFFFFFFF00000000ULL) == 0) ? ctz32(v) : 32 + ctz32(v >> 32);
 #endif
 }
 inline double cos(double v) noexcept

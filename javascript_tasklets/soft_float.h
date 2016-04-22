@@ -180,6 +180,38 @@ public:
     {
         return low != 0 ? UInt128(~high, -low) : UInt128(-high, 0);
     }
+    friend constexpr bool operator==(UInt128 a, UInt128 b) noexcept
+    {
+        return a.high == b.high && a.low == b.low;
+    }
+    friend constexpr bool operator!=(UInt128 a, UInt128 b) noexcept
+    {
+        return a.high != b.high || a.low != b.low;
+    }
+    friend constexpr bool operator<(UInt128 a, UInt128 b) noexcept
+    {
+        return a.high < b.high || (a.high == b.high && a.low < b.low);
+    }
+    friend constexpr bool operator<=(UInt128 a, UInt128 b) noexcept
+    {
+        return a.high < b.high || (a.high == b.high && a.low <= b.low);
+    }
+    friend constexpr bool operator>(UInt128 a, UInt128 b) noexcept
+    {
+        return a.high > b.high || (a.high == b.high && a.low > b.low);
+    }
+    friend constexpr bool operator>=(UInt128 a, UInt128 b) noexcept
+    {
+        return a.high > b.high || (a.high == b.high && a.low >= b.low);
+    }
+    friend constexpr unsigned clz128(UInt128 v) noexcept
+    {
+        return v.high == 0 ? 64 + vm::math::clz64(v.low) : vm::math::clz64(v.high);
+    }
+    friend constexpr unsigned ctz128(UInt128 v) noexcept
+    {
+        return v.low == 0 ? 64 + vm::math::ctz64(v.high) : vm::math::ctz64(v.low);
+    }
 };
 
 struct UInt128::DivModResult final
@@ -194,7 +226,17 @@ struct UInt128::DivModResult final
 
 constexpr UInt128::DivModResult UInt128::divmod(UInt128 a, UInt128 b) noexcept
 {
-#error finish
+    return constexpr_assert(b != UInt128(0)),
+           a.high == 0 ?
+               (b.high == 0 ? DivModResult(UInt128(a.low / b.low), UInt128(a.low % b.low)) :
+                              DivModResult(UInt128(0), a)) :
+               b.low == 0 ?
+               (a.low == 0 ? DivModResult(UInt128(a.high / b.high), UInt128(a.high % b.high, 0)) :
+                             (b.high & (b.high - 1)) == 0 ?
+                             DivModResult(UInt128(a.high >> vm::math::ctz64(b.high)),
+                                          UInt128(a.high & (b.high - 1), a.low)) :
+                             finish_me$$()) :
+               finish_me$$();
 }
 
 constexpr UInt128 UInt128::div(UInt128 a, UInt128 b) noexcept
