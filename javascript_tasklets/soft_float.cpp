@@ -21,6 +21,93 @@
 
 #if 1
 #include "soft_float.h"
+#if 1
+#include <iostream>
+#include <cstdlib>
+#include <string>
+#include <sstream>
+#include <cstdio>
+namespace
+{
+using namespace javascript_tasklets::soft_float;
+std::string hexValue(const ExtendedFloat &v)
+{
+    if(v.isNaN())
+    {
+        return "NaN";
+    }
+    if(v.isInfinite())
+    {
+        if(v.sign)
+            return "-Infinity";
+        return "+Infinity";
+    }
+    std::ostringstream ss;
+    ss << std::hex << std::uppercase;
+    ss.fill('0');
+    if(v.sign)
+        ss << "-";
+    else
+        ss << "+";
+    ss << "0x";
+    std::int32_t exponent = v.exponent;
+    exponent -= ExtendedFloat::exponentBias();
+    if(v.isZero())
+        exponent = 0;
+    std::uint64_t mantissa = v.mantissa;
+    ss << (mantissa >> 63);
+    mantissa <<= 1;
+    ss << ".";
+    ss.width(16);
+    ss << mantissa;
+    ss << "p";
+    ss << std::dec << std::showpos;
+    ss << exponent;
+    return ss.str();
+}
+std::string hexValue(double v)
+{
+    if(std::isnan(v))
+    {
+        return "NaN";
+    }
+    if(std::isinf(v))
+    {
+        if(v < 0)
+            return "-Infinity";
+        return "+Infinity";
+    }
+    const std::size_t strSize = 64;
+    char str[strSize];
+    std::snprintf(str, sizeof(str), "%+1.16A", v);
+    for(char &ch : str)
+    {
+        if(ch == '\0')
+            break;
+        if(ch == 'X')
+            ch = 'x';
+        else if(ch == 'P')
+            ch = 'p';
+    }
+    return str;
+}
+void mainFn()
+{
+    auto a = ExtendedFloat(0x1.FFFFFFFFFFFFFp63);
+    a += ExtendedFloat::One();
+    std::cout << hexValue(a) << " == " << hexValue(static_cast<double>(a)) << std::endl;
+}
+struct Init
+{
+    Init()
+    {
+        mainFn();
+        std::exit(0);
+    }
+};
+Init init;
+}
+#endif
 #else
 #include <cstdint>
 #include <cstdlib>
