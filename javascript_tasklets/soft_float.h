@@ -399,11 +399,12 @@ inline UInt128 UInt128::mod(UInt128 a, UInt128 b) noexcept
     return divmod(a, b).modResult;
 }
 
-#if 0
+#if 1
 struct ExtendedFloat final // modeled after IEEE754 standard
 {
     std::uint64_t mantissa;
     std::uint16_t exponent;
+    bool sign;
     static constexpr std::uint16_t infinityNaNExponent() noexcept
     {
         return 0xFFFFU;
@@ -420,79 +421,300 @@ struct ExtendedFloat final // modeled after IEEE754 standard
     {
         return 0x8000000000000000ULL;
     }
-    void normalize() noexcept
+    struct NormalizedTag final
     {
-        if(exponent == infinityNaNExponent())
-            return;
-        if(mantissa == 0)
-        {
-            exponent = 0;
-            return;
-        }
-#if defined(__GNUC__)
-        bool isNeg = (mantissa < 0);
-        if(isNeg)
-        {
-            mantissa = -mantissa;
-        }
-        int shiftAmount = clzMantissa(mantissa) - clzMantissa(normalizedMantissaMin());
-        if(shiftAmount > 0)
-        {
-            if(exponent < static_cast<ExponentType>(-shiftAmount) + 0)
-            {
-                exponent = 0;
-                mantissa = 0;
-            }
-            else
-            {
-                mantissa <<= shiftAmount;
-                exponent -= shiftAmount;
-            }
-        }
-        if(isNeg)
-        {
-            mantissa = -mantissa;
-        }
-#else
-        while(mantissa > -normalizedMantissaMin() && mantissa < normalizedMantissaMin())
-        {
-            if(exponent == zeroExponent())
-            {
-                exponent = 0;
-                mantissa = 0;
-                return;
-            }
-            exponent--;
-            mantissa <<= 1;
-        }
-#endif
+    };
+    static constexpr ExtendedFloat normalizeHelper(const ExtendedFloat &v,
+                                                   unsigned shiftAmount) noexcept
+    {
+        return shiftAmount > 0 && v.exponent >= -shiftAmount ?
+                   ExtendedFloat(NormalizedTag{},
+                                 v.mantissa << shiftAmount,
+                                 v.exponent - shiftAmount,
+                                 v.sign) :
+                   v;
     }
-    constexpr ExtendedFloat() noexcept : mantissa(0), exponent(0)
+    static constexpr ExtendedFloat normalize(const ExtendedFloat &v) noexcept
+    {
+        return v.exponent == infinityNaNExponent() ? v : v.mantissa == 0 ?
+                                                     Zero(v.sign) :
+                                                     normalizeHelper(v, vm::math::clz64(v.mantissa));
+    }
+    constexpr ExtendedFloat() noexcept : mantissa(0), exponent(0), sign(false)
     {
     }
-    explicit ExtendedFloat(MantissaType mantissa, ExponentType exponent = exponentBias()) noexcept
-        : mantissa(mantissa),
-          exponent(exponent)
+    constexpr ExtendedFloat(NormalizedTag,
+                            std::uint64_t mantissa,
+                            std::uint16_t exponent,
+                            bool sign = false) noexcept : mantissa(mantissa),
+                                                          exponent(exponent),
+                                                          sign(sign)
     {
-        normalize();
     }
-    explicit ExtendedFloat(double value) noexcept
+    explicit constexpr ExtendedFloat(std::uint64_t mantissa,
+                                     std::uint16_t exponent = exponentBias(),
+                                     bool sign = false) noexcept
+        : ExtendedFloat(normalize(ExtendedFloat(NormalizedTag{}, mantissa, exponent, sign)))
     {
+    }
+    explicit ExtendedFloat(double value) noexcept : mantissa(0),
+                                                    exponent(0),
+                                                    sign(std::signbit(value))
+    {
+        value = std::fabs(value);
         if(std::isnan(value))
         {
-            mantissa = 0;
+            mantissa = 1;
             exponent = infinityNaNExponent();
             return;
         }
         if(std::isinf(value))
         {
             exponent = infinityNaNExponent();
-            if(value < 0)
-                mantissa = -1;
-            else
-                mantissa = 1;
+            mantissa = 0;
             return;
         }
+        if(value == 0)
+        {
+            exponent = 0;
+            mantissa = 0;
+            return;
+        }
+        int log2Value = std::ilogb(value);
+        exponent = log2Value + exponentBias();
+        value = std::scalbn(value, log2Value + 63);
+        mantissa = value;
+    }
+    explicit operator double() const noexcept
+    {
+        if(exponent == infinityNaNExponent())
+        {
+            double retval = std::numeric_limits<double>::infinity();
+            if(mantissa)
+                retval = std::numeric_limits<double>::quiet_NaN();
+            if(sign)
+                return -retval;
+            return retval;
+        }
+        if(exponent == 0)
+        {
+            if(sign)
+                return -0.0;
+            return 0;
+        }
+        double value = std::scalbln(mantissa, static_cast<long>(exponent) - exponentBias() - 63);
+        if(sign)
+            return -value;
+        return value;
+    }
+    constexpr bool isNaN() const noexcept
+    {
+        return exponent == infinityNaNExponent() && mantissa != 0;
+    }
+    constexpr bool isInfinite() const noexcept
+    {
+        return exponent == infinityNaNExponent() && mantissa == 0;
+    }
+    constexpr bool isFinite() const noexcept
+    {
+        return exponent != infinityNaNExponent();
+    }
+    constexpr bool isNormal() const noexcept
+    {
+        return exponent != infinityNaNExponent() && exponent != 0;
+    }
+    constexpr bool isDenormal() const noexcept
+    {
+        return exponent == 0 && mantissa != 0;
+    }
+    constexpr bool isZero() const noexcept
+    {
+        return exponent == 0 && mantissa == 0;
+    }
+    constexpr bool signBit() const noexcept
+    {
+        return sign;
+    }
+    static constexpr ExtendedFloat NaN() noexcept
+    {
+        return ExtendedFloat(NormalizedTag{}, 1, infinityNaNExponent());
+    }
+    static constexpr ExtendedFloat Infinity(bool sign = false) noexcept
+    {
+        return ExtendedFloat(NormalizedTag{}, 0, infinityNaNExponent(), sign);
+    }
+    static constexpr ExtendedFloat Zero(bool sign = false) noexcept
+    {
+        return ExtendedFloat(NormalizedTag{}, 0, 0, sign);
+    }
+    constexpr ExtendedFloat operator+() const noexcept
+    {
+        return *this;
+    }
+    constexpr ExtendedFloat operator-() const noexcept
+    {
+        return ExtendedFloat(NormalizedTag{}, mantissa, exponent, !sign);
+    }
+    static constexpr UInt128 shiftHelper(std::uint64_t a, unsigned shift) noexcept
+    {
+        return shift >= 128 ? UInt128(0) : UInt128(a, 0) >> shift;
+    }
+    static constexpr std::uint64_t roundHelper(UInt128 v) noexcept
+    {
+        return v.low == 0x8000000000000000ULL && (v.high & 1) == 0 ?
+                   v.high :
+                   (v + UInt128(0x8000000000000000ULL)).high;
+    }
+    static constexpr ExtendedFloat subtractHelper6(UInt128 mantissa,
+                                                   std::uint16_t exponent,
+                                                   bool sign,
+                                                   unsigned shift)
+    {
+        return ExtendedFloat(
+            NormalizedTag{}, roundHelper(mantissa << shift), exponent - shift, sign);
+    }
+    static constexpr ExtendedFloat subtractHelper5(UInt128 mantissa,
+                                                   std::uint16_t exponent,
+                                                   bool sign,
+                                                   unsigned shift)
+    {
+        return subtractHelper6(mantissa, exponent, sign, shift > exponent ? exponent : shift);
+    }
+    static constexpr ExtendedFloat subtractHelper4(UInt128 mantissa,
+                                                   std::uint16_t exponent,
+                                                   bool sign)
+    {
+        return subtractHelper5(mantissa, exponent, sign, clz128(mantissa));
+    }
+    static constexpr ExtendedFloat subtractHelper3(UInt128 aMantissa,
+                                                   UInt128 bMantissa,
+                                                   std::uint16_t exponent) noexcept
+    {
+        return aMantissa == bMantissa ? Zero() : aMantissa < bMantissa ?
+                                        subtractHelper4(bMantissa - aMantissa, exponent, true) :
+                                        subtractHelper4(aMantissa - bMantissa, exponent, false);
+    }
+    static constexpr ExtendedFloat subtractHelper2(std::uint64_t aMantissa,
+                                                   std::uint16_t aExponent,
+                                                   std::uint64_t bMantissa,
+                                                   std::uint16_t bExponent,
+                                                   std::uint16_t maxExponent) noexcept
+    {
+        return subtractHelper3(shiftHelper(aMantissa, maxExponent - aExponent),
+                               shiftHelper(bMantissa, maxExponent - bExponent),
+                               maxExponent);
+    }
+    static constexpr ExtendedFloat subtractHelper(std::uint64_t aMantissa,
+                                                  std::uint16_t aExponent,
+                                                  std::uint64_t bMantissa,
+                                                  std::uint16_t bExponent) noexcept
+    {
+        return subtractHelper2(aMantissa,
+                               aExponent,
+                               bMantissa,
+                               bExponent,
+                               aExponent < bExponent ? bExponent : aExponent);
+    }
+    static constexpr ExtendedFloat addHelper3(UInt128 mantissa,
+                                              std::uint16_t exponent,
+                                              bool sign) noexcept
+    {
+        return mantissa >= UInt128(0x8000000000000000ULL, 0) ?
+                   (exponent + 1 == infinityNaNExponent() ?
+                        Infinity(sign) :
+                        ExtendedFloat(NormalizedTag{}, roundHelper(mantissa), exponent + 1, sign)) :
+                   ExtendedFloat(NormalizedTag{}, roundHelper(mantissa << 1), exponent + 1, sign);
+    }
+    static constexpr ExtendedFloat addHelper2(std::uint64_t aMantissa,
+                                              std::uint16_t aExponent,
+                                              std::uint64_t bMantissa,
+                                              std::uint16_t bExponent,
+                                              std::uint16_t maxExponent,
+                                              bool sign) noexcept
+    {
+        return addHelper3(shiftHelper(aMantissa, maxExponent - aExponent + 1)
+                              + shiftHelper(bMantissa, maxExponent - bExponent + 1),
+                          maxExponent,
+                          sign);
+    }
+    static constexpr ExtendedFloat addHelper(std::uint64_t aMantissa,
+                                             std::uint16_t aExponent,
+                                             std::uint64_t bMantissa,
+                                             std::uint16_t bExponent,
+                                             bool sign) noexcept
+    {
+        return addHelper2(aMantissa,
+                          aExponent,
+                          bMantissa,
+                          bExponent,
+                          aExponent < bExponent ? bExponent : aExponent,
+                          sign);
+    }
+    constexpr friend ExtendedFloat operator+(const ExtendedFloat &a,
+                                             const ExtendedFloat &b) noexcept
+    {
+        return a.isNaN() ? a : b.isNaN() ?
+                           b :
+                           a.isInfinite() ?
+                           (b.isInfinite() ? (a.sign == b.sign ? a : NaN()) : a) :
+                           b.isInfinite() ?
+                           b :
+                           a.isZero() ?
+                           (b.isZero() ? Zero(a.sign && b.sign) : b) :
+                           b.isZero() ?
+                           a :
+                           a.sign == b.sign ?
+                           addHelper(a.mantissa, a.exponent, b.mantissa, b.exponent, a.sign) :
+                           a.sign ? subtractHelper(b.mantissa, b.exponent, a.mantissa, a.exponent) :
+                                    subtractHelper(a.mantissa, a.exponent, b.mantissa, b.exponent);
+    }
+    constexpr friend ExtendedFloat operator-(const ExtendedFloat &a,
+                                             const ExtendedFloat &b) noexcept
+    {
+        return a + b.operator-();
+    }
+    ExtendedFloat &operator+=(const ExtendedFloat &v) noexcept
+    {
+        return *this = *this + v;
+    }
+    ExtendedFloat &operator-=(const ExtendedFloat &v) noexcept
+    {
+        return *this = *this - v;
+    }
+    friend constexpr bool operator==(const ExtendedFloat &a, const ExtendedFloat &b) noexcept
+    {
+        return a.isNaN() ? false : b.isNaN() ? false : a.isZero() ?
+                                               b.isZero() :
+                                               a.exponent == b.exponent && a.mantissa == b.mantissa;
+    }
+    friend constexpr bool operator!=(const ExtendedFloat &a, const ExtendedFloat &b) noexcept
+    {
+        return !(a == b);
+    }
+    static constexpr int compareHelper(const ExtendedFloat &a, const ExtendedFloat &b) noexcept
+    {
+        return a.isZero() ? (b.isZero() ? 0 : (b.sign ? 1 : -1)) : a.sign != b.sign ?
+                            (a.sign ? -1 : 1) :
+                            a.exponent != b.exponent ?
+                            ((a.exponent < b.exponent) != a.sign ? -1 : 1) :
+                            a.mantissa == b.mantissa ? 0 :
+                                                       (a.mantissa < b.mantissa) != a.sign ? -1 : 1;
+    }
+    friend constexpr bool operator<(const ExtendedFloat &a, const ExtendedFloat &b) noexcept
+    {
+        return a.isNaN() ? false : b.isNaN() ? false : compareHelper(a, b) < 0;
+    }
+    friend constexpr bool operator<=(const ExtendedFloat &a, const ExtendedFloat &b) noexcept
+    {
+        return a.isNaN() ? false : b.isNaN() ? false : compareHelper(a, b) <= 0;
+    }
+    friend constexpr bool operator>(const ExtendedFloat &a, const ExtendedFloat &b) noexcept
+    {
+        return a.isNaN() ? false : b.isNaN() ? false : compareHelper(a, b) > 0;
+    }
+    friend constexpr bool operator>=(const ExtendedFloat &a, const ExtendedFloat &b) noexcept
+    {
+        return a.isNaN() ? false : b.isNaN() ? false : compareHelper(a, b) >= 0;
     }
 };
 #endif
