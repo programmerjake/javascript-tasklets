@@ -493,9 +493,9 @@ struct ExtendedFloat final // modeled after IEEE754 standard
                         mantissa < 0)
     {
     }
-    explicit ExtendedFloat(double value) noexcept : mantissa(0),
-                                                    exponent(0),
-                                                    sign(std::signbit(value))
+    explicit ExtendedFloat(long double value) noexcept : mantissa(0),
+                                                         exponent(0),
+                                                         sign(std::signbit(value))
     {
         value = std::fabs(value);
         if(std::isnan(value))
@@ -517,11 +517,14 @@ struct ExtendedFloat final // modeled after IEEE754 standard
             return;
         }
         int log2Value = std::ilogb(value);
-        exponent = log2Value + exponentBias();
-        value = std::scalbn(value, 63 - log2Value);
+        if(log2Value <= -static_cast<int>(exponentBias()))
+            exponent = 0;
+        else
+            exponent = log2Value + exponentBias();
+        value = std::scalbn(value, 63 - static_cast<long>(exponent) + exponentBias());
         mantissa = value;
     }
-    explicit operator double() const noexcept
+    explicit operator long double() const noexcept
     {
         if(exponent == infinityNaNExponent())
         {
@@ -538,7 +541,7 @@ struct ExtendedFloat final // modeled after IEEE754 standard
                 return -0.0;
             return 0;
         }
-        double value = std::scalbln(mantissa, static_cast<long>(exponent) - exponentBias() - 63);
+        long double value = std::scalbln(static_cast<long double>(mantissa), static_cast<long>(exponent) - exponentBias() - 63);
         if(sign)
             return -value;
         return value;
@@ -829,7 +832,7 @@ struct ExtendedFloat final // modeled after IEEE754 standard
                                               std::int32_t exponent,
                                               bool sign) noexcept
     {
-        return divHelper6(((quotient << 2) | UInt128(roundExtraBitsCompareValue + 2))
+        return divHelper6(((quotient << 2) | UInt128(static_cast<std::uint64_t>(2 - roundExtraBitsCompareValue)))
                               << (shift - 2),
                           exponent - shift + 64,
                           sign);
@@ -904,8 +907,9 @@ struct ExtendedFloat final // modeled after IEEE754 standard
                    Infinity() :
                    exponent <= -128 ?
                    Zero() :
-                   exponent < 0 ? ExtendedFloat(roundHelper(UInt128(mantissa, 0) >> -exponent), 64) :
-                                  ExtendedFloat(roundHelper(UInt128(mantissa, 0)), exponent + 64);
+                   exponent < 0 ?
+                   ExtendedFloat(roundHelper(UInt128(mantissa, 0) >> -exponent), 64) :
+                   ExtendedFloat(roundHelper(UInt128(mantissa, 0)), exponent + 64);
     }
     static constexpr ExtendedFloat floorCeilHelper(UInt128 mantissa, std::int32_t exponent) noexcept
     {

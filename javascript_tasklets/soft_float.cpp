@@ -55,8 +55,10 @@ std::string hexValue(const ExtendedFloat &v)
     if(v.isZero())
         exponent = 0;
     std::uint64_t mantissa = v.mantissa;
-    ss << (mantissa >> 63);
-    mantissa <<= 1;
+    unsigned firstDigitBits = 1 + (exponent & 3);
+    ss << (mantissa >> (64 - firstDigitBits));
+    mantissa <<= firstDigitBits;
+    exponent &= ~3;
     ss << ".";
     ss.width(16);
     ss << mantissa;
@@ -65,7 +67,7 @@ std::string hexValue(const ExtendedFloat &v)
     ss << exponent;
     return ss.str();
 }
-std::string hexValue(double v)
+std::string hexValue(long double v)
 {
     if(std::isnan(v))
     {
@@ -79,7 +81,7 @@ std::string hexValue(double v)
     }
     const std::size_t strSize = 64;
     char str[strSize];
-    std::snprintf(str, sizeof(str), "%+1.16A", v);
+    std::snprintf(str, sizeof(str), "%+1.16LA", v);
     for(char &ch : str)
     {
         if(ch == '\0')
@@ -91,11 +93,147 @@ std::string hexValue(double v)
     }
     return str;
 }
+bool sameValue(long double a, long double b)
+{
+    if(std::isnan(a))
+        return std::isnan(b);
+    if(a == 0)
+    {
+        return b == 0 && std::signbit(a) == std::signbit(b);
+    }
+    return a == b;
+}
+template <typename TestFn1, typename TestFn2, typename... Args>
+void testCase(const char *name, TestFn1 &&testFn1, TestFn2 &&testFn2, Args... args)
+{
+    long double result1 = static_cast<long double>(testFn1(args...));
+    long double result2 = static_cast<long double>(testFn2(args...));
+    if(!sameValue(result1, result2))
+    {
+        std::cout << name;
+        for(const auto &v : {args...})
+        {
+            std::cout << " " << hexValue(v);
+        }
+        std::cout << " -> ";
+        std::cout << hexValue(result1) << " != " << hexValue(result2) << std::endl;
+    }
+    else if(false)
+    {
+        std::cout << name;
+        for(const auto &v : {args...})
+        {
+            std::cout << " " << hexValue(v);
+        }
+        std::cout << " -> ";
+        std::cout << hexValue(result1) << std::endl;
+    }
+}
 void mainFn()
 {
-    auto a = ExtendedFloat(0x1.FFFFFFFFFFFFFp63);
-    a += ExtendedFloat::One();
-    std::cout << hexValue(a) << " == " << hexValue(static_cast<double>(a)) << std::endl;
+    auto add1 = [](long double a, long double b) -> long double
+    {
+        return a + b;
+    };
+    auto add2 = [](long double a, long double b) -> ExtendedFloat
+    {
+        return ExtendedFloat(a) + ExtendedFloat(b);
+    };
+    auto mul1 = [](long double a, long double b) -> long double
+    {
+        return a * b;
+    };
+    auto mul2 = [](long double a, long double b) -> ExtendedFloat
+    {
+        return ExtendedFloat(a) * ExtendedFloat(b);
+    };
+    auto div1 = [](long double a, long double b) -> long double
+    {
+        return a / b;
+    };
+    auto div2 = [](long double a, long double b) -> ExtendedFloat
+    {
+        return ExtendedFloat(a) / ExtendedFloat(b);
+    };
+    auto floor1 = [](long double a) -> long double
+    {
+        return std::floor(a);
+    };
+    auto floor2 = [](long double a) -> ExtendedFloat
+    {
+        return floor(ExtendedFloat(a));
+    };
+    const long double NaN = std::numeric_limits<long double>::quiet_NaN();
+    const long double Infinity = std::numeric_limits<long double>::infinity();
+    testCase("add", add1, add2, +0.0L, +0.0L);
+    testCase("add", add1, add2, +0.0L, -0.0L);
+    testCase("add", add1, add2, -0.0L, +0.0L);
+    testCase("add", add1, add2, -0.0L, -0.0L);
+    testCase("add", add1, add2, 0.0L, NaN);
+    testCase("add", add1, add2, NaN, 0.0L);
+    testCase("add", add1, add2, NaN, NaN);
+    testCase("add", add1, add2, +Infinity, +Infinity);
+    testCase("add", add1, add2, +Infinity, -Infinity);
+    testCase("add", add1, add2, -Infinity, +Infinity);
+    testCase("add", add1, add2, -Infinity, -Infinity);
+    testCase("add", add1, add2, 0x1.0000000000000002p0L, -0x1.0p-64L);
+    testCase("add", add1, add2, 0x1.p0L, -0x1.0p-65L);
+    testCase("add", add1, add2, 0x1.p0L, -0x0.Fp-65L);
+    testCase("add", add1, add2, 0x1.p0L, -0x1.1p-65L);
+    testCase("add", add1, add2, 0x1.0000000000000002p0L, -0x2.0p-65L);
+    testCase("add", add1, add2, 0x1.0000000000000002p0L, -0x1.Fp-65L);
+    testCase("add", add1, add2, 0x1.0000000000000002p0L, -0x2.1p-65L);
+    testCase("add", add1, add2, 0x1p-16445L, 0x1p-16445L);
+    testCase("add", add1, add2, 0x1p+16383L, 0x1p+16383L);
+    testCase("mul", mul1, mul2, +0.0L, +0.0L);
+    testCase("mul", mul1, mul2, +0.0L, -0.0L);
+    testCase("mul", mul1, mul2, -0.0L, +0.0L);
+    testCase("mul", mul1, mul2, -0.0L, -0.0L);
+    testCase("mul", mul1, mul2, 0.0L, NaN);
+    testCase("mul", mul1, mul2, NaN, 0.0L);
+    testCase("mul", mul1, mul2, NaN, NaN);
+    testCase("mul", mul1, mul2, +Infinity, +Infinity);
+    testCase("mul", mul1, mul2, +Infinity, -Infinity);
+    testCase("mul", mul1, mul2, -Infinity, +Infinity);
+    testCase("mul", mul1, mul2, -Infinity, -Infinity);
+    testCase("mul", mul1, mul2, 0x1p0L, 0x1p0L);
+    testCase("mul", mul1, mul2, 0x1p16000L, 0x1p383L);
+    testCase("mul", mul1, mul2, 0x1p16000L, 0x1p384L);
+    testCase("mul", mul1, mul2, 0x1p-16000L, 0x1p-445L);
+    testCase("mul", mul1, mul2, 0x1p-16000L, 0x1p-446L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000001p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000002p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000003p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000004p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000005p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000006p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000007p0L);
+    testCase("mul", mul1, mul2, 3.1415926535897932384626433832795L, 0.318309886183790671537767526745028724L);
+    testCase("mul", mul1, mul2, 2.718281828459045235360287471352662497757L, 0.3678794411714423215955237701614608674458L);
+    testCase("div", div1, div2, +0.0L, +0.0L);
+    testCase("div", div1, div2, +1.0L, +0.0L);
+    testCase("div", div1, div2, +1.0L, -0.0L);
+    testCase("div", div1, div2, -1.0L, +0.0L);
+    testCase("div", div1, div2, -1.0L, -0.0L);
+    testCase("div", div1, div2, +0.0L, +1.0L);
+    testCase("div", div1, div2, +0.0L, -1.0L);
+    testCase("div", div1, div2, -0.0L, +1.0L);
+    testCase("div", div1, div2, -0.0L, -1.0L);
+    testCase("div", div1, div2, 0.0L, NaN);
+    testCase("div", div1, div2, NaN, 0.0L);
+    testCase("div", div1, div2, NaN, NaN);
+    testCase("div", div1, div2, +Infinity, +Infinity);
+    testCase("div", div1, div2, +1.0L, +Infinity);
+    testCase("div", div1, div2, +1.0L, -Infinity);
+    testCase("div", div1, div2, -1.0L, +Infinity);
+    testCase("div", div1, div2, -1.0L, -Infinity);
+    testCase("div", div1, div2, 1.0L, 3.0L);
+    testCase("div", div1, div2, 1.0L, 5.0L);
+    testCase("div", div1, div2, 1.0L, 7.0L);
+    testCase("div", div1, div2, 1.0L, 9.0L);
+    testCase("div", div1, div2, 1.0L, 11.0L);
+    testCase("div", div1, div2, 1.0L, 3.1415926535897932384626433832795L);
+    testCase("div", div1, div2, 1.0L, 2.718281828459045235360287471352662497757L);
 }
 struct Init
 {
