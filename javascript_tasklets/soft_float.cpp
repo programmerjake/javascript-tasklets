@@ -171,76 +171,175 @@ UInt16::DivModResult UInt16::divMod2(UInt16 n, UInt16 d)
     std::uint16_t rv = nv % dv;
     return DivModResult(UInt16(qv >> 8, qv & 0xFF), UInt16(rv >> 8, rv & 0xFF));
 }
+template <std::size_t NumberSizes,
+          typename Digit,
+          typename DoubleDigit,
+          unsigned DigitBitCount,
+          typename DigitCLZFn>
+void divMod(const Digit(&numerator)[NumberSizes],
+            const Digit(&denominator)[NumberSizes],
+            Digit(&quotient)[NumberSizes],
+            Digit(&remainder)[NumberSizes])
+{
+    constexpr Digit DigitMax = (static_cast<DoubleDigit>(1) << DigitBitCount) - 1;
+    static_assert(NumberSizes != 0, "bad size");
+    std::size_t m = NumberSizes;
+    for(std::size_t i = 0; i < NumberSizes; i++)
+    {
+        if(denominator[i] != 0)
+        {
+            m = i;
+            break;
+        }
+    }
+    const std::size_t n = NumberSizes - m;
+    if(n <= 1)
+    {
+        constexpr_assert(denominator[NumberSizes - 1] != 0);
+        for(std::size_t i = 0; i < NumberSizes - 1; i++)
+        {
+            remainder[i] = 0;
+        }
+        Digit currentRemainder = 0;
+        for(std::size_t i = 0; i < NumberSizes; i++)
+        {
+            DoubleDigit n = currentRemainder;
+            n <<= DigitBitCount;
+            n |= numerator[i];
+            quotient[i] = n / denominator[NumberSizes - 1];
+            currentRemainder = n % denominator[NumberSizes - 1];
+        }
+        remainder[NumberSizes - 1] = currentRemainder;
+        return;
+    }
+    // from algorithm D, section 4.3.1 in Art of Computer Programming volume 2 by Knuth.
+    unsigned log2D = DigitCLZFn()(denominator[m]);
+    Digit u[NumberSizes + 1];
+    u[NumberSizes] = (numerator[NumberSizes - 1] << log2D) & DigitMax;
+    u[0] = ((static_cast<DoubleDigit>(numerator[0]) << log2D) >> DigitBitCount) & DigitMax;
+    for(std::size_t i = 1; i < NumberSizes; i++)
+    {
+        DoubleDigit value = numerator[i - 1];
+        value <<= DigitBitCount;
+        value |= numerator[i];
+        value <<= log2D;
+        u[i] = (value >> DigitBitCount) & DigitMax;
+    }
+    Digit v[NumberSizes + 1] = {};
+    v[n] = (denominator[NumberSizes - 1] << log2D) & DigitMax;
+    for(std::size_t i = 1; i < n; i++)
+    {
+        DoubleDigit value = denominator[m + i - 1];
+        value <<= DigitBitCount;
+        value |= denominator[m + i];
+        value <<= log2D;
+        v[i] = (value >> DigitBitCount) & DigitMax;
+        quotient[i - 1] = 0;
+    }
+    for(std::size_t j = 0; j <= m; j++)
+    {
+        DoubleDigit qHat;
+        if(u[j] == v[1])
+        {
+            qHat = DigitMax;
+        }
+        else
+        {
+            qHat = ((static_cast<DoubleDigit>(u[j]) << DigitBitCount) | u[j + 1]) / v[1];
+        }
+        {
+            DoubleDigit lhs = v[2] * qHat;
+            DoubleDigit rhsHigh =
+                ((static_cast<DoubleDigit>(u[j]) << DigitBitCount) | u[j + 1]) - qHat * v[1];
+            Digit rhsLow = u[j + 2];
+            if(rhsHigh < static_cast<DoubleDigit>(1) << DigitBitCount
+               && lhs > ((rhsHigh << DigitBitCount) | rhsLow))
+            {
+                qHat--;
+                lhs -= v[2];
+                rhsHigh += v[1];
+                if(rhsHigh < static_cast<DoubleDigit>(1) << DigitBitCount
+                   && lhs > ((rhsHigh << DigitBitCount) | rhsLow))
+                {
+                    qHat--;
+                }
+            }
+        }
+        bool borrow = false;
+        {
+            Digit mulCarry = 0;
+            for(std::size_t i = n; i > 0; i--)
+            {
+                constexpr_assert(i <= NumberSizes);
+                DoubleDigit product = qHat * v[i] + mulCarry;
+                mulCarry = product >> DigitBitCount;
+                product &= DigitMax;
+                bool prevBorrow = borrow;
+                DoubleDigit digit = u[j + i] - product - prevBorrow;
+                borrow = digit != (digit & DigitMax);
+                digit &= DigitMax;
+                u[j + i] = digit;
+            }
+            bool prevBorrow = borrow;
+            DoubleDigit digit = u[j] - mulCarry - prevBorrow;
+            borrow = digit != (digit & DigitMax);
+            digit &= DigitMax;
+            u[j] = digit;
+        }
+        Digit qj = qHat;
+        if(borrow)
+        {
+            qj--;
+            bool carry = false;
+            for(std::size_t i = n; i > 0; i--)
+            {
+                bool prevCarry = carry;
+                constexpr_assert(i + j <= NumberSizes);
+                DoubleDigit digit = u[j + i] + v[i] + prevCarry;
+                carry = digit != (digit & DigitMax);
+                digit &= DigitMax;
+                u[j + i] = digit;
+            }
+            u[j] = (u[j] + carry) & DigitMax;
+        }
+        quotient[j + n - 1] = qj;
+    }
+    for(std::size_t i = 0; i < NumberSizes; i++)
+    {
+        DoubleDigit value = u[i];
+        value <<= DigitBitCount;
+        value |= u[i + 1];
+        remainder[i] = value >> log2D;
+    }
+}
+struct OpClz4 final
+{
+    constexpr unsigned operator()(std::uint16_t value) const noexcept
+    {
+        return __builtin_clz(value) - (__builtin_clz(0) - 4);
+    }
+};
 UInt16::DivModResult UInt16::divMod(UInt16 uIn, UInt16 vIn)
 {
-    if(vIn.high == 0)
-    {
-        if(uIn.high == 0)
-        {
-            return DivModResult(UInt16(uIn.low / vIn.low), UInt16(uIn.low % vIn.low));
-        }
-        auto qr = divMod16x8(UInt16(uIn.high % vIn.low, uIn.low), vIn.low);
-        return DivModResult(UInt16(uIn.high / vIn.low, qr.divResult), UInt16(qr.modResult));
-    }
-    if(uIn < vIn)
-    {
-        return DivModResult(UInt16(0), uIn);
-    }
-    unsigned log2D = clz8(vIn.high);
-    std::uint8_t u[3], v[3] = {};
-    u[2] = (uIn << log2D).low;
-    u[1] = (uIn << log2D).high;
-    u[0] = (UInt16(uIn.high) << log2D).high;
-    v[1] = (vIn << log2D).high;
-    v[2] = (vIn << log2D).low;
-    unsigned j = 0;
-    std::uint8_t qHat;
-    if(u[j] == v[1])
-        qHat = 0xFF;
-    else
-        qHat = divMod16x8(UInt16(u[j], u[j + 1]), v[1]).divResult;
-    {
-        UInt16 rHigh = UInt16(u[j], u[j + 1]) - mul8x8(v[1], qHat);
-        std::uint8_t rLow = u[j + 2];
-        UInt16 l = mul8x8(v[2], qHat);
-        if(rHigh.high == 0 && l > UInt16(rHigh.low, rLow))
-        {
-            qHat--;
-            rHigh = rHigh + UInt16(v[1]);
-            l = l - UInt16(v[2]);
-        }
-        if(rHigh.high == 0 && l > UInt16(rHigh.low, rLow))
-        {
-            qHat--;
-        }
-    }
-    bool borrow;
-    {
-        UInt16 product = mul8x8(qHat, v[2]);
-        std::uint8_t mulCarry = product.high;
-        borrow = subBorrow(u[j + 2], product.low);
-        u[j + 2] -= product.low;
-        product = mul8x8(qHat, v[1]) + UInt16(mulCarry);
-        mulCarry = product.high;
-        bool prevBorrow = borrow;
-        borrow = subBorrow(u[j + 1], product.low, prevBorrow);
-        u[j + 1] -= product.low + prevBorrow;
-        prevBorrow = borrow;
-        borrow = subBorrow(u[j], mulCarry, prevBorrow);
-        u[j] -= mulCarry + prevBorrow;
-    }
-    std::uint8_t qj = qHat;
-    if(borrow)
-    {
-        qj--;
-        bool carry = addCarry(u[j + 2], v[2]);
-        u[j + 2] += v[2];
-        bool prevCarry = carry;
-        carry = addCarry(u[j + 1], v[1], prevCarry);
-        u[j + 1] += v[1] + prevCarry;
-        u[j] += carry;
-    }
-    return DivModResult(UInt16(qj), UInt16(u[1], u[2]) >> log2D);
+    constexpr std::size_t NumberSizes = 4;
+    typedef std::uint16_t Digit;
+    typedef unsigned DoubleDigit;
+    constexpr unsigned DigitBitCount = 4;
+    Digit numerator[NumberSizes], denominator[NumberSizes], quotient[NumberSizes],
+        remainder[NumberSizes];
+    numerator[0] = uIn.high >> 4;
+    numerator[1] = uIn.high & 0xF;
+    numerator[2] = uIn.low >> 4;
+    numerator[3] = uIn.low & 0xF;
+    denominator[0] = vIn.high >> 4;
+    denominator[1] = vIn.high & 0xF;
+    denominator[2] = vIn.low >> 4;
+    denominator[3] = vIn.low & 0xF;
+    ::divMod<NumberSizes, Digit, DoubleDigit, DigitBitCount, OpClz4>(
+        numerator, denominator, quotient, remainder);
+    return DivModResult(
+        UInt16((quotient[0] << 4) | quotient[1], (quotient[2] << 4) | quotient[3]),
+        UInt16((remainder[0] << 4) | remainder[1], (remainder[2] << 4) | remainder[3]));
 }
 void mainFn(std::uint8_t start, std::uint8_t end)
 {
@@ -257,6 +356,10 @@ void mainFn(std::uint8_t start, std::uint8_t end)
             UInt16 d(dHigh, dLow);
             if(d == UInt16(0))
                 continue;
+#if 0
+            if(d < UInt16(2, 0))
+                continue;
+#endif
             for(unsigned nHigh = 0; nHigh < 0x100U; nHigh++)
             {
                 for(unsigned nLow = 0; nLow < 0x100U; nLow++)

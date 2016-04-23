@@ -99,14 +99,14 @@ public:
         return *this = *this * v;
     }
     struct DivModResult;
-    static constexpr DivModResult divmod(UInt128 a, UInt128 b) noexcept;
-    static constexpr UInt128 div(UInt128 a, UInt128 b) noexcept;
-    static constexpr UInt128 mod(UInt128 a, UInt128 b) noexcept;
-    friend constexpr UInt128 operator/(UInt128 a, UInt128 b) noexcept
+    static DivModResult divmod(UInt128 a, UInt128 b) noexcept;
+    static UInt128 div(UInt128 a, UInt128 b) noexcept;
+    static UInt128 mod(UInt128 a, UInt128 b) noexcept;
+    friend UInt128 operator/(UInt128 a, UInt128 b) noexcept
     {
         return div(a, b);
     }
-    friend constexpr UInt128 operator%(UInt128 a, UInt128 b) noexcept
+    friend UInt128 operator%(UInt128 a, UInt128 b) noexcept
     {
         return mod(a, b);
     }
@@ -224,31 +224,182 @@ struct UInt128::DivModResult final
     }
 };
 
-constexpr UInt128::DivModResult UInt128::divmod(UInt128 a, UInt128 b) noexcept
+inline UInt128::DivModResult UInt128::divmod(UInt128 a, UInt128 b) noexcept
 {
-    return constexpr_assert(b != UInt128(0)),
-           a.high == 0 ?
-               (b.high == 0 ? DivModResult(UInt128(a.low / b.low), UInt128(a.low % b.low)) :
-                              DivModResult(UInt128(0), a)) :
-               b.low == 0 ?
-               (a.low == 0 ? DivModResult(UInt128(a.high / b.high), UInt128(a.high % b.high, 0)) :
-                             (b.high & (b.high - 1)) == 0 ?
-                             DivModResult(UInt128(a.high >> vm::math::ctz64(b.high)),
-                                          UInt128(a.high & (b.high - 1), a.low)) :
-                             finish_me$$()) :
-               finish_me$$();
+    constexpr std::size_t NumberSizes = 4;
+    typedef std::uint32_t Digit;
+    typedef std::uint64_t DoubleDigit;
+    constexpr unsigned DigitBitCount = 32;
+    struct DigitCLZFn final
+    {
+        constexpr unsigned operator()(Digit v) const noexcept
+        {
+            return vm::math::clz32(v);
+        }
+    };
+    constexpr Digit DigitMax = (static_cast<DoubleDigit>(1) << DigitBitCount) - 1;
+    const Digit numerator[NumberSizes] = {
+        static_cast<Digit>(a.high >> DigitBitCount),
+        static_cast<Digit>(a.high & DigitMax),
+        static_cast<Digit>(a.low >> DigitBitCount),
+        static_cast<Digit>(a.low & DigitMax),
+    };
+    const Digit denominator[NumberSizes] = {
+        static_cast<Digit>(b.high >> DigitBitCount),
+        static_cast<Digit>(b.high & DigitMax),
+        static_cast<Digit>(b.low >> DigitBitCount),
+        static_cast<Digit>(b.low & DigitMax),
+    };
+    Digit quotient[NumberSizes];
+    Digit remainder[NumberSizes];
+    std::size_t m = NumberSizes;
+    for(std::size_t i = 0; i < NumberSizes; i++)
+    {
+        if(denominator[i] != 0)
+        {
+            m = i;
+            break;
+        }
+    }
+    const std::size_t n = NumberSizes - m;
+    if(n <= 1)
+    {
+        constexpr_assert(denominator[NumberSizes - 1] != 0);
+        for(std::size_t i = 0; i < NumberSizes - 1; i++)
+        {
+            remainder[i] = 0;
+        }
+        Digit currentRemainder = 0;
+        for(std::size_t i = 0; i < NumberSizes; i++)
+        {
+            DoubleDigit n = currentRemainder;
+            n <<= DigitBitCount;
+            n |= numerator[i];
+            quotient[i] = n / denominator[NumberSizes - 1];
+            currentRemainder = n % denominator[NumberSizes - 1];
+        }
+        remainder[NumberSizes - 1] = currentRemainder;
+    }
+    else
+    {
+        // from algorithm D, section 4.3.1 in Art of Computer Programming volume 2 by Knuth.
+        unsigned log2D = DigitCLZFn()(denominator[m]);
+        Digit u[NumberSizes + 1];
+        u[NumberSizes] = (numerator[NumberSizes - 1] << log2D) & DigitMax;
+        u[0] = ((static_cast<DoubleDigit>(numerator[0]) << log2D) >> DigitBitCount) & DigitMax;
+        for(std::size_t i = 1; i < NumberSizes; i++)
+        {
+            DoubleDigit value = numerator[i - 1];
+            value <<= DigitBitCount;
+            value |= numerator[i];
+            value <<= log2D;
+            u[i] = (value >> DigitBitCount) & DigitMax;
+        }
+        Digit v[NumberSizes + 1] = {};
+        v[n] = (denominator[NumberSizes - 1] << log2D) & DigitMax;
+        for(std::size_t i = 1; i < n; i++)
+        {
+            DoubleDigit value = denominator[m + i - 1];
+            value <<= DigitBitCount;
+            value |= denominator[m + i];
+            value <<= log2D;
+            v[i] = (value >> DigitBitCount) & DigitMax;
+            quotient[i - 1] = 0;
+        }
+        for(std::size_t j = 0; j <= m; j++)
+        {
+            DoubleDigit qHat;
+            if(u[j] == v[1])
+            {
+                qHat = DigitMax;
+            }
+            else
+            {
+                qHat = ((static_cast<DoubleDigit>(u[j]) << DigitBitCount) | u[j + 1]) / v[1];
+            }
+            {
+                DoubleDigit lhs = v[2] * qHat;
+                DoubleDigit rhsHigh =
+                    ((static_cast<DoubleDigit>(u[j]) << DigitBitCount) | u[j + 1]) - qHat * v[1];
+                Digit rhsLow = u[j + 2];
+                if(rhsHigh < static_cast<DoubleDigit>(1) << DigitBitCount
+                   && lhs > ((rhsHigh << DigitBitCount) | rhsLow))
+                {
+                    qHat--;
+                    lhs -= v[2];
+                    rhsHigh += v[1];
+                    if(rhsHigh < static_cast<DoubleDigit>(1) << DigitBitCount
+                       && lhs > ((rhsHigh << DigitBitCount) | rhsLow))
+                    {
+                        qHat--;
+                    }
+                }
+            }
+            bool borrow = false;
+            {
+                Digit mulCarry = 0;
+                for(std::size_t i = n; i > 0; i--)
+                {
+                    constexpr_assert(i <= NumberSizes);
+                    DoubleDigit product = qHat * v[i] + mulCarry;
+                    mulCarry = product >> DigitBitCount;
+                    product &= DigitMax;
+                    bool prevBorrow = borrow;
+                    DoubleDigit digit = u[j + i] - product - prevBorrow;
+                    borrow = digit != (digit & DigitMax);
+                    digit &= DigitMax;
+                    u[j + i] = digit;
+                }
+                bool prevBorrow = borrow;
+                DoubleDigit digit = u[j] - mulCarry - prevBorrow;
+                borrow = digit != (digit & DigitMax);
+                digit &= DigitMax;
+                u[j] = digit;
+            }
+            Digit qj = qHat;
+            if(borrow)
+            {
+                qj--;
+                bool carry = false;
+                for(std::size_t i = n; i > 0; i--)
+                {
+                    bool prevCarry = carry;
+                    constexpr_assert(i + j <= NumberSizes);
+                    DoubleDigit digit = u[j + i] + v[i] + prevCarry;
+                    carry = digit != (digit & DigitMax);
+                    digit &= DigitMax;
+                    u[j + i] = digit;
+                }
+                u[j] = (u[j] + carry) & DigitMax;
+            }
+            quotient[j + n - 1] = qj;
+        }
+        for(std::size_t i = 0; i < NumberSizes; i++)
+        {
+            DoubleDigit value = u[i];
+            value <<= DigitBitCount;
+            value |= u[i + 1];
+            remainder[i] = value >> log2D;
+        }
+    }
+    return DivModResult(
+        UInt128((static_cast<DoubleDigit>(quotient[0]) << DigitBitCount) | quotient[1],
+                (static_cast<DoubleDigit>(quotient[2]) << DigitBitCount) | quotient[3]),
+        UInt128((static_cast<DoubleDigit>(remainder[0]) << DigitBitCount) | remainder[1],
+                (static_cast<DoubleDigit>(remainder[2]) << DigitBitCount) | remainder[3]));
 }
 
-constexpr UInt128 UInt128::div(UInt128 a, UInt128 b) noexcept
+inline UInt128 UInt128::div(UInt128 a, UInt128 b) noexcept
 {
     return divmod(a, b).divResult;
 }
 
-constexpr UInt128 UInt128::mod(UInt128 a, UInt128 b) noexcept
+inline UInt128 UInt128::mod(UInt128 a, UInt128 b) noexcept
 {
     return divmod(a, b).modResult;
 }
 
+#if 0
 struct ExtendedFloat final // modeled after IEEE754 standard
 {
     std::uint64_t mantissa;
@@ -344,6 +495,7 @@ struct ExtendedFloat final // modeled after IEEE754 standard
         }
     }
 };
+#endif
 }
 }
 
