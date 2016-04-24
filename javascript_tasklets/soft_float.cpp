@@ -93,6 +93,33 @@ std::string hexValue(long double v)
     }
     return str;
 }
+std::string hexValue(std::int64_t v)
+{
+    std::ostringstream ss;
+    ss << std::hex << std::uppercase;
+    ss.fill('0');
+    if(v < 0)
+        ss << "-";
+    else
+        ss << "+";
+    ss << "0x";
+    ss.width(16);
+    if(v < 0)
+        ss << -static_cast<std::uint64_t>(v);
+    else
+        ss << static_cast<std::uint64_t>(v);
+    return ss.str();
+}
+std::string hexValue(std::uint64_t v)
+{
+    std::ostringstream ss;
+    ss << std::hex << std::uppercase;
+    ss.fill('0');
+    ss << "0x";
+    ss.width(16);
+    ss << static_cast<std::uint64_t>(v);
+    return ss.str();
+}
 bool sameValue(long double a, long double b)
 {
     if(std::isnan(a))
@@ -103,6 +130,7 @@ bool sameValue(long double a, long double b)
     }
     return a == b;
 }
+constexpr bool displayPassedTests = false;
 template <typename TestFn1, typename TestFn2, typename... Args>
 void testCase(const char *name, TestFn1 &&testFn1, TestFn2 &&testFn2, Args... args)
 {
@@ -118,7 +146,7 @@ void testCase(const char *name, TestFn1 &&testFn1, TestFn2 &&testFn2, Args... ar
         std::cout << " -> ";
         std::cout << hexValue(result1) << " != " << hexValue(result2) << std::endl;
     }
-    else if(false)
+    else if(displayPassedTests)
     {
         std::cout << name;
         for(const auto &v : {args...})
@@ -128,6 +156,96 @@ void testCase(const char *name, TestFn1 &&testFn1, TestFn2 &&testFn2, Args... ar
         std::cout << " -> ";
         std::cout << hexValue(result1) << std::endl;
     }
+}
+template <typename TestFn1, typename TestFn2, typename... Args>
+void testCaseI(const char *name, TestFn1 &&testFn1, TestFn2 &&testFn2, Args... args)
+{
+    auto result1 = testFn1(args...);
+    auto result2 = testFn2(args...);
+    if(result1 != result2)
+    {
+        std::cout << name;
+        for(const auto &v : {args...})
+        {
+            std::cout << " " << hexValue(v);
+        }
+        std::cout << " -> ";
+        std::cout << hexValue(result1) << " != " << hexValue(result2) << std::endl;
+    }
+    else if(displayPassedTests)
+    {
+        std::cout << name;
+        for(const auto &v : {args...})
+        {
+            std::cout << " " << hexValue(v);
+        }
+        std::cout << " -> ";
+        std::cout << hexValue(result1) << std::endl;
+    }
+}
+template <typename TestFn1, typename TestFn2, typename... Args>
+void roundTestCases(const char *name, TestFn1 &&testFn1, TestFn2 &&testFn2)
+{
+    const long double NaN = std::numeric_limits<long double>::quiet_NaN();
+    const long double Infinity = std::numeric_limits<long double>::infinity();
+    auto testBothSigns = [&](long double value)
+    {
+        testCase(name, testFn1, testFn2, value);
+        testCase(name, testFn1, testFn2, -value);
+    };
+    testCase(name, testFn1, testFn2, NaN);
+    testBothSigns(0.0L);
+    testBothSigns(Infinity);
+    testBothSigns(1.0L);
+    testBothSigns(0x1.0p-1L);
+    testBothSigns(0x1.8p0L);
+    testBothSigns(0x1.Fp0L);
+    testBothSigns(0x1.Fp-30L);
+    testBothSigns(0x1.Fp30L);
+    testBothSigns(0x1.Fp62L);
+    testBothSigns(0x1.Fp63L);
+    testBothSigns(0x1.Fp64L);
+    testBothSigns(0x1.Fp65L);
+    testBothSigns(0x1.Fp62L + 0.5L);
+    testBothSigns(0x1.Fp63L + 0.5L);
+    testBothSigns(0x1.Fp64L + 0.5L);
+    testBothSigns(0x1.Fp65L + 0.5L);
+    testBothSigns(0x1.Fp62L + 1);
+    testBothSigns(0x1.Fp63L + 1);
+    testBothSigns(0x1.Fp64L + 1);
+    testBothSigns(0x1.Fp65L + 1);
+}
+template <typename TestFn1, typename TestFn2, typename... Args>
+void toIntTestCases(const char *name, TestFn1 &&testFn1, TestFn2 &&testFn2)
+{
+    const long double NaN = std::numeric_limits<long double>::quiet_NaN();
+    const long double Infinity = std::numeric_limits<long double>::infinity();
+    auto testBothSigns = [&](long double value)
+    {
+        testCaseI(name, testFn1, testFn2, value);
+        testCaseI(name, testFn1, testFn2, -value);
+    };
+    testCaseI(name, testFn1, testFn2, NaN);
+    testBothSigns(0.0L);
+    testBothSigns(Infinity);
+    testBothSigns(1.0L);
+    testBothSigns(0x1.0p-1L);
+    testBothSigns(0x1.8p0L);
+    testBothSigns(0x1.Fp0L);
+    testBothSigns(0x1.Fp-30L);
+    testBothSigns(0x1.Fp30L);
+    testBothSigns(0x1.Fp62L);
+    testBothSigns(0x1.Fp63L);
+    testBothSigns(0x1.Fp64L);
+    testBothSigns(0x1.Fp65L);
+    testBothSigns(0x1.Fp62L + 0.5L);
+    testBothSigns(0x1.Fp63L + 0.5L);
+    testBothSigns(0x1.Fp64L + 0.5L);
+    testBothSigns(0x1.Fp65L + 0.5L);
+    testBothSigns(0x1.Fp62L + 1);
+    testBothSigns(0x1.Fp63L + 1);
+    testBothSigns(0x1.Fp64L + 1);
+    testBothSigns(0x1.Fp65L + 1);
 }
 void mainFn()
 {
@@ -163,6 +281,58 @@ void mainFn()
     {
         return floor(ExtendedFloat(a));
     };
+    auto ceil1 = [](long double a) -> long double
+    {
+        return std::ceil(a);
+    };
+    auto ceil2 = [](long double a) -> ExtendedFloat
+    {
+        return ceil(ExtendedFloat(a));
+    };
+    auto round1 = [](long double a) -> long double
+    {
+        return std::round(a);
+    };
+    auto round2 = [](long double a) -> ExtendedFloat
+    {
+        return round(ExtendedFloat(a));
+    };
+    auto trunc1 = [](long double a) -> long double
+    {
+        return std::trunc(a);
+    };
+    auto trunc2 = [](long double a) -> ExtendedFloat
+    {
+        return trunc(ExtendedFloat(a));
+    };
+    auto toUInt1 = [](long double a) -> std::uint64_t
+    {
+        if(std::isnan(a))
+            return 0;
+        if(a < std::numeric_limits<std::uint64_t>::min())
+            return std::numeric_limits<std::uint64_t>::min();
+        if(a > std::numeric_limits<std::uint64_t>::max())
+            return std::numeric_limits<std::uint64_t>::max();
+        return static_cast<std::uint64_t>(a);
+    };
+    auto toUInt2 = [](long double a) -> std::uint64_t
+    {
+        return static_cast<std::uint64_t>(ExtendedFloat(a));
+    };
+    auto toInt1 = [](long double a) -> std::int64_t
+    {
+        if(std::isnan(a))
+            return 0;
+        if(a < std::numeric_limits<std::int64_t>::min())
+            return std::numeric_limits<std::int64_t>::min();
+        if(a > std::numeric_limits<std::int64_t>::max())
+            return std::numeric_limits<std::int64_t>::max();
+        return static_cast<std::int64_t>(a);
+    };
+    auto toInt2 = [](long double a) -> std::int64_t
+    {
+        return static_cast<std::int64_t>(ExtendedFloat(a));
+    };
     const long double NaN = std::numeric_limits<long double>::quiet_NaN();
     const long double Infinity = std::numeric_limits<long double>::infinity();
     testCase("add", add1, add2, +0.0L, +0.0L);
@@ -185,6 +355,7 @@ void mainFn()
     testCase("add", add1, add2, 0x1.0000000000000002p0L, -0x2.1p-65L);
     testCase("add", add1, add2, 0x1p-16445L, 0x1p-16445L);
     testCase("add", add1, add2, 0x1p+16383L, 0x1p+16383L);
+
     testCase("mul", mul1, mul2, +0.0L, +0.0L);
     testCase("mul", mul1, mul2, +0.0L, -0.0L);
     testCase("mul", mul1, mul2, -0.0L, +0.0L);
@@ -202,14 +373,30 @@ void mainFn()
     testCase("mul", mul1, mul2, 0x1p-16000L, 0x1p-445L);
     testCase("mul", mul1, mul2, 0x1p-16000L, 0x1p-446L);
     testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000001p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.0000000018p0L);
     testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000002p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.0000000028p0L);
     testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000003p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.0000000038p0L);
     testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000004p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.0000000048p0L);
     testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000005p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.0000000058p0L);
     testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000006p0L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.0000000068p0L);
     testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.000000007p0L);
-    testCase("mul", mul1, mul2, 3.1415926535897932384626433832795L, 0.318309886183790671537767526745028724L);
-    testCase("mul", mul1, mul2, 2.718281828459045235360287471352662497757L, 0.3678794411714423215955237701614608674458L);
+    testCase("mul", mul1, mul2, 0x1.0000001p0L, 0x1.0000000078p0L);
+    testCase("mul",
+             mul1,
+             mul2,
+             3.1415926535897932384626433832795L,
+             0.318309886183790671537767526745028724L);
+    testCase("mul",
+             mul1,
+             mul2,
+             2.718281828459045235360287471352662497757L,
+             0.3678794411714423215955237701614608674458L);
+
     testCase("div", div1, div2, +0.0L, +0.0L);
     testCase("div", div1, div2, +1.0L, +0.0L);
     testCase("div", div1, div2, +1.0L, -0.0L);
@@ -234,6 +421,18 @@ void mainFn()
     testCase("div", div1, div2, 1.0L, 11.0L);
     testCase("div", div1, div2, 1.0L, 3.1415926535897932384626433832795L);
     testCase("div", div1, div2, 1.0L, 2.718281828459045235360287471352662497757L);
+    testCase("div", div1, div2, 0x1p16000L, 0x1p-383L);
+    testCase("div", div1, div2, 0x1p16000L, 0x1p-384L);
+    testCase("div", div1, div2, 0x1p-16000L, 0x1p445L);
+    testCase("div", div1, div2, 0x1p-16000L, 0x1p446L);
+
+    roundTestCases("floor", floor1, floor2);
+    roundTestCases("round", round1, round2);
+    roundTestCases("ceil", ceil1, ceil2);
+    roundTestCases("trunc", trunc1, trunc2);
+
+    toIntTestCases("uint64", toUInt1, toUInt2);
+    toIntTestCases("int64", toInt1, toInt2);
 }
 struct Init
 {

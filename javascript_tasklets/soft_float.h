@@ -541,7 +541,8 @@ struct ExtendedFloat final // modeled after IEEE754 standard
                 return -0.0;
             return 0;
         }
-        long double value = std::scalbln(static_cast<long double>(mantissa), static_cast<long>(exponent) - exponentBias() - 63);
+        long double value = std::scalbln(static_cast<long double>(mantissa),
+                                         static_cast<long>(exponent) - exponentBias() - 63);
         if(sign)
             return -value;
         return value;
@@ -606,7 +607,7 @@ struct ExtendedFloat final // modeled after IEEE754 standard
     {
         return shift >= 128 ? UInt128(0) : UInt128(a, 0) >> shift;
     }
-    static constexpr UInt128 roundHelper(UInt128 v) noexcept
+    static constexpr UInt128 finalRoundHelper(UInt128 v) noexcept
     {
         return v.low == 0x8000000000000000ULL && (v.high & 1) == 0 ?
                    UInt128(v.high) :
@@ -617,7 +618,7 @@ struct ExtendedFloat final // modeled after IEEE754 standard
                                                    bool sign,
                                                    unsigned shift)
     {
-        return ExtendedFloat(roundHelper(mantissa << shift), exponent - shift + 64, sign);
+        return ExtendedFloat(finalRoundHelper(mantissa << shift), exponent - shift + 64, sign);
     }
     static constexpr ExtendedFloat subtractHelper5(UInt128 mantissa,
                                                    std::uint16_t exponent,
@@ -668,8 +669,8 @@ struct ExtendedFloat final // modeled after IEEE754 standard
         return mantissa >= UInt128(0x8000000000000000ULL, 0) ?
                    (exponent + 1 == infinityNaNExponent() ?
                         Infinity(sign) :
-                        ExtendedFloat(roundHelper(mantissa), exponent + 65, sign)) :
-                   ExtendedFloat(roundHelper(mantissa << 1), exponent + 64, sign);
+                        ExtendedFloat(finalRoundHelper(mantissa), exponent + 65, sign)) :
+                   ExtendedFloat(finalRoundHelper(mantissa << 1), exponent + 64, sign);
     }
     static constexpr ExtendedFloat addHelper2(std::uint64_t aMantissa,
                                               std::uint16_t aExponent,
@@ -768,9 +769,10 @@ struct ExtendedFloat final // modeled after IEEE754 standard
     {
         return exponent >= infinityNaNExponent() ?
                    Infinity(sign) :
-                   exponent <= -128 ? Zero(sign) : exponent < 0 ?
-                                      ExtendedFloat(roundHelper(mantissa >> -exponent), 64, sign) :
-                                      ExtendedFloat(roundHelper(mantissa), exponent + 64, sign);
+                   exponent <= -128 ?
+                   Zero(sign) :
+                   exponent < 0 ? ExtendedFloat(finalRoundHelper(mantissa >> -exponent), 64, sign) :
+                                  ExtendedFloat(finalRoundHelper(mantissa), exponent + 64, sign);
     }
     static constexpr ExtendedFloat mulHelper3(UInt128 mantissa,
                                               std::int32_t exponent,
@@ -822,9 +824,10 @@ struct ExtendedFloat final // modeled after IEEE754 standard
     {
         return exponent >= infinityNaNExponent() ?
                    Infinity(sign) :
-                   exponent <= -128 ? Zero(sign) : exponent < 0 ?
-                                      ExtendedFloat(roundHelper(mantissa >> -exponent), 64, sign) :
-                                      ExtendedFloat(roundHelper(mantissa), exponent + 64, sign);
+                   exponent <= -128 ?
+                   Zero(sign) :
+                   exponent < 0 ? ExtendedFloat(finalRoundHelper(mantissa >> -exponent), 64, sign) :
+                                  ExtendedFloat(finalRoundHelper(mantissa), exponent + 64, sign);
     }
     static constexpr ExtendedFloat divHelper5(UInt128 quotient,
                                               unsigned shift,
@@ -832,10 +835,11 @@ struct ExtendedFloat final // modeled after IEEE754 standard
                                               std::int32_t exponent,
                                               bool sign) noexcept
     {
-        return divHelper6(((quotient << 2) | UInt128(static_cast<std::uint64_t>(2 - roundExtraBitsCompareValue)))
-                              << (shift - 2),
-                          exponent - shift + 64,
-                          sign);
+        return divHelper6(
+            ((quotient << 2) | UInt128(static_cast<std::uint64_t>(2 - roundExtraBitsCompareValue)))
+                << (shift - 2),
+            exponent - shift + 64,
+            sign);
     }
     static constexpr ExtendedFloat divHelper4(UInt128::DivModResult mantissa,
                                               std::uint64_t bMantissa,
@@ -908,8 +912,8 @@ struct ExtendedFloat final // modeled after IEEE754 standard
                    exponent <= -128 ?
                    Zero() :
                    exponent < 0 ?
-                   ExtendedFloat(roundHelper(UInt128(mantissa, 0) >> -exponent), 64) :
-                   ExtendedFloat(roundHelper(UInt128(mantissa, 0)), exponent + 64);
+                   ExtendedFloat(finalRoundHelper(UInt128(mantissa, 0) >> -exponent), 64) :
+                   ExtendedFloat(finalRoundHelper(UInt128(mantissa, 0)), exponent + 64);
     }
     static constexpr ExtendedFloat floorCeilHelper(UInt128 mantissa, std::int32_t exponent) noexcept
     {
@@ -961,18 +965,48 @@ struct ExtendedFloat final // modeled after IEEE754 standard
     static constexpr ExtendedFloat roundHelper(std::uint64_t mantissa,
                                                std::int32_t exponent) noexcept
     {
-        return exponent < exponentBias() ?
+        return exponent < exponentBias() - 2 ?
                    Zero() :
                    exponent >= exponentBias() + 63 ?
                    ExtendedFloat(NormalizedTag{}, mantissa, exponent) :
-                   ExtendedFloat(
-                       roundHelper(UInt128(mantissa, 0) >> (exponentBias() - exponent + 63)));
+                   ExtendedFloat(((UInt128(mantissa, 0) >> (exponentBias() - exponent + 64))
+                                  + UInt128(0x4000000000000000ULL)) >> 63);
     }
     constexpr friend ExtendedFloat round(const ExtendedFloat &v) noexcept
     {
         return !v.isFinite() || v.isZero() ? v : v.sign ? -roundHelper(v.mantissa, v.exponent) :
                                                           roundHelper(v.mantissa, v.exponent);
     }
+    explicit constexpr operator std::uint64_t() const noexcept
+    {
+        return isNaN() ? 0 : isInfinite() ?
+                         (sign ? 0 : ~static_cast<std::uint64_t>(0)) :
+                         exponent < exponentBias() || sign ?
+                         0 :
+                         *this >= TwoToThe64() ?
+                         ~static_cast<std::uint64_t>(0) :
+                         (UInt128(mantissa, 0) >> (exponentBias() - exponent + 63)).high;
+    }
+    static constexpr std::int64_t toInt64Helper(bool sign, std::uint64_t uint64Value) noexcept
+    {
+        return sign ? (uint64Value > 0x8000000000000000ULL ?
+                           -static_cast<std::int64_t>(0x7FFFFFFFFFFFFFFFULL) - 1 :
+                           -static_cast<std::int64_t>(uint64Value)) :
+                      uint64Value >= 0x8000000000000000ULL ?
+                      static_cast<std::int64_t>(0x7FFFFFFFFFFFFFFFULL) :
+                      static_cast<std::int64_t>(uint64Value);
+    }
+    explicit constexpr operator std::int64_t() const noexcept
+    {
+        return isNaN() ? 0 : sign ? toInt64Helper(true, static_cast<std::uint64_t>(operator-())) :
+                                    toInt64Helper(false, static_cast<std::uint64_t>(*this));
+    }
+#if 0
+    constexpr friend ExtendedFloat pow(const ExtendedFloat &v, std::int64_t value) noexcept
+    {
+
+    }
+#endif
 };
 #endif
 }
