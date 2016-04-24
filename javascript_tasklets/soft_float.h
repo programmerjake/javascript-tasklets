@@ -1001,12 +1001,27 @@ struct ExtendedFloat final // modeled after IEEE754 standard
         return isNaN() ? 0 : sign ? toInt64Helper(true, static_cast<std::uint64_t>(operator-())) :
                                     toInt64Helper(false, static_cast<std::uint64_t>(*this));
     }
-#if 0
-    constexpr friend ExtendedFloat pow(const ExtendedFloat &v, std::int64_t value) noexcept
+    static constexpr ExtendedFloat powHelper(const ExtendedFloat &base,
+                                             const ExtendedFloat &currentValue,
+                                             std::uint64_t exponent) noexcept
     {
-
+        return exponent == 0 ? currentValue : exponent == 1 ?
+                               currentValue * base :
+                               exponent == 2 ?
+                               currentValue * (base * base) :
+                               exponent & 1 ?
+                               powHelper(base * base, currentValue * base, exponent >> 1) :
+                               powHelper(base * base, currentValue, exponent >> 1);
     }
-#endif
+    constexpr friend ExtendedFloat pow(const ExtendedFloat &base, std::uint64_t exponent) noexcept
+    {
+        return powHelper(base, One(), exponent);
+    }
+    friend ExtendedFloat pow(const ExtendedFloat &base, std::int64_t exponent) noexcept
+    {
+        return exponent < 0 ? powHelper(One() / base, One(), -exponent) :
+                              powHelper(base, One(), exponent);
+    }
 };
 #endif
 }

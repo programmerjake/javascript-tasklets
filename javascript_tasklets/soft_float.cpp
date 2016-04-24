@@ -130,7 +130,16 @@ bool sameValue(long double a, long double b)
     }
     return a == b;
 }
-constexpr bool displayPassedTests = false;
+void writeArgs()
+{
+}
+template <typename Arg, typename ...Args>
+void writeArgs(Arg arg, Args ...args)
+{
+    std::cout << " " << hexValue(arg);
+    writeArgs(args...);
+}
+constexpr bool displayPassedTests = true;
 template <typename TestFn1, typename TestFn2, typename... Args>
 void testCase(const char *name, TestFn1 &&testFn1, TestFn2 &&testFn2, Args... args)
 {
@@ -139,20 +148,14 @@ void testCase(const char *name, TestFn1 &&testFn1, TestFn2 &&testFn2, Args... ar
     if(!sameValue(result1, result2))
     {
         std::cout << name;
-        for(const auto &v : {args...})
-        {
-            std::cout << " " << hexValue(v);
-        }
+        writeArgs(args...);
         std::cout << " -> ";
         std::cout << hexValue(result1) << " != " << hexValue(result2) << std::endl;
     }
     else if(displayPassedTests)
     {
         std::cout << name;
-        for(const auto &v : {args...})
-        {
-            std::cout << " " << hexValue(v);
-        }
+        writeArgs(args...);
         std::cout << " -> ";
         std::cout << hexValue(result1) << std::endl;
     }
@@ -165,20 +168,14 @@ void testCaseI(const char *name, TestFn1 &&testFn1, TestFn2 &&testFn2, Args... a
     if(result1 != result2)
     {
         std::cout << name;
-        for(const auto &v : {args...})
-        {
-            std::cout << " " << hexValue(v);
-        }
+        writeArgs(args...);
         std::cout << " -> ";
         std::cout << hexValue(result1) << " != " << hexValue(result2) << std::endl;
     }
     else if(displayPassedTests)
     {
         std::cout << name;
-        for(const auto &v : {args...})
-        {
-            std::cout << " " << hexValue(v);
-        }
+        writeArgs(args...);
         std::cout << " -> ";
         std::cout << hexValue(result1) << std::endl;
     }
@@ -333,6 +330,34 @@ void mainFn()
     {
         return static_cast<std::int64_t>(ExtendedFloat(a));
     };
+    auto pow1 = [](long double base, int exponent) -> long double
+    {
+        if(exponent < 0)
+        {
+            base = 1 / base;
+            exponent = -exponent;
+        }
+        else if(exponent == 0)
+            return 1;
+        long double retval = 1;
+        for(;;)
+        {
+            if(exponent == 0)
+                return retval;
+            else if(exponent == 1)
+                return retval * base;
+            if(exponent & 1)
+            {
+                retval *= base;
+            }
+            base *= base;
+            exponent >>= 1;
+        }
+    };
+    auto pow2 = [](long double base, int exponent) -> ExtendedFloat
+    {
+        return pow(ExtendedFloat(base), static_cast<std::int64_t>(exponent));
+    };
     const long double NaN = std::numeric_limits<long double>::quiet_NaN();
     const long double Infinity = std::numeric_limits<long double>::infinity();
     testCase("add", add1, add2, +0.0L, +0.0L);
@@ -433,6 +458,18 @@ void mainFn()
 
     toIntTestCases("uint64", toUInt1, toUInt2);
     toIntTestCases("int64", toInt1, toInt2);
+
+    testCase("pow", pow1, pow2, 1.0L, static_cast<std::int64_t>(0));
+    testCase("pow", pow1, pow2, 1.0L, static_cast<std::int64_t>(5000));
+    testCase("pow", pow1, pow2, 1.0L, static_cast<std::int64_t>(-5000));
+    testCase("pow", pow1, pow2, 2.0L, static_cast<std::int64_t>(3000));
+    testCase("pow", pow1, pow2, 2.0L, static_cast<std::int64_t>(-3000));
+    testCase("pow", pow1, pow2, 3.0L, static_cast<std::int64_t>(3000));
+    testCase("pow", pow1, pow2, 3.0L, static_cast<std::int64_t>(-3000));
+    testCase("pow", pow1, pow2, 10.0L, static_cast<std::int64_t>(3000));
+    testCase("pow", pow1, pow2, 10.0L, static_cast<std::int64_t>(-3000));
+    testCase("pow", pow1, pow2, 36.0L, static_cast<std::int64_t>(3000));
+    testCase("pow", pow1, pow2, 36.0L, static_cast<std::int64_t>(-3000));
 }
 struct Init
 {
