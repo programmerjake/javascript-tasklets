@@ -22,6 +22,9 @@
 #include "value.h"
 #include <cmath>
 #include <algorithm>
+#include "soft_float.h"
+#include <sstream>
+#include <array>
 
 namespace javascript_tasklets
 {
@@ -666,101 +669,195 @@ String UInt32Handle::toStringValue(std::uint32_t value, unsigned base)
     return retval;
 }
 
-#if 0
-String DoubleHandle::toStringValue(double value, unsigned base)
+namespace
+{
+constexpr std::array<soft_float::ExtendedFloat, 37> makeBase2Logs() noexcept
+{
+    return std::array<soft_float::ExtendedFloat, 37>{
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(0))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(1))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(2))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(3))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(4))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(5))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(6))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(7))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(8))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(9))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(10))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(11))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(12))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(13))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(14))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(15))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(16))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(17))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(18))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(19))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(20))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(21))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(22))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(23))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(24))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(25))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(26))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(27))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(28))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(29))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(30))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(31))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(32))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(33))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(34))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(35))),
+        log2(soft_float::ExtendedFloat(static_cast<std::uint64_t>(36))),
+    };
+}
+std::string toStringValueHelper(std::uint64_t value, unsigned base)
 {
     constexpr_assert(base >= 2 && base <= 36);
-    if(std::isnan(value))
+    std::string retval;
+    retval.reserve(32); // max number of digits is base 2 with 32 digits
+    do
+    {
+        retval += static_cast<char>(StringHandle::getDigitCharacter(value % base));
+        value /= base;
+    } while(value != 0);
+    std::reverse(retval.begin(), retval.end());
+    return retval;
+}
+}
+
+String DoubleHandle::toStringValue(double valueIn, unsigned base)
+{
+    constexpr_assert(base >= 2 && base <= 36);
+    const char exponentChar = base == 10 ? 'e' : base == 16 ? 'h' : base == 8 ? 'o' : 'E';
+    soft_float::ExtendedFloat value(valueIn), baseF(static_cast<std::uint64_t>(base));
+    auto invBaseF = soft_float::ExtendedFloat::One() / baseF;
+    static constexpr auto base2Logs = makeBase2Logs();
+    auto limit21 = static_cast<std::int64_t>(round(soft_float::ExtendedFloat(static_cast<std::uint64_t>(21)) * (base2Logs[10] / base2Logs[base])));
+    constexpr_assert(limit21 > 0);
+    auto limit6 = static_cast<std::int64_t>(round(soft_float::ExtendedFloat(static_cast<std::uint64_t>(6)) * (base2Logs[10] / base2Logs[base])));
+    constexpr_assert(limit6 > 0);
+    if(value.isNaN())
         return u"NaN";
-    if(value == 0)
+    if(value.isZero())
         return u"0";
-    if(value < 0)
-        return u"-" + toStringValue(-value, base);
-    if(std::isinf(value))
+    std::ostringstream ss;
+    if(value.signBit())
+    {
+        ss << "-";
+        value = -value;
+        valueIn = -valueIn;
+    }
+    if(value.isInfinite())
         return u"Infinity";
-    static const double logs[37] = {
-        0, // 0
-        0, // 1
-        1.00000000000000000000, // log2(2)
-        1.58496250072115618145, // log2(3)
-        2.00000000000000000000, // log2(4)
-        2.32192809488736234787, // log2(5)
-        2.58496250072115618145, // log2(6)
-        2.80735492205760410744, // log2(7)
-        3.00000000000000000000, // log2(8)
-        3.16992500144231236290, // log2(9)
-        3.32192809488736234787, // log2(10)
-        3.45943161863729725619, // log2(11)
-        3.58496250072115618145, // log2(12)
-        3.70043971814109216039, // log2(13)
-        3.80735492205760410744, // log2(14)
-        3.90689059560851852932, // log2(15)
-        4.00000000000000000000, // log2(16)
-        4.08746284125033940825, // log2(17)
-        4.16992500144231236290, // log2(18)
-        4.24792751344358549379, // log2(19)
-        4.32192809488736234787, // log2(20)
-        4.39231742277876028889, // log2(21)
-        4.45943161863729725619, // log2(22)
-        4.52356195605701287229, // log2(23)
-        4.58496250072115618145, // log2(24)
-        4.64385618977472469574, // log2(25)
-        4.70043971814109216039, // log2(26)
-        4.75488750216346854436, // log2(27)
-        4.80735492205760410744, // log2(28)
-        4.85798099512757212071, // log2(29)
-        4.90689059560851852932, // log2(30)
-        4.95419631038687520880, // log2(31)
-        5.00000000000000000000, // log2(32)
-        5.04439411935845343765, // log2(33)
-        5.08746284125033940825, // log2(34)
-        5.12928301694496645531, // log2(35)
-        5.16992500144231236290, // log2(36)
-    };
-    static const double invLogs[37] = {
-        0, // 0
-        0, // 1
-        1.00000000000000000000, // 1 / log2(2)
-        0.63092975357145743710, // 1 / log2(3)
-        0.50000000000000000000, // 1 / log2(4)
-        0.43067655807339305067, // 1 / log2(5)
-        0.38685280723454158687, // 1 / log2(6)
-        0.35620718710802217651, // 1 / log2(7)
-        0.33333333333333333333, // 1 / log2(8)
-        0.31546487678572871855, // 1 / log2(9)
-        0.30102999566398119521, // 1 / log2(10)
-        0.28906482631788785926, // 1 / log2(11)
-        0.27894294565112984319, // 1 / log2(12)
-        0.27023815442731974129, // 1 / log2(13)
-        0.26264953503719354797, // 1 / log2(14)
-        0.25595802480981548938, // 1 / log2(15)
-        0.25000000000000000000, // 1 / log2(16)
-        0.24465054211822603039, // 1 / log2(17)
-        0.23981246656813144473, // 1 / log2(18)
-        0.23540891336663823644, // 1 / log2(19)
-        0.23137821315975917426, // 1 / log2(20)
-        0.22767024869695299798, // 1 / log2(21)
-        0.22424382421757543947, // 1 / log2(22)
-        0.22106472945750374615, // 1 / log2(23)
-        0.21810429198553155922, // 1 / log2(24)
-        0.21533827903669652533, // 1 / log2(25)
-        0.21274605355336315360, // 1 / log2(26)
-        0.21030991785715247903, // 1 / log2(27)
-        0.20801459767650945759, // 1 / log2(28)
-        0.20584683246043445730, // 1 / log2(29)
-        0.20379504709050619003, // 1 / log2(30)
-        0.20184908658209985071, // 1 / log2(31)
-        0.20000000000000000000, // 1 / log2(32)
-        0.19823986317056053160, // 1 / log2(33)
-        0.19656163223282260771, // 1 / log2(34)
-        0.19495902189378630772, // 1 / log2(35)
-        0.19342640361727079343, // 1 / log2(36)
-    };
-    int n = static_cast<int>(std::ilogb(value) * invLogs[base]);
-    long double baseToThePowerOfN = std::pow(static_cast<long double>(base), n);
-    double baseToThePowerOf
-    std::uint64_t
+    auto nF = log2(value) / base2Logs[base] + soft_float::ExtendedFloat::One();
+    auto n = static_cast<std::int64_t>(floor(nF));
+    soft_float::ExtendedFloat baseToThePowerOfN = pow(baseF, n);
+    soft_float::ExtendedFloat baseToThePowerOfMinusN =
+        soft_float::ExtendedFloat::One() / baseToThePowerOfN;
+    auto scaledValue = value * baseToThePowerOfMinusN;
+    if(scaledValue < invBaseF)
+    {
+        n--;
+        baseToThePowerOfN *= invBaseF;
+        baseToThePowerOfMinusN *= baseF;
+        scaledValue = value * baseToThePowerOfMinusN;
+    }
+    else if(scaledValue >= soft_float::ExtendedFloat::One())
+    {
+        n++;
+        baseToThePowerOfN *= baseF;
+        baseToThePowerOfMinusN *= invBaseF;
+        scaledValue = value * baseToThePowerOfMinusN;
+    }
+    std::int64_t k = 0;
+    soft_float::ExtendedFloat sF = soft_float::ExtendedFloat::One();
+    auto baseToThePowerOfK = soft_float::ExtendedFloat::One();
+    auto baseToThePowerOfMinusK = soft_float::ExtendedFloat::One();
+    while(sF < soft_float::ExtendedFloat::TwoToThe64())
+    {
+        k++;
+        baseToThePowerOfK *= baseF;
+        baseToThePowerOfMinusK *= invBaseF;
+        sF = round(scaledValue * baseToThePowerOfK);
+        if(valueIn == static_cast<double>(sF * baseToThePowerOfMinusK * baseToThePowerOfN))
+            break;
+    }
+    std::uint64_t s = static_cast<std::uint64_t>(sF);
+    std::string sDigits = toStringValueHelper(s, base);
+    constexpr_assert(sDigits.size() == static_cast<std::uint64_t>(k));
+    if(k <= n && n <= limit21)
+    {
+        ss << sDigits;
+        for(std::size_t i = n - k; i > 0; i--)
+            ss << '0';
+    }
+    else if(0 < n && n <= limit21)
+    {
+        for(std::int64_t i = 0; i < n; i++)
+            ss << sDigits[i];
+        ss << '.';
+        for(std::int64_t i = n; i < k; i++)
+            ss << sDigits[i];
+    }
+    else if(-limit6 < n && n <= 0)
+    {
+        ss << "0.";
+        for(std::size_t i = -n; i > 0; i--)
+            ss << '0';
+        ss << sDigits;
+    }
+    else if(k == 1)
+    {
+        ss << sDigits << exponentChar;
+        if(n - 1 >= 0)
+            ss << '+' << (n - 1);
+        else
+            ss << (n - 1);
+    }
+    else
+    {
+        ss << sDigits[0] << '.';
+        for(std::int64_t i = 1; i < k; i++)
+            ss << sDigits[i];
+        ss << exponentChar;
+        if(n - 1 >= 0)
+            ss << '+' << (n - 1);
+        else
+            ss << (n - 1);
+    }
+    return string_cast<String>(ss.str());
+}
+}
+}
+
+#if 0
+#include <cstdlib>
+#include <iostream>
+namespace
+{
+using namespace javascript_tasklets::value;
+using namespace javascript_tasklets;
+void mainFn()
+{
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(1.2301e300)) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(1.2301)) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(0.02301)) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(12301)) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(1234567890123456.0)) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(3.14159265358979323, 16)) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(0x1.FFFFFFFFFFFFFp100, 2)) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(0x1.FFFFFFFFFFFFFp400, 16)) << std::endl;
+}
+struct Initializer final
+{
+    Initializer()
+    {
+        mainFn();
+        std::exit(0);
+    }
+} init;
 }
 #endif
-}
-}

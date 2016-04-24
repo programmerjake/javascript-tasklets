@@ -493,6 +493,37 @@ struct ExtendedFloat final // modeled after IEEE754 standard
                         mantissa < 0)
     {
     }
+    explicit ExtendedFloat(double value) noexcept : mantissa(0),
+                                                    exponent(0),
+                                                    sign(std::signbit(value))
+    {
+        value = std::fabs(value);
+        if(std::isnan(value))
+        {
+            mantissa = 1;
+            exponent = infinityNaNExponent();
+            return;
+        }
+        if(std::isinf(value))
+        {
+            exponent = infinityNaNExponent();
+            mantissa = 0;
+            return;
+        }
+        if(value == 0)
+        {
+            exponent = 0;
+            mantissa = 0;
+            return;
+        }
+        int log2Value = std::ilogb(value);
+        if(log2Value <= -static_cast<int>(exponentBias()))
+            exponent = 0;
+        else
+            exponent = log2Value + exponentBias();
+        value = std::scalbn(value, 63 - static_cast<long>(exponent) + exponentBias());
+        mantissa = value;
+    }
     explicit ExtendedFloat(long double value) noexcept : mantissa(0),
                                                          exponent(0),
                                                          sign(std::signbit(value))
@@ -535,13 +566,36 @@ struct ExtendedFloat final // modeled after IEEE754 standard
                 return -retval;
             return retval;
         }
-        if(exponent == 0)
+        if(isZero())
         {
             if(sign)
                 return -0.0;
             return 0;
         }
         long double value = std::scalbln(static_cast<long double>(mantissa),
+                                         static_cast<long>(exponent) - exponentBias() - 63);
+        if(sign)
+            return -value;
+        return value;
+    }
+    explicit operator double() const noexcept
+    {
+        if(exponent == infinityNaNExponent())
+        {
+            double retval = std::numeric_limits<double>::infinity();
+            if(mantissa)
+                retval = std::numeric_limits<double>::quiet_NaN();
+            if(sign)
+                return -retval;
+            return retval;
+        }
+        if(isZero())
+        {
+            if(sign)
+                return -0.0;
+            return 0;
+        }
+        double value = std::scalbln(static_cast<double>(mantissa),
                                          static_cast<long>(exponent) - exponentBias() - 63);
         if(sign)
             return -value;
