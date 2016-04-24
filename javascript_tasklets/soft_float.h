@@ -1022,6 +1022,80 @@ struct ExtendedFloat final // modeled after IEEE754 standard
         return exponent < 0 ? powHelper(One() / base, One(), -exponent) :
                               powHelper(base, One(), exponent);
     }
+    constexpr friend int ilogb(const ExtendedFloat &v) noexcept
+    {
+        return v.isNaN() ? FP_ILOGBNAN : v.isZero() ?
+                           FP_ILOGB0 :
+                           v.isInfinite() ? std::numeric_limits<int>::max() :
+                                            static_cast<std::int32_t>(v.exponent) - exponentBias()
+                                                     - vm::math::clz64(v.mantissa);
+    }
+    static constexpr ExtendedFloat scalbnHelper(std::uint64_t mantissa,
+                                                std::int64_t exponent,
+                                                bool sign) noexcept
+    {
+        return exponent >= infinityNaNExponent() ?
+                   Infinity(sign) :
+                   exponent <= -128 ?
+                   Zero(sign) :
+                   exponent < 0 ?
+                   ExtendedFloat(finalRoundHelper(UInt128(mantissa, 0) >> -exponent), 64, sign) :
+                   ExtendedFloat(finalRoundHelper(UInt128(mantissa, 0)), exponent + 64, sign);
+    }
+    constexpr friend ExtendedFloat scalbn(const ExtendedFloat &v, std::int64_t exponent) noexcept
+    {
+        return !v.isFinite() || v.isZero() ? v : scalbnHelper(
+                                                     v.mantissa, v.exponent + exponent, v.sign);
+    }
+    static constexpr std::uint64_t log2Helper4(UInt128 mantissa) noexcept
+    {
+        return ~mantissa.high == 0
+                       || ((mantissa.high & 1) == 0 && mantissa.low == 0x8000000000000000ULL) ?
+                   mantissa.high :
+                   (mantissa + UInt128(0x8000000000000000ULL)).high;
+    }
+    static constexpr UInt128 log2Helper3(UInt128 mantissa, unsigned bitsLeft) noexcept
+    {
+        return (bitsLeft > 0 ?
+                    log2Helper2(
+                        log2Helper4(mantissa << (mantissa.high & 0x8000000000000000ULL ? 0 : 1)),
+                        bitsLeft - 1) >> 1 :
+                    UInt128(0)) | UInt128(mantissa.high & 0x8000000000000000ULL, 0);
+    }
+    static constexpr UInt128 log2Helper2(std::uint64_t mantissa, unsigned bitsLeft) noexcept
+    {
+        return log2Helper3(UInt128(mantissa) * UInt128(mantissa), bitsLeft);
+    }
+    static constexpr ExtendedFloat log2Helper(const ExtendedFloat &v, unsigned shift) noexcept
+    {
+        return ExtendedFloat(finalRoundHelper(log2Helper2(v.mantissa << shift, 67)),
+                             exponentBias() - 1 + 64,
+                             0)
+               + ExtendedFloat(static_cast<std::int64_t>(v.exponent) - exponentBias() - shift);
+    }
+    constexpr friend ExtendedFloat log2(const ExtendedFloat &v) noexcept
+    {
+        return v.isNaN() ? v : v.isZero() ? Infinity(true) :
+                                            v.sign ? NaN() : v.isInfinite() ?
+                                                     v :
+                                                     log2Helper(v, vm::math::clz64(v.mantissa));
+    }
+    static constexpr ExtendedFloat Log10Of2() noexcept
+    {
+        return ExtendedFloat(NormalizedTag{}, 0x9A209A84FBCFF799ULL, exponentBias() - 2);
+    }
+    static constexpr ExtendedFloat LogOf2() noexcept
+    {
+        return ExtendedFloat(NormalizedTag{}, 0xB17217F7D1CF79ACULL, exponentBias() - 1);
+    }
+    constexpr friend ExtendedFloat log10(const ExtendedFloat &v) noexcept
+    {
+        return log2(v) * Log10Of2();
+    }
+    constexpr friend ExtendedFloat log(const ExtendedFloat &v) noexcept
+    {
+        return log2(v) * LogOf2();
+    }
 };
 #endif
 }

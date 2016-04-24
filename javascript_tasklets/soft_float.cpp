@@ -358,6 +358,30 @@ void mainFn()
     {
         return pow(ExtendedFloat(base), static_cast<std::int64_t>(exponent));
     };
+    auto scalbn1 = [](long double a, std::int64_t exponent) -> long double
+    {
+        return std::scalbln(a, static_cast<long>(exponent));
+    };
+    auto scalbn2 = [](long double a, std::int64_t exponent) -> ExtendedFloat
+    {
+        return scalbn(ExtendedFloat(a), exponent);
+    };
+    auto log2_1 = [](long double a) -> long double
+    {
+        return std::log2(a);
+    };
+    auto log2_2 = [](long double a) -> ExtendedFloat
+    {
+        return log2(ExtendedFloat(a));
+    };
+    auto log10_1 = [](long double a) -> long double
+    {
+        return std::log10(a);
+    };
+    auto log10_2 = [](long double a) -> ExtendedFloat
+    {
+        return log10(ExtendedFloat(a));
+    };
     const long double NaN = std::numeric_limits<long double>::quiet_NaN();
     const long double Infinity = std::numeric_limits<long double>::infinity();
     testCase("add", add1, add2, +0.0L, +0.0L);
@@ -470,6 +494,41 @@ void mainFn()
     testCase("pow", pow1, pow2, 10.0L, static_cast<std::int64_t>(-3000));
     testCase("pow", pow1, pow2, 36.0L, static_cast<std::int64_t>(3000));
     testCase("pow", pow1, pow2, 36.0L, static_cast<std::int64_t>(-3000));
+
+    testCase("scalbn", scalbn1, scalbn2, 1.0L, static_cast<std::int64_t>(16384));
+    testCase("scalbn", scalbn1, scalbn2, 1.0L, static_cast<std::int64_t>(16383));
+    testCase("scalbn", scalbn1, scalbn2, 1.0L, static_cast<std::int64_t>(3000));
+    testCase("scalbn", scalbn1, scalbn2, 1.0L, static_cast<std::int64_t>(-3000));
+    testCase("scalbn", scalbn1, scalbn2, 1.0L, static_cast<std::int64_t>(-16383));
+    testCase("scalbn", scalbn1, scalbn2, 1.0L, static_cast<std::int64_t>(-16384));
+    testCase("scalbn", scalbn1, scalbn2, 1.0L, static_cast<std::int64_t>(-16445));
+    testCase("scalbn", scalbn1, scalbn2, 1.0L, static_cast<std::int64_t>(-16446));
+
+    testCase("log2", log2_1, log2_2, NaN);
+    testCase("log2", log2_1, log2_2, Infinity);
+    testCase("log2", log2_1, log2_2, -Infinity);
+    testCase("log2", log2_1, log2_2, 0.0L);
+    testCase("log2", log2_1, log2_2, -0.0L);
+    testCase("log2", log2_1, log2_2, -1.0L);
+    testCase("log2", log2_1, log2_2, 1.0L);
+    testCase("log2", log2_1, log2_2, 2.0L);
+    testCase("log2", log2_1, log2_2, 0x1.0p-16445L);
+    testCase("log2", log2_1, log2_2, 0x1.0p16383L);
+    testCase("log2", log2_1, log2_2, 3.0L);
+    testCase("log2", log2_1, log2_2, 5.0L);
+    testCase("log2", log2_1, log2_2, 7.0L);
+    testCase("log2", log2_1, log2_2, 9.0L);
+    testCase("log2", log2_1, log2_2, 11.0L);
+    testCase("log2", log2_1, log2_2, 1e100L);
+    testCase("log2", log2_1, log2_2, 1e-1L);
+    testCase("log2", log2_1, log2_2, 1e-2L);
+    testCase("log2", log2_1, log2_2, 1.5L);
+    testCase("log2", log2_1, log2_2, 0.693147180559945309417232121458176568L);
+    testCase("log2", log2_1, log2_2, static_cast<long double>(ExtendedFloat::Log10Of2()));
+    testCase("log2", log2_1, log2_2, static_cast<long double>(ExtendedFloat::LogOf2()));
+
+    testCase("log10", log10_1, log10_2, 1e1001L);
+    testCase("log10", log10_1, log10_2, 1.5L);
 }
 struct Init
 {
