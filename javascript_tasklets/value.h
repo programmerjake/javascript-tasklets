@@ -841,6 +841,7 @@ struct StringHandle final
         return constexpr_assert(value < 36), value < 10 ? static_cast<char16_t>(value + '0') :
                                                           static_cast<char16_t>(value - 10 + 'a');
     }
+    static double toNumberValue(const String &str) noexcept;
 };
 
 inline ValueHandle::ValueHandle(StringHandle value) noexcept : value(value.get())

@@ -735,30 +735,38 @@ String DoubleHandle::toStringValue(double valueIn, unsigned base)
     soft_float::ExtendedFloat value(valueIn), baseF(static_cast<std::uint64_t>(base));
     auto invBaseF = soft_float::ExtendedFloat::One() / baseF;
     static constexpr auto base2Logs = makeBase2Logs();
-    auto limit21 = static_cast<std::int64_t>(round(soft_float::ExtendedFloat(static_cast<std::uint64_t>(21)) * (base2Logs[10] / base2Logs[base])));
+    auto limit21 =
+        static_cast<std::int64_t>(round(soft_float::ExtendedFloat(static_cast<std::uint64_t>(21))
+                                        * (base2Logs[10] / base2Logs[base])));
     constexpr_assert(limit21 > 0);
-    auto limit6 = static_cast<std::int64_t>(round(soft_float::ExtendedFloat(static_cast<std::uint64_t>(6)) * (base2Logs[10] / base2Logs[base])));
+    auto limit6 =
+        static_cast<std::int64_t>(round(soft_float::ExtendedFloat(static_cast<std::uint64_t>(6))
+                                        * (base2Logs[10] / base2Logs[base])));
     constexpr_assert(limit6 > 0);
     if(value.isNaN())
         return u"NaN";
     if(value.isZero())
         return u"0";
     std::ostringstream ss;
+    if(value.isInfinite())
+    {
+        if(value.signBit())
+            return u"-Infinity";
+        return u"Infinity";
+    }
     if(value.signBit())
     {
         ss << "-";
         value = -value;
         valueIn = -valueIn;
     }
-    if(value.isInfinite())
-        return u"Infinity";
     auto nF = log2(value) / base2Logs[base] + soft_float::ExtendedFloat::One();
     auto n = static_cast<std::int64_t>(floor(nF));
     soft_float::ExtendedFloat baseToThePowerOfN = pow(baseF, n);
     soft_float::ExtendedFloat baseToThePowerOfMinusN =
         soft_float::ExtendedFloat::One() / baseToThePowerOfN;
     auto scaledValue = value * baseToThePowerOfMinusN;
-    if(scaledValue < invBaseF)
+    if(scaledValue + scalbn(soft_float::ExtendedFloat::One(), -62) < invBaseF) // extra is to handle round-off error
     {
         n--;
         baseToThePowerOfN *= invBaseF;
@@ -830,6 +838,214 @@ String DoubleHandle::toStringValue(double valueIn, unsigned base)
     }
     return string_cast<String>(ss.str());
 }
+
+double StringHandle::toNumberValue(const String &str) noexcept
+{
+    const auto whiteSpace =
+        u"\t"
+        "\v"
+        "\f"
+        " "
+        "\u2028"
+        "\u2029"
+        "\u00A0"
+        "\u1680"
+        "\u2000"
+        "\u2001"
+        "\u2002"
+        "\u2003"
+        "\u2004"
+        "\u2005"
+        "\u2006"
+        "\u2007"
+        "\u2008"
+        "\u2009"
+        "\u200A"
+        "\u202F"
+        "\u205F"
+        "\u3000"
+        "\uFEFF";
+    std::size_t firstNonSpace = str.find_first_not_of(whiteSpace);
+    if(firstNonSpace == String::npos)
+        return 0;
+    std::size_t lastNonSpace = str.find_last_not_of(whiteSpace);
+    constexpr_assert(lastNonSpace != String::npos && lastNonSpace >= firstNonSpace);
+    if(str.compare(firstNonSpace, lastNonSpace - firstNonSpace + 1, u"Infinity") == 0
+       || str.compare(firstNonSpace, lastNonSpace - firstNonSpace + 1, u"+Infinity") == 0)
+    {
+        return std::numeric_limits<double>::infinity();
+    }
+    if(str.compare(firstNonSpace, lastNonSpace - firstNonSpace + 1, u"-Infinity") == 0)
+    {
+        return -std::numeric_limits<double>::infinity();
+    }
+    std::size_t currentPosition = firstNonSpace;
+    if(str[currentPosition] == u'0')
+    {
+        if(currentPosition == lastNonSpace)
+            return 0;
+        currentPosition++;
+        if(str[currentPosition] == u'b' || str[currentPosition] == u'B')
+        {
+            if(currentPosition == lastNonSpace)
+                return std::numeric_limits<double>::quiet_NaN();
+            currentPosition++;
+            if(str[currentPosition] != u'0' && str[currentPosition] != u'1')
+                return std::numeric_limits<double>::quiet_NaN();
+            auto retval = str[currentPosition] == u'1' ? soft_float::ExtendedFloat::One() :
+                                                         soft_float::ExtendedFloat::Zero();
+            while(currentPosition != lastNonSpace)
+            {
+                currentPosition++;
+                retval = scalbn(retval, 1);
+                if(str[currentPosition] != u'0' && str[currentPosition] != u'1')
+                    return std::numeric_limits<double>::quiet_NaN();
+                if(str[currentPosition] == u'1')
+                    retval += soft_float::ExtendedFloat::One();
+            }
+            return static_cast<double>(retval);
+        }
+        if(str[currentPosition] == u'o' || str[currentPosition] == u'O')
+        {
+            if(currentPosition == lastNonSpace)
+                return std::numeric_limits<double>::quiet_NaN();
+            currentPosition++;
+            if(str[currentPosition] < u'0' || str[currentPosition] > u'7')
+                return std::numeric_limits<double>::quiet_NaN();
+            auto retval =
+                soft_float::ExtendedFloat(static_cast<std::uint64_t>(str[currentPosition] - u'0'));
+            while(currentPosition != lastNonSpace)
+            {
+                currentPosition++;
+                retval = scalbn(retval, 3);
+                if(str[currentPosition] < u'0' || str[currentPosition] > u'7')
+                    return std::numeric_limits<double>::quiet_NaN();
+                if(str[currentPosition] != u'0')
+                    retval += soft_float::ExtendedFloat(
+                        static_cast<std::uint64_t>(str[currentPosition] - u'0'));
+            }
+            return static_cast<double>(retval);
+        }
+        if(str[currentPosition] == u'x' || str[currentPosition] == u'X')
+        {
+            if(currentPosition == lastNonSpace)
+                return std::numeric_limits<double>::quiet_NaN();
+            currentPosition++;
+            if((str[currentPosition] < u'0' || str[currentPosition] > u'9')
+               && (str[currentPosition] < u'a' || str[currentPosition] > u'f')
+               && (str[currentPosition] < u'A' || str[currentPosition] > u'F'))
+                return std::numeric_limits<double>::quiet_NaN();
+            std::uint64_t digit;
+            if(str[currentPosition] >= u'0' && str[currentPosition] <= u'9')
+                digit = str[currentPosition] - u'0';
+            else if(str[currentPosition] >= u'A' && str[currentPosition] <= u'F')
+                digit = str[currentPosition] - u'A' + 0xA;
+            else
+                digit = str[currentPosition] - u'a' + 0xA;
+            auto retval = soft_float::ExtendedFloat(digit);
+            while(currentPosition != lastNonSpace)
+            {
+                currentPosition++;
+                retval = scalbn(retval, 4);
+                if((str[currentPosition] < u'0' || str[currentPosition] > u'9')
+                   && (str[currentPosition] < u'a' || str[currentPosition] > u'f')
+                   && (str[currentPosition] < u'A' || str[currentPosition] > u'F'))
+                    return std::numeric_limits<double>::quiet_NaN();
+                if(str[currentPosition] != u'0')
+                {
+                    if(str[currentPosition] >= u'0' && str[currentPosition] <= u'9')
+                        digit = str[currentPosition] - u'0';
+                    else if(str[currentPosition] >= u'A' && str[currentPosition] <= u'F')
+                        digit = str[currentPosition] - u'A' + 0xA;
+                    else
+                        digit = str[currentPosition] - u'a' + 0xA;
+                    retval += soft_float::ExtendedFloat(digit);
+                }
+            }
+            return static_cast<double>(retval);
+        }
+        currentPosition--;
+    }
+    bool negative = false;
+    if(str[currentPosition] == u'-')
+    {
+        negative = true;
+        currentPosition++;
+    }
+    else if(str[currentPosition] == u'+')
+    {
+        currentPosition++;
+    }
+    auto retval = soft_float::ExtendedFloat::Zero();
+    bool gotDigitsBeforeFraction = false;
+    while(currentPosition <= lastNonSpace && str[currentPosition] >= u'0'
+          && str[currentPosition] <= u'9')
+    {
+        gotDigitsBeforeFraction = true;
+        retval *= soft_float::ExtendedFloat(static_cast<std::uint64_t>(10));
+        retval +=
+            soft_float::ExtendedFloat(static_cast<std::uint64_t>(str[currentPosition] - u'0'));
+        currentPosition++;
+    }
+    bool gotDigitsAfterFraction = false;
+    if(currentPosition <= lastNonSpace && str[currentPosition] == '.')
+    {
+        currentPosition++;
+        const auto oneTenth = soft_float::ExtendedFloat::One()
+                              / soft_float::ExtendedFloat(static_cast<std::uint64_t>(10));
+        auto factor = oneTenth;
+        while(currentPosition <= lastNonSpace && str[currentPosition] >= u'0'
+              && str[currentPosition] <= u'9')
+        {
+            gotDigitsAfterFraction = true;
+            retval += factor * soft_float::ExtendedFloat(
+                                   static_cast<std::uint64_t>(str[currentPosition] - u'0'));
+            factor *= oneTenth;
+            currentPosition++;
+        }
+    }
+    if(!gotDigitsBeforeFraction && !gotDigitsAfterFraction)
+        return std::numeric_limits<double>::quiet_NaN();
+    if(currentPosition <= lastNonSpace
+       && (str[currentPosition] == u'e' || str[currentPosition] == u'E'))
+    {
+        currentPosition++;
+        bool exponentIsNegative = false;
+        if(currentPosition > lastNonSpace)
+            return std::numeric_limits<double>::quiet_NaN();
+        if(str[currentPosition] == u'-')
+        {
+            exponentIsNegative = true;
+            currentPosition++;
+        }
+        else if(str[currentPosition] == u'+')
+        {
+            currentPosition++;
+        }
+        if(currentPosition > lastNonSpace)
+            return std::numeric_limits<double>::quiet_NaN();
+        if(str[currentPosition] < u'0' || str[currentPosition] > u'9')
+            return std::numeric_limits<double>::quiet_NaN();
+        int exponentValue = 0;
+        while(currentPosition <= lastNonSpace && str[currentPosition] >= u'0'
+              && str[currentPosition] <= u'9')
+        {
+            if(exponentValue < 10000)
+            {
+                exponentValue *= 10;
+                exponentValue += str[currentPosition] - u'0';
+            }
+            currentPosition++;
+        }
+        if(exponentIsNegative)
+            exponentValue = -exponentValue;
+        retval *= pow(soft_float::ExtendedFloat(static_cast<std::uint64_t>(10)),
+                      static_cast<std::int64_t>(exponentValue));
+    }
+    if(negative)
+        return static_cast<double>(-retval);
+    return static_cast<double>(retval);
+}
 }
 }
 
@@ -842,14 +1058,75 @@ using namespace javascript_tasklets::value;
 using namespace javascript_tasklets;
 void mainFn()
 {
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     std::numeric_limits<double>::infinity())) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     -std::numeric_limits<double>::infinity())) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     std::numeric_limits<double>::quiet_NaN())) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(0.0)) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(-0.0)) << std::endl;
     std::cout << string_cast<std::string>(DoubleHandle::toStringValue(1.2301e300)) << std::endl;
     std::cout << string_cast<std::string>(DoubleHandle::toStringValue(1.2301)) << std::endl;
     std::cout << string_cast<std::string>(DoubleHandle::toStringValue(0.02301)) << std::endl;
     std::cout << string_cast<std::string>(DoubleHandle::toStringValue(12301)) << std::endl;
-    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(1234567890123456.0)) << std::endl;
-    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(3.14159265358979323, 16)) << std::endl;
-    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(0x1.FFFFFFFFFFFFFp100, 2)) << std::endl;
-    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(0x1.FFFFFFFFFFFFFp400, 16)) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(1234567890123456.0))
+              << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(3.14159265358979323, 16))
+              << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(0x1.FFFFFFFFFFFFFp100, 2))
+              << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(0x1.FFFFFFFFFFFFFp400, 16))
+              << std::endl;
+    std::cout << std::endl;
+    std::cout << string_cast<std::string>(
+                     DoubleHandle::toStringValue(StringHandle::toNumberValue(""_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" Infinity "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" +Infinity "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" -Infinity "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 1e2 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 1e200000000000000000000000 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 1e-200000000000000000000000 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 1e+2 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 01e-2 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 1 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue("1.0000000000000001"_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue("1.0000000000000002"_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue("1.0000000000000003"_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue("1.0000000000000004"_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 0 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" -0 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" +0 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" +.e0 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 0x5f5E100 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 0X5F5e100 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 0b100101 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 0o9 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 0O0 "_js))) << std::endl;
+    std::cout << string_cast<std::string>(DoubleHandle::toStringValue(
+                     StringHandle::toNumberValue(" 0o77 "_js))) << std::endl;
 }
 struct Initializer final
 {
