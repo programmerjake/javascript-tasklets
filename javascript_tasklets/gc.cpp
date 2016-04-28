@@ -266,6 +266,14 @@ void GC::collect() noexcept
         const Value &value = std::get<1>(globalValue);
         collectorMarkValue(value);
     }
+    for(ExceptionBase *exception = exceptionListHead; exception != nullptr; exception = exception->next)
+    {
+        constexpr_assert(exception->gc.get() == this);
+        HandleScope handleScope(*this);
+        GCReferencesCallback callback(handleScope);
+        exception->getGCReferences(callback);
+        collectorMarkHandleScope(handleScope);
+    }
 
     // mark heap
     for(;;)

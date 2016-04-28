@@ -34,6 +34,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <forward_list>
+#include <exception>
 
 namespace javascript_tasklets
 {
@@ -1149,9 +1150,12 @@ public:
     }
 };
 
+class ExceptionBase;
+
 class GC final : public std::enable_shared_from_this<GC>
 {
     friend class HandleScope;
+    friend class ExceptionBase;
     template <typename T>
     friend class Handle;
     GC &operator=(const GC &) = delete;
@@ -1214,6 +1218,8 @@ private:
     std::vector<std::forward_list<ObjectDescriptorTransition>> objectDescriptorTransitions;
     std::unordered_multimap<std::size_t, StringReference> stringHashToStringReferenceMap;
     std::unordered_map<const void *, Value> globalValuesMap;
+    ExceptionBase *exceptionListHead;
+    ExceptionBase *exceptionListTail;
 
 private:
     ObjectReference allocateObjectIndex();
@@ -1402,6 +1408,168 @@ public:
                             object,
                             ObjectMemberDescriptor::DataInObject(
                                 configurable, enumerable, ObjectMemberIndex(), writable));
+    }
+};
+
+class ExceptionBase : public std::exception
+{
+    friend class GC;
+private:
+    std::shared_ptr<GC> gc;
+    ExceptionBase *next;
+    ExceptionBase *prev;
+    void addToGC() noexcept
+    {
+        constexpr_assert(gc);
+        if(gc->exceptionListHead == nullptr)
+        {
+            prev = nullptr;
+            next = nullptr;
+            gc->exceptionListHead = this;
+            gc->exceptionListTail = this;
+        }
+        else
+        {
+            prev = nullptr;
+            next = gc->exceptionListHead;
+            gc->exceptionListHead->prev = this;
+            gc->exceptionListHead = this;
+        }
+    }
+    void removeFromGC() noexcept
+    {
+        constexpr_assert(gc);
+        if(prev)
+        {
+            constexpr_assert(prev->next == this);
+            prev->next = next;
+        }
+        else
+        {
+            constexpr_assert(gc->exceptionListHead == this);
+            gc->exceptionListHead = next;
+        }
+        if(next)
+        {
+            constexpr_assert(next->prev == this);
+            next->prev = prev;
+        }
+        else
+        {
+            constexpr_assert(gc->exceptionListTail == this);
+            gc->exceptionListTail = prev;
+        }
+        prev = nullptr;
+        next = nullptr;
+    }
+
+public:
+    explicit ExceptionBase(std::shared_ptr<GC> gc) noexcept
+        : gc((constexpr_assert(gc), std::move(gc))),
+          next(nullptr),
+          prev(nullptr)
+    {
+        addToGC();
+    }
+    ExceptionBase(const ExceptionBase &rt) noexcept : gc(rt.gc), next(nullptr), prev(nullptr)
+    {
+        addToGC();
+    }
+    ExceptionBase(ExceptionBase &&rt) noexcept : gc(rt.gc), next(nullptr), prev(nullptr)
+    {
+        addToGC();
+    }
+    virtual ~ExceptionBase() noexcept
+    {
+        removeFromGC();
+    }
+    ExceptionBase &operator=(const ExceptionBase &rt) noexcept
+    {
+        if(gc == rt.gc)
+            return *this;
+        removeFromGC();
+        gc = rt.gc;
+        addToGC();
+        return *this;
+    }
+    ExceptionBase &operator=(ExceptionBase &&rt) noexcept
+    {
+        if(gc == rt.gc)
+            return *this;
+        removeFromGC();
+        gc = rt.gc;
+        addToGC();
+        return *this;
+    }
+    virtual void getGCReferences(GCReferencesCallback &callback) const = 0;
+    virtual const char *what() const noexcept override
+    {
+        return "gc::BaseException";
+    }
+    const std::shared_ptr<GC> &getGC() const noexcept
+    {
+        return gc;
+    }
+};
+
+struct ScriptException final : public ExceptionBase
+{
+public:
+    Handle<Value> value;
+
+private:
+    mutable char *whatValue;
+    static char *calculateWhat(GC &gc, const Handle<Value> &value) noexcept;
+
+public:
+    ScriptException(Handle<Value> value, std::shared_ptr<GC> gc) noexcept
+        : ExceptionBase(std::move(gc)),
+          value(std::move(value)),
+          whatValue(nullptr)
+    {
+    }
+    ScriptException(const ScriptException &rt) noexcept : ExceptionBase(rt), whatValue(nullptr)
+    {
+    }
+    ScriptException(ScriptException &&rt) noexcept : ExceptionBase(std::move(rt)),
+                                                     whatValue(rt.whatValue)
+    {
+        rt.whatValue = nullptr;
+    }
+    virtual ~ScriptException() noexcept
+    {
+        delete[] whatValue;
+    }
+    ScriptException &operator=(const ScriptException &rt) noexcept
+    {
+        ScriptException::operator=(rt);
+        if(whatValue == rt.whatValue)
+            return *this;
+        delete[] whatValue;
+        whatValue = nullptr;
+        return *this;
+    }
+    ScriptException &operator=(ScriptException &&rt) noexcept
+    {
+        ScriptException::operator=(std::move(rt));
+        if(whatValue == rt.whatValue)
+            return *this;
+        delete[] whatValue;
+        whatValue = rt.whatValue;
+        rt.whatValue = nullptr;
+        return *this;
+    }
+    virtual void getGCReferences(GCReferencesCallback &callback) const override
+    {
+        callback(value);
+    }
+    virtual const char *what() const noexcept override
+    {
+        if(!whatValue)
+            whatValue = calculateWhat(*getGC(), value);
+        if(!whatValue)
+            return "ScriptException";
+        return whatValue;
     }
 };
 
