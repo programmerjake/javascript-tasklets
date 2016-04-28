@@ -25,6 +25,7 @@
 #include "soft_float.h"
 #include <sstream>
 #include <array>
+#include "string.h"
 
 namespace javascript_tasklets
 {
@@ -766,7 +767,8 @@ String DoubleHandle::toStringValue(double valueIn, unsigned base)
     soft_float::ExtendedFloat baseToThePowerOfMinusN =
         soft_float::ExtendedFloat::One() / baseToThePowerOfN;
     auto scaledValue = value * baseToThePowerOfMinusN;
-    if(scaledValue + scalbn(soft_float::ExtendedFloat::One(), -62) < invBaseF) // extra is to handle round-off error
+    if(scaledValue + scalbn(soft_float::ExtendedFloat::One(), -62)
+       < invBaseF) // extra is to handle round-off error
     {
         n--;
         baseToThePowerOfN *= invBaseF;
@@ -1045,6 +1047,40 @@ double StringHandle::toNumberValue(const String &str) noexcept
     if(negative)
         return static_cast<double>(-retval);
     return static_cast<double>(retval);
+}
+
+PrimitiveHandle ObjectHandle::ordinaryToPrimitive(ToPrimitivePreferredType preferredType,
+                                                  GC &gc) const
+{
+    HandleScope handleScope(gc);
+    const StringHandle toStringString = gc.internString(u"toString");
+    const StringHandle valueOfString = gc.internString(u"valueOf");
+    std::initializer_list<const StringHandle *> methodNames;
+    switch(preferredType)
+    {
+    case ToPrimitivePreferredType::Default:
+    case ToPrimitivePreferredType::Number:
+        methodNames = {&valueOfString, &toStringString};
+        break;
+    case ToPrimitivePreferredType::String:
+        methodNames = {&toStringString, &valueOfString};
+        break;
+    }
+    for(const StringHandle *methodName : methodNames)
+    {
+        ValueHandle method = getValue(*methodName, *this, gc);
+        if(method.isObject() && method.getObject().isCallable(gc))
+        {
+            ValueHandle result = method.getObject().call(*this, {}, gc);
+            if(result.isPrimitive())
+                return handleScope.escapeHandle(result);
+        }
+    }
+    throwTypeError(u"Cannot convert object to primitive value", gc);
+}
+
+PrimitiveHandle ObjectHandle::toPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const
+{
 }
 }
 }

@@ -262,9 +262,11 @@ struct ObjectHandle final
     std::vector<NameHandle> ownPropertyKeys(GC &gc) const;
     std::vector<NameHandle> ordinaryOwnPropertyKeys(GC &gc) const;
     ValueHandle call(ValueHandle thisValue, std::vector<ValueHandle> arguments, GC &gc) const;
+    bool isCallable(GC &gc) const;
     ObjectHandle construct(std::vector<ValueHandle> arguments,
                            ObjectHandle newTarget,
                            GC &gc) const;
+    bool isConstructable(GC &gc) const;
     bool isSameValueZero(const ObjectHandle &rt) const noexcept
     {
         return isSameValue(rt);
@@ -273,12 +275,22 @@ struct ObjectHandle final
     {
         return value.get() == rt.value.get();
     }
+    PrimitiveHandle ordinaryToPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const;
     PrimitiveHandle toPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const;
     static ObjectHandle create(ObjectOrNullHandle prototype, GC &gc);
     static ObjectHandle create(Handle<gc::ObjectDescriptorReference> objectDescriptor,
                                std::unique_ptr<gc::Object::ExtraData> extraData,
                                ObjectOrNullHandle prototype,
                                GC &gc);
+    static void throwTypeError(StringHandle message, GC &gc);
+    static void throwTypeError(const String &message, GC &gc)
+    {
+        throwTypeError(gc.internString(message), gc);
+    }
+    static void throwTypeError(String &&message, GC &gc)
+    {
+        throwTypeError(gc.internString(std::move(message)), gc);
+    }
 
 private:
     PropertyHandle getOwnProperty(gc::Name name, GC &gc) const;
