@@ -236,6 +236,7 @@ struct ObjectHandle final
     BooleanHandle hasProperty(NameHandle name, GC &gc) const;
     BooleanHandle ordinaryHasProperty(NameHandle name, GC &gc) const;
     ValueHandle getValue(NameHandle name, ValueHandle reciever, GC &gc) const;
+    ObjectOrNullHandle getMethod(NameHandle name, GC &gc) const;
     BooleanHandle ordinarySetValue(NameHandle name,
                                    ValueHandle newValue,
                                    ValueHandle reciever,
@@ -283,14 +284,8 @@ struct ObjectHandle final
                                ObjectOrNullHandle prototype,
                                GC &gc);
     static void throwTypeError(StringHandle message, GC &gc);
-    static void throwTypeError(const String &message, GC &gc)
-    {
-        throwTypeError(gc.internString(message), gc);
-    }
-    static void throwTypeError(String &&message, GC &gc)
-    {
-        throwTypeError(gc.internString(std::move(message)), gc);
-    }
+    static void throwTypeError(const String &message, GC &gc);
+    static void throwTypeError(String &&message, GC &gc);
 
 private:
     PropertyHandle getOwnProperty(gc::Name name, GC &gc) const;
@@ -1538,6 +1533,16 @@ inline PrimitiveHandle ObjectOrNullHandle::toPrimitive(ToPrimitivePreferredType 
     if(isObject())
         return getObject().toPrimitive(preferredType, gc);
     return getNull();
+}
+
+inline void ObjectHandle::throwTypeError(const String &message, GC &gc)
+{
+    throwTypeError(gc.internString(message), gc);
+}
+
+inline void ObjectHandle::throwTypeError(String &&message, GC &gc)
+{
+    throwTypeError(gc.internString(std::move(message)), gc);
 }
 }
 

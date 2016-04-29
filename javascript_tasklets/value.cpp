@@ -606,6 +606,16 @@ void ObjectHandle::setOwnProperty(gc::Name name, const PropertyHandle &property,
     }
 }
 
+ObjectOrNullHandle ObjectHandle::getMethod(NameHandle name, GC &gc) const
+{
+    ValueHandle retval = this->getValue(name, *this, gc);
+    if(retval.isNull() || retval.isUndefined())
+        return ObjectOrNullHandle(nullptr);
+    if(!retval.isObject() || !retval.getObject().isCallable(gc))
+        throwTypeError(u"Property is not a function", gc);
+    return retval.getObject();
+}
+
 void ObjectHandle::setOwnProperty(gc::Name name,
                                   const PropertyHandle &property,
                                   GC &gc,
@@ -1073,14 +1083,37 @@ PrimitiveHandle ObjectHandle::ordinaryToPrimitive(ToPrimitivePreferredType prefe
         {
             ValueHandle result = method.getObject().call(*this, {}, gc);
             if(result.isPrimitive())
-                return handleScope.escapeHandle(result);
+                return handleScope.escapeHandle(result.getPrimitive());
         }
     }
     throwTypeError(u"Cannot convert object to primitive value", gc);
+    constexpr_assert(false);
+    return PrimitiveHandle();
 }
 
 PrimitiveHandle ObjectHandle::toPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const
 {
+    HandleScope handleScope(gc);
+    auto exoticToPrimitive = getMethod(SymbolHandle::getToPrimitive(gc), gc);
+    if(exoticToPrimitive.isNull())
+        return handleScope.escapeHandle(ordinaryToPrimitive(preferredType, gc));
+    ValueHandle arg;
+    switch(preferredType)
+    {
+    case ToPrimitivePreferredType::Default:
+        arg = StringHandle(gc.internString(u"default"));
+        break;
+    case ToPrimitivePreferredType::Number:
+        arg = StringHandle(gc.internString(u"number"));
+        break;
+    case ToPrimitivePreferredType::String:
+        arg = StringHandle(gc.internString(u"string"));
+        break;
+    }
+    ValueHandle retval = exoticToPrimitive.getObject().call(*this, {std::move(arg)}, gc);
+    if(!retval.isPrimitive())
+        throwTypeError(u"Cannot convert object to primitive value", gc);
+    return handleScope.escapeHandle(retval.getPrimitive());
 }
 }
 }
