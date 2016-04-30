@@ -29,6 +29,7 @@
 #include <vector>
 #include <cmath>
 #include <limits>
+#include <memory>
 
 namespace javascript_tasklets
 {
@@ -219,7 +220,6 @@ struct ValueHandle final
 };
 
 struct PropertyHandle;
-struct LexicalEnvironmentHandle;
 
 struct ObjectHandle final
 {
@@ -277,12 +277,13 @@ struct ObjectHandle final
                                                PropertyHandle newProperty,
                                                PropertyHandle currentProperty,
                                                GC &gc);
+    void definePropertyOrThrow(NameHandle name, PropertyHandle property, GC &gc) const;
     ObjectHandle enumerate(GC &gc) const;
     std::vector<NameHandle> ownPropertyKeys(GC &gc) const;
     std::vector<NameHandle> ordinaryOwnPropertyKeys(GC &gc) const;
-    ValueHandle call(ValueHandle thisValue, std::vector<ValueHandle> arguments, GC &gc) const;
+    ValueHandle call(ValueHandle thisValue, ArrayRef<const ValueHandle> arguments, GC &gc) const;
     bool isCallable(GC &gc) const;
-    ObjectHandle construct(std::vector<ValueHandle> arguments,
+    ObjectHandle construct(ArrayRef<const ValueHandle> arguments,
                            ObjectHandle newTarget,
                            GC &gc) const;
     bool isConstructable(GC &gc) const;
@@ -296,6 +297,9 @@ struct ObjectHandle final
     }
     PrimitiveHandle ordinaryToPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const;
     PrimitiveHandle toPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const;
+    static ObjectHandle create(std::unique_ptr<gc::Object::ExtraData> extraData,
+                               ObjectOrNullHandle prototype,
+                               GC &gc);
     static ObjectHandle create(ObjectOrNullHandle prototype, GC &gc);
     static ObjectHandle create(Handle<gc::ObjectDescriptorReference> objectDescriptor,
                                std::unique_ptr<gc::Object::ExtraData> extraData,
@@ -304,6 +308,10 @@ struct ObjectHandle final
     static void throwTypeError(StringHandle message, GC &gc);
     static void throwTypeError(const String &message, GC &gc);
     static void throwTypeError(String &&message, GC &gc);
+    static void throwTypeError(const char16_t *message, GC &gc)
+    {
+        throwTypeError(String(message), gc);
+    }
     static ObjectHandle getObjectPrototype(GC &gc);
     static ObjectHandle getFunctionPrototype(GC &gc);
     enum class FunctionKind
@@ -323,18 +331,57 @@ struct ObjectHandle final
         Strict,
         Global,
     };
-    static ObjectHandle createFunction(std::unique_ptr<vm::Code> code,
+    static ObjectHandle createFunction(std::shared_ptr<vm::Code> code,
                                        std::uint32_t length,
                                        const StringHandle &name,
                                        const ObjectOrNullHandle &prototype,
                                        const ObjectOrNullHandle &constructorPrototype,
-                                       const LexicalEnvironmentHandle &environment,
+                                       const ObjectOrNullHandle &environment,
                                        FunctionKind functionKind,
                                        ConstructorKind constructorKind,
                                        ThisMode thisMode,
                                        bool strict,
                                        const ObjectOrNullHandle &homeObject,
+                                       bool addAsConstructorPrototypeConstructorProperty,
                                        GC &gc);
+    static ObjectHandle createBuiltinFunction(std::shared_ptr<vm::Code> code,
+                                              std::uint32_t length,
+                                              String name,
+                                              FunctionKind functionKind,
+                                              ConstructorKind constructorKind,
+                                              GC &gc);
+    template <typename Fn>
+    struct BuiltinCode final : public vm::Code
+    {
+        Fn fn;
+        explicit BuiltinCode(Fn fn) : fn(std::move(fn))
+        {
+        }
+        virtual ValueHandle run(ArrayRef<const ValueHandle> arguments, GC &gc) const override
+        {
+            return fn(arguments, gc);
+        }
+        virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
+        {
+        }
+    };
+    template <typename Fn,
+              typename = decltype(std::declval<const Fn &>()(
+                  std::declval<ArrayRef<const ValueHandle> &>(), std::declval<GC &>()))>
+    static ObjectHandle createBuiltinFunction(Fn fn,
+                                              std::uint32_t length,
+                                              String name,
+                                              FunctionKind functionKind,
+                                              ConstructorKind constructorKind,
+                                              GC &gc)
+    {
+        return createBuiltinFunction(std::make_shared<BuiltinCode<Fn>>(std::move(fn)),
+                                     length,
+                                     std::move(name),
+                                     functionKind,
+                                     constructorKind,
+                                     gc);
+    }
     bool toBoolean(GC &gc) const
     {
         return true;
@@ -356,6 +403,7 @@ private:
                         GC &gc,
                         bool putInObjectDescriptor) const;
     struct FunctionPrototypeCode;
+    struct FunctionObjectExtraData;
 };
 
 inline ValueHandle::ValueHandle(ObjectHandle value) noexcept : value(value.get())

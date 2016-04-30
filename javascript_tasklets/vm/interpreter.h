@@ -1312,7 +1312,12 @@ struct FunctionCode final : public Code
     Handle<gc::ObjectDescriptorReference> closureObjectDescriptor;
     static Handle<gc::ObjectDescriptorReference> makeClosureObjectDescriptor(
         GC &gc, std::size_t registerCount);
-    virtual value::ValueHandle run(ArrayRef<const value::ValueHandle> arguments, GC &gc) const override;
+    virtual value::ValueHandle run(ArrayRef<const value::ValueHandle> arguments,
+                                   GC &gc) const override;
+    virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
+    {
+        callback(*this);
+    }
     FunctionCode(std::vector<Instruction> instructions,
                  std::size_t registerCount,
                  std::size_t namedArgumentCount,

@@ -40,6 +40,7 @@ struct Code
 {
     virtual ~Code() = default;
     virtual value::ValueHandle run(ArrayRef<const value::ValueHandle> arguments, GC &gc) const = 0;
+    virtual void getGCReferences(gc::GCReferencesCallback &callback) const = 0;
 };
 }
 }

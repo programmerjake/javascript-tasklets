@@ -31,6 +31,68 @@ namespace javascript_tasklets
 {
 namespace value
 {
+struct ObjectHandle::FunctionObjectExtraData final : public gc::Object::ExtraData
+{
+    std::shared_ptr<vm::Code> code;
+    ObjectOrNullHandle environment;
+    FunctionKind functionKind;
+    ConstructorKind constructorKind;
+    ThisMode thisMode;
+    bool strict;
+    const ObjectOrNullHandle &homeObject;
+    FunctionObjectExtraData(std::shared_ptr<vm::Code> code,
+                            ObjectOrNullHandle environment,
+                            FunctionKind functionKind,
+                            ConstructorKind constructorKind,
+                            ThisMode thisMode,
+                            bool strict,
+                            ObjectOrNullHandle homeObject)
+        : code(std::move(code)),
+          environment(std::move(environment)),
+          functionKind(functionKind),
+          constructorKind(constructorKind),
+          thisMode(thisMode),
+          strict(strict),
+          homeObject(std::move(homeObject))
+    {
+    }
+    virtual std::unique_ptr<ExtraData> clone() const override
+    {
+        return std::unique_ptr<ExtraData>(new FunctionObjectExtraData(*this));
+    }
+    virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
+    {
+        if(code)
+            code->getGCReferences(callback);
+        callback(environment);
+        callback(homeObject);
+    }
+};
+
+ObjectHandle ObjectHandle::createBuiltinFunction(std::shared_ptr<vm::Code> code,
+                                                 std::uint32_t length,
+                                                 String name,
+                                                 FunctionKind functionKind,
+                                                 ConstructorKind constructorKind,
+                                                 GC &gc)
+{
+    return createFunction(std::move(code),
+                          length,
+                          gc.internString(std::move(name)),
+                          getFunctionPrototype(gc),
+                          functionKind == FunctionKind::NonConstructor ?
+                              ObjectOrNullHandle(create(getObjectPrototype(gc), gc)) :
+                              NullHandle(),
+                          NullHandle(),
+                          functionKind,
+                          constructorKind,
+                          ThisMode::Strict,
+                          true,
+                          NullHandle(),
+                          true,
+                          gc);
+}
+
 PropertyHandle &PropertyHandle::completePropertyDescriptor() noexcept
 {
     if(isGenericDescriptor() || isDataDescriptor())
@@ -187,8 +249,7 @@ ValueHandle ObjectHandle::getValue(NameHandle name, ValueHandle reciever, GC &gc
     constexpr_assert(property.hasGet);
     if(property.get.isNull())
         return ValueHandle();
-    return handleScope.escapeHandle(
-        property.get.getObject().call(reciever, std::vector<ValueHandle>(), gc));
+    return handleScope.escapeHandle(property.get.getObject().call(reciever, {}, gc));
 }
 
 namespace
@@ -282,6 +343,13 @@ BooleanHandle ObjectHandle::setPrototype(ObjectOrNullHandle newPrototype, GC &gc
 
 ObjectHandle ObjectHandle::create(ObjectOrNullHandle prototype, GC &gc)
 {
+    return create(nullptr, prototype, gc);
+}
+
+ObjectHandle ObjectHandle::create(std::unique_ptr<gc::Object::ExtraData> extraData,
+                                  ObjectOrNullHandle prototype,
+                                  GC &gc)
+{
     HandleScope handleScope(gc);
     struct DefaultObjectTag final
     {
@@ -304,7 +372,7 @@ ObjectHandle ObjectHandle::create(ObjectOrNullHandle prototype, GC &gc)
         objectDescriptor = gc.getObjectDescriptor(Handle<gc::ObjectReference>(
             defaultObject, defaultObject.get().get<gc::ObjectReference>()));
     }
-    ObjectHandle retval = gc.create(objectDescriptor);
+    ObjectHandle retval = gc.create(objectDescriptor, std::move(extraData));
     retval.setPrototypeUnchecked(prototype, gc);
     return handleScope.escapeHandle(retval);
 }
@@ -541,17 +609,8 @@ BooleanHandle ObjectHandle::ordinarySetValue(NameHandle name,
     constexpr_assert(ownProperty.isAccessorDescriptor());
     if(ownProperty.set.isNull())
         return handleScope.escapeHandle(BooleanHandle(false, gc));
-    ownProperty.set.getObject().call(reciever, std::vector<ValueHandle>(1, newValue), gc);
+    ownProperty.set.getObject().call(reciever, {newValue}, gc);
     return handleScope.escapeHandle(BooleanHandle(true, gc));
-}
-
-ValueHandle ObjectHandle::call(ValueHandle thisValue,
-                               std::vector<ValueHandle> arguments,
-                               GC &gc) const
-{
-    constexpr_assert(false);
-#warning finish
-    return ValueHandle();
 }
 
 void ObjectHandle::setOwnProperty(NameHandle name, const PropertyHandle &property, GC &gc) const
@@ -637,14 +696,35 @@ std::vector<NameHandle> ObjectHandle::ordinaryOwnPropertyKeys(GC &gc) const
     return std::vector<NameHandle>();
 }
 
+ValueHandle ObjectHandle::call(ValueHandle thisValue,
+                               ArrayRef<const ValueHandle> arguments,
+                               GC &gc) const
+{
+    HandleScope handleScope(gc);
+    auto functionObjectExtraData =
+        dynamic_cast<FunctionObjectExtraData *>(gc.readObject(value).extraData.get());
+    if(functionObjectExtraData)
+    {
+        return handleScope.escapeHandle(functionObjectExtraData->code->run(arguments, gc));
+    }
+    throwTypeError(u"object is not callable", gc);
+    constexpr_assert(false);
+    return ValueHandle();
+}
+
 bool ObjectHandle::isCallable(GC &gc) const
 {
-#warning finish
-    constexpr_assert(false);
+    HandleScope handleScope(gc);
+    auto functionObjectExtraData =
+        dynamic_cast<FunctionObjectExtraData *>(gc.readObject(value).extraData.get());
+    if(functionObjectExtraData)
+    {
+        return true;
+    }
     return false;
 }
 
-ObjectHandle ObjectHandle::construct(std::vector<ValueHandle> arguments,
+ObjectHandle ObjectHandle::construct(ArrayRef<const ValueHandle> arguments,
                                      ObjectHandle newTarget,
                                      GC &gc) const
 {
@@ -680,6 +760,14 @@ ObjectHandle ObjectHandle::getObjectPrototype(GC &gc)
 #warning add Object.prototype members
     }
     return handleScope.escapeHandle(objectPrototype.getObject());
+}
+
+void ObjectHandle::definePropertyOrThrow(NameHandle name, PropertyHandle property, GC &gc) const
+{
+    if(!defineOwnProperty(name, property, gc).getValue(gc))
+    {
+        throwTypeError(u"defining property failed", gc);
+    }
 }
 
 void ObjectHandle::setOwnProperty(gc::Name name,
@@ -731,11 +819,13 @@ struct ObjectHandle::FunctionPrototypeCode final : public vm::Code
     {
         return UndefinedHandle();
     }
+    virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
+    {
+    }
 };
 
 ObjectHandle ObjectHandle::getFunctionPrototype(GC &gc)
 {
-#if 0
     HandleScope handleScope(gc);
     struct FunctionPrototypeTag final
     {
@@ -743,45 +833,57 @@ ObjectHandle ObjectHandle::getFunctionPrototype(GC &gc)
     ValueHandle functionPrototype = gc.getGlobalValue<FunctionPrototypeTag>();
     if(functionPrototype.isUndefined())
     {
-        functionPrototype = createFunction(std::unique_ptr<vm::Code>(new FunctionPrototypeCode),
+        functionPrototype = createFunction(std::make_shared<FunctionPrototypeCode>(),
                                            0,
                                            gc.internString(u""),
                                            getObjectPrototype(gc),
                                            NullHandle(),
-                                           LexicalEnvironmentHandle(nullptr),
+                                           NullHandle(),
                                            FunctionKind::NonConstructor,
                                            ConstructorKind::Base,
                                            ThisMode::Strict,
                                            true,
                                            NullHandle(),
+                                           true,
                                            gc);
         gc.setGlobalValue<FunctionPrototypeTag>(functionPrototype.get());
 #warning add Function.prototype members
     }
     return handleScope.escapeHandle(functionPrototype.getObject());
-#else
-#warning finish
-    constexpr_assert(false);
-    return ObjectHandle();
-#endif
 }
 
-ObjectHandle ObjectHandle::createFunction(std::unique_ptr<vm::Code> code,
+ObjectHandle ObjectHandle::createFunction(std::shared_ptr<vm::Code> code,
                                           std::uint32_t length,
                                           const StringHandle &name,
                                           const ObjectOrNullHandle &prototype,
                                           const ObjectOrNullHandle &constructorPrototype,
-                                          const LexicalEnvironmentHandle &environment,
+                                          const ObjectOrNullHandle &environment,
                                           FunctionKind functionKind,
                                           ConstructorKind constructorKind,
                                           ThisMode thisMode,
                                           bool strict,
                                           const ObjectOrNullHandle &homeObject,
+                                          bool addAsConstructorPrototypeConstructorProperty,
                                           GC &gc)
 {
-#warning finish
-    constexpr_assert(false);
-    return ObjectHandle();
+    HandleScope handleScope(gc);
+    auto extraData = std::unique_ptr<gc::Object::ExtraData>(new FunctionObjectExtraData(
+        code, environment, functionKind, constructorKind, thisMode, strict, homeObject));
+    ObjectHandle retval = create(std::move(extraData), prototype, gc);
+    if(constructorPrototype.isObject())
+    {
+        retval.definePropertyOrThrow(StringHandle(gc.internString(u"prototype")),
+                                     PropertyHandle(constructorPrototype, true, false, true),
+                                     gc);
+        if(addAsConstructorPrototypeConstructorProperty)
+        {
+            constructorPrototype.getObject().definePropertyOrThrow(
+                StringHandle(gc.internString(u"constructor")),
+                PropertyHandle(retval, true, false, true),
+                gc);
+        }
+    }
+    return handleScope.escapeHandle(retval);
 }
 
 String Int32Handle::toStringValue(std::int32_t value, unsigned base)
