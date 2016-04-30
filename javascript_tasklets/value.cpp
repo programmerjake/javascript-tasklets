@@ -616,6 +616,56 @@ ObjectOrNullHandle ObjectHandle::getMethod(NameHandle name, GC &gc) const
     return retval.getObject();
 }
 
+ObjectHandle ObjectHandle::enumerate(GC &gc) const
+{
+#warning finish
+    constexpr_assert(false);
+    return ObjectHandle();
+}
+
+std::vector<NameHandle> ObjectHandle::ownPropertyKeys(GC &gc) const
+{
+#warning finish
+    constexpr_assert(false);
+    return std::vector<NameHandle>();
+}
+
+std::vector<NameHandle> ObjectHandle::ordinaryOwnPropertyKeys(GC &gc) const
+{
+#warning finish
+    constexpr_assert(false);
+    return std::vector<NameHandle>();
+}
+
+bool ObjectHandle::isCallable(GC &gc) const
+{
+#warning finish
+    constexpr_assert(false);
+    return false;
+}
+
+ObjectHandle ObjectHandle::construct(std::vector<ValueHandle> arguments,
+                                     ObjectHandle newTarget,
+                                     GC &gc) const
+{
+#warning finish
+    constexpr_assert(false);
+    return ObjectHandle();
+}
+
+bool ObjectHandle::isConstructable(GC &gc) const
+{
+#warning finish
+    constexpr_assert(false);
+    return false;
+}
+
+void ObjectHandle::throwTypeError(StringHandle message, GC &gc)
+{
+#warning finish
+    constexpr_assert(false);
+}
+
 void ObjectHandle::setOwnProperty(gc::Name name,
                                   const PropertyHandle &property,
                                   GC &gc,

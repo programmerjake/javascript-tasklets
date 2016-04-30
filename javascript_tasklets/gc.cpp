@@ -79,7 +79,9 @@ GC::GC(std::shared_ptr<const GC> parent)
       startingMemoryLeftTillNextCollect(1 << 16),
 #endif
       allocationsLeftTillNextCollect(startingAllocationsLeftTillNextCollect),
-      memoryLeftTillNextCollect(startingMemoryLeftTillNextCollect)
+      memoryLeftTillNextCollect(startingMemoryLeftTillNextCollect),
+      exceptionListHead(nullptr),
+      exceptionListTail(nullptr)
 {
     if(parent)
     {
@@ -266,7 +268,8 @@ void GC::collect() noexcept
         const Value &value = std::get<1>(globalValue);
         collectorMarkValue(value);
     }
-    for(ExceptionBase *exception = exceptionListHead; exception != nullptr; exception = exception->next)
+    for(ExceptionBase *exception = exceptionListHead; exception != nullptr;
+        exception = exception->next)
     {
         constexpr_assert(exception->gc.get() == this);
         HandleScope handleScope(*this);

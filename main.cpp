@@ -40,7 +40,7 @@ void main()
         Instruction::makeMathATanHD(parser::Location(), RegisterIndex(0), RegisterIndex(0)));
     instructions.push_back(Instruction::makeReturn(parser::Location(), RegisterIndex(0)));
     vm::interpreter::FunctionCode fn(std::move(instructions), 1, 1, gc);
-    std::cout << fn.run(std::vector<value::ValueHandle>{value::DoubleHandle(0.2, gc)}, gc)
+    std::cout << fn.run({value::DoubleHandle(0.2, gc)}, gc)
                      .getDouble()
                      .getValue(gc) << std::endl;
 }

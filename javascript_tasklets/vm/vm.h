@@ -22,12 +22,21 @@
 #ifndef JAVASCRIPT_TASKLETS_VM_VM_H_
 #define JAVASCRIPT_TASKLETS_VM_VM_H_
 
+#include "../gc.h"
+#include "../value.h"
+#include "../array_ref.h"
+
 namespace javascript_tasklets
 {
 namespace vm
 {
 struct ClosureInternalNameTag final
 {
+};
+struct Code
+{
+    virtual ~Code() = default;
+    virtual value::ValueHandle run(ArrayRef<const value::ValueHandle> arguments, GC &gc) const = 0;
 };
 }
 }

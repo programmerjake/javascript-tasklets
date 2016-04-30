@@ -24,6 +24,7 @@
 
 #include "../value.h"
 #include "../parser/location.h"
+#include "vm.h"
 
 namespace javascript_tasklets
 {
@@ -1303,7 +1304,7 @@ public:
         forEachSourceRegister(std::forward<Fn>(fn));
     }
 };
-struct FunctionCode final
+struct FunctionCode final : public Code
 {
     std::vector<Instruction> instructions;
     std::size_t registerCount;
@@ -1311,7 +1312,7 @@ struct FunctionCode final
     Handle<gc::ObjectDescriptorReference> closureObjectDescriptor;
     static Handle<gc::ObjectDescriptorReference> makeClosureObjectDescriptor(
         GC &gc, std::size_t registerCount);
-    value::ValueHandle run(const std::vector<value::ValueHandle> &arguments, GC &gc) const;
+    virtual value::ValueHandle run(ArrayRef<const value::ValueHandle> arguments, GC &gc) const override;
     FunctionCode(std::vector<Instruction> instructions,
                  std::size_t registerCount,
                  std::size_t namedArgumentCount,
