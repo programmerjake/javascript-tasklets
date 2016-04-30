@@ -666,6 +666,22 @@ void ObjectHandle::throwTypeError(StringHandle message, GC &gc)
     constexpr_assert(false);
 }
 
+ObjectHandle ObjectHandle::getObjectPrototype(GC &gc)
+{
+    HandleScope handleScope(gc);
+    struct ObjectPrototypeTag final
+    {
+    };
+    ValueHandle objectPrototype = gc.getGlobalValue<ObjectPrototypeTag>();
+    if(objectPrototype.isUndefined())
+    {
+        objectPrototype = create(NullHandle(), gc);
+        gc.setGlobalValue<ObjectPrototypeTag>(objectPrototype.get());
+#warning add Object.prototype members
+    }
+    return handleScope.escapeHandle(objectPrototype.getObject());
+}
+
 void ObjectHandle::setOwnProperty(gc::Name name,
                                   const PropertyHandle &property,
                                   GC &gc,
@@ -707,6 +723,65 @@ void ObjectHandle::setOwnProperty(gc::Name name,
             gc.writeObject(value).getMember(memberIndex) = property.value.value.get();
         }
     }
+}
+
+struct ObjectHandle::FunctionPrototypeCode final : public vm::Code
+{
+    virtual ValueHandle run(ArrayRef<const ValueHandle> arguments, GC &gc) const override
+    {
+        return UndefinedHandle();
+    }
+};
+
+ObjectHandle ObjectHandle::getFunctionPrototype(GC &gc)
+{
+#if 0
+    HandleScope handleScope(gc);
+    struct FunctionPrototypeTag final
+    {
+    };
+    ValueHandle functionPrototype = gc.getGlobalValue<FunctionPrototypeTag>();
+    if(functionPrototype.isUndefined())
+    {
+        functionPrototype = createFunction(std::unique_ptr<vm::Code>(new FunctionPrototypeCode),
+                                           0,
+                                           gc.internString(u""),
+                                           getObjectPrototype(gc),
+                                           NullHandle(),
+                                           LexicalEnvironmentHandle(nullptr),
+                                           FunctionKind::NonConstructor,
+                                           ConstructorKind::Base,
+                                           ThisMode::Strict,
+                                           true,
+                                           NullHandle(),
+                                           gc);
+        gc.setGlobalValue<FunctionPrototypeTag>(functionPrototype.get());
+#warning add Function.prototype members
+    }
+    return handleScope.escapeHandle(functionPrototype.getObject());
+#else
+#warning finish
+    constexpr_assert(false);
+    return ObjectHandle();
+#endif
+}
+
+ObjectHandle ObjectHandle::createFunction(std::unique_ptr<vm::Code> code,
+                                          std::uint32_t length,
+                                          const StringHandle &name,
+                                          const ObjectOrNullHandle &prototype,
+                                          const ObjectOrNullHandle &constructorPrototype,
+                                          const LexicalEnvironmentHandle &environment,
+                                          FunctionKind functionKind,
+                                          ConstructorKind constructorKind,
+                                          ThisMode thisMode,
+                                          bool strict,
+                                          const ObjectOrNullHandle &homeObject,
+                                          GC &gc)
+{
+#warning finish
+    constexpr_assert(false);
+    return ObjectHandle();
 }
 
 String Int32Handle::toStringValue(std::int32_t value, unsigned base)

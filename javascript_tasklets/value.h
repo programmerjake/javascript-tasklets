@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <vector>
 #include <cmath>
+#include <limits>
 
 namespace javascript_tasklets
 {
@@ -45,6 +46,7 @@ struct SymbolHandle;
 struct BooleanHandle;
 struct StringHandle;
 struct NameHandle;
+struct NumberHandle;
 struct UndefinedHandle final
 {
     void get() const noexcept
@@ -58,6 +60,12 @@ struct UndefinedHandle final
     {
         return true;
     }
+    bool toBoolean(GC &gc) const
+    {
+        return false;
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const;
 };
 struct NullHandle final
 {
@@ -73,8 +81,13 @@ struct NullHandle final
     {
         return true;
     }
+    bool toBoolean(GC &gc) const
+    {
+        return false;
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const;
 };
-struct NumberHandle;
 struct PrimitiveHandle;
 struct Int32Handle;
 struct UInt32Handle;
@@ -200,6 +213,9 @@ struct ValueHandle final
     bool isSameValueZero(const ValueHandle &rt) const noexcept;
     bool isSameValue(const ValueHandle &rt) const noexcept;
     PrimitiveHandle toPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const;
+    bool toBoolean(GC &gc) const;
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const;
 };
 
 struct PropertyHandle;
@@ -288,7 +304,8 @@ struct ObjectHandle final
     static void throwTypeError(StringHandle message, GC &gc);
     static void throwTypeError(const String &message, GC &gc);
     static void throwTypeError(String &&message, GC &gc);
-    static ObjectHandle getStandardFunctionPrototype(GC &gc);
+    static ObjectHandle getObjectPrototype(GC &gc);
+    static ObjectHandle getFunctionPrototype(GC &gc);
     enum class FunctionKind
     {
         Normal,
@@ -309,14 +326,21 @@ struct ObjectHandle final
     static ObjectHandle createFunction(std::unique_ptr<vm::Code> code,
                                        std::uint32_t length,
                                        const StringHandle &name,
-                                       const ObjectHandle &prototype,
+                                       const ObjectOrNullHandle &prototype,
                                        const ObjectOrNullHandle &constructorPrototype,
                                        const LexicalEnvironmentHandle &environment,
                                        FunctionKind functionKind,
                                        ConstructorKind constructorKind,
                                        ThisMode thisMode,
                                        bool strict,
-                                       const ObjectOrNullHandle &homeObject);
+                                       const ObjectOrNullHandle &homeObject,
+                                       GC &gc);
+    bool toBoolean(GC &gc) const
+    {
+        return true;
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const;
 
 private:
     PropertyHandle getOwnProperty(gc::Name name, GC &gc) const;
@@ -331,6 +355,7 @@ private:
                         const PropertyHandle &property,
                         GC &gc,
                         bool putInObjectDescriptor) const;
+    struct FunctionPrototypeCode;
 };
 
 inline ValueHandle::ValueHandle(ObjectHandle value) noexcept : value(value.get())
@@ -412,6 +437,12 @@ struct ObjectOrNullHandle final
         return value.get() == rt.value.get();
     }
     PrimitiveHandle toPrimitive(ToPrimitivePreferredType preferredType, GC &gc) const;
+    bool toBoolean(GC &gc) const
+    {
+        return isObject();
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(ObjectOrNullHandle value) noexcept : value(value.get())
@@ -827,6 +858,12 @@ public:
     {
         return value.get() == rt.value.get();
     }
+    bool toBoolean(GC &gc) const
+    {
+        return true;
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(SymbolHandle value) noexcept : value(value.get())
@@ -880,6 +917,15 @@ struct StringHandle final
                                                           static_cast<char16_t>(value - 10 + 'a');
     }
     static double toNumberValue(const String &str) noexcept;
+    bool toBoolean(GC &gc) const
+    {
+        return !gc.readString(value).empty();
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const
+    {
+        return *this;
+    }
 };
 
 inline ValueHandle::ValueHandle(StringHandle value) noexcept : value(value.get())
@@ -889,6 +935,27 @@ inline ValueHandle::ValueHandle(StringHandle value) noexcept : value(value.get()
 inline StringHandle ValueHandle::getString() const noexcept
 {
     return StringHandle(Handle<gc::StringReference>(value, value.get().get<gc::StringReference>()));
+}
+
+inline StringHandle UndefinedHandle::toString(GC &gc) const
+{
+    return gc.internString(u"undefined");
+}
+
+inline StringHandle NullHandle::toString(GC &gc) const
+{
+    return gc.internString(u"null");
+}
+
+inline StringHandle ObjectOrNullHandle::toString(GC &gc) const
+{
+    return isObject() ? getObject().toString(gc) : getNull().toString(gc);
+}
+
+inline StringHandle SymbolHandle::toString(GC &gc) const
+{
+    ObjectHandle::throwTypeError(u"Cannot convert a Symbol value to a string", gc);
+    return StringHandle();
 }
 
 struct BooleanHandle final
@@ -919,6 +986,11 @@ struct BooleanHandle final
     bool isSameValue(const BooleanHandle &rt) const noexcept
     {
         return value.get() == rt.value.get();
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const
+    {
+        return value.get() ? gc.internString(u"true") : gc.internString(u"false");
     }
 };
 
@@ -961,6 +1033,15 @@ struct Int32Handle final
         return value.get() == rt.value.get();
     }
     static String toStringValue(std::int32_t value, unsigned base = 10);
+    bool toBoolean(GC &gc) const
+    {
+        return value.get() != 0;
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const
+    {
+        return gc.internString(toStringValue(value.get()));
+    }
 };
 
 inline ValueHandle::ValueHandle(Int32Handle value) noexcept : value(value.get())
@@ -1002,6 +1083,15 @@ struct UInt32Handle final
         return value.get() == rt.value.get();
     }
     static String toStringValue(std::uint32_t value, unsigned base = 10);
+    bool toBoolean(GC &gc) const
+    {
+        return value.get() != 0;
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const
+    {
+        return gc.internString(toStringValue(value.get()));
+    }
 };
 
 inline ValueHandle::ValueHandle(UInt32Handle value) noexcept : value(value.get())
@@ -1053,6 +1143,19 @@ struct DoubleHandle final
         return value.get() == rt.value.get();
     }
     static String toStringValue(double value, unsigned base = 10);
+    static bool toBooleanValue(double value) noexcept
+    {
+        return !std::isnan(value) && value != 0;
+    }
+    bool toBoolean(GC &gc) const
+    {
+        return toBooleanValue(value.get());
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const
+    {
+        return gc.internString(toStringValue(value.get()));
+    }
 };
 
 inline ValueHandle::ValueHandle(DoubleHandle value) noexcept : value(value.get())
@@ -1113,6 +1216,15 @@ struct NameHandle final
     bool isSameValue(const NameHandle &rt) const noexcept
     {
         return value.get() == rt.value.get();
+    }
+    bool toBoolean(GC &gc) const
+    {
+        return isSymbol() || getString().toBoolean(gc);
+    }
+    NumberHandle toNumber(GC &gc) const;
+    StringHandle toString(GC &gc) const
+    {
+        return isString() ? getString() : getSymbol().toString(gc);
     }
 };
 
@@ -1190,6 +1302,29 @@ struct IntegerHandle final
         if(lValue < 0)
             return false;
         return static_cast<std::uint32_t>(lValue) == rValue;
+    }
+    bool toBoolean(GC &gc) const
+    {
+        return isUInt32() ? getUInt32().toBoolean(gc) : getInt32().toBoolean(gc);
+    }
+    NumberHandle toNumber(GC &gc) const;
+    double toDouble(GC &gc) const
+    {
+        return isUInt32() ? value.get().get<std::uint32_t>() : value.get().get<std::int32_t>();
+    }
+    std::int32_t toInt32(GC &gc) const
+    {
+        return isUInt32() ? static_cast<std::int32_t>(value.get().get<std::uint32_t>()) :
+                            value.get().get<std::int32_t>();
+    }
+    std::uint32_t toUInt32(GC &gc) const
+    {
+        return isUInt32() ? value.get().get<std::uint32_t>() :
+                            static_cast<std::uint32_t>(value.get().get<std::int32_t>());
+    }
+    StringHandle toString(GC &gc) const
+    {
+        return isInt32() ? getInt32().toString(gc) : getUInt32().toString(gc);
     }
 };
 
@@ -1337,6 +1472,164 @@ struct NumberHandle final
             return false;
         return true;
     }
+    bool toBoolean(GC &gc) const
+    {
+        return isDouble() ? getDouble().toBoolean(gc) : isUInt32() ? getUInt32().toBoolean(gc) :
+                                                                     getInt32().toBoolean(gc);
+    }
+    NumberHandle toNumber(GC &gc) const
+    {
+        return *this;
+    }
+    double toDouble(GC &gc) const
+    {
+        return isDouble() ? value.get().get<double>() : isUInt32() ?
+                            value.get().get<std::uint32_t>() :
+                            value.get().get<std::int32_t>();
+    }
+    static double toIntegerValue(double value) noexcept
+    {
+        return std::trunc(value);
+    }
+    static std::uint32_t toUInt32Value(double value) noexcept
+    {
+        if(!std::isfinite(value))
+            return 0;
+        value = std::trunc(value);
+        constexpr double twoToThe32 = static_cast<double>(1ULL << 32);
+        value = std::fmod(value, twoToThe32);
+        if(value < 0)
+            value += twoToThe32;
+        return static_cast<std::uint32_t>(value);
+    }
+    static std::int32_t toInt32Value(double value) noexcept
+    {
+        return static_cast<std::int32_t>(toUInt32Value(value));
+    }
+    static std::uint32_t toUInt16Value(double value) noexcept
+    {
+        return toUInt32Value(value) & 0xFFFFU;
+    }
+    static std::uint32_t toUInt16Value(std::uint32_t value) noexcept
+    {
+        return value & 0xFFFFU;
+    }
+    static std::uint32_t toUInt16Value(std::int32_t value) noexcept
+    {
+        return value & 0xFFFFU;
+    }
+    static std::int32_t toInt16Value(double value) noexcept
+    {
+        return toInt16Value(toUInt32Value(value));
+    }
+    static std::int32_t toInt16Value(std::uint32_t value) noexcept
+    {
+        return static_cast<std::int16_t>(value & 0xFFFFU);
+    }
+    static std::int32_t toInt16Value(std::int32_t value) noexcept
+    {
+        return toInt16Value(static_cast<std::uint32_t>(value));
+    }
+    static std::uint32_t toUInt8Value(double value) noexcept
+    {
+        return toUInt32Value(value) & 0xFFU;
+    }
+    static std::uint32_t toUInt8Value(std::uint32_t value) noexcept
+    {
+        return value & 0xFFU;
+    }
+    static std::uint32_t toUInt8Value(std::int32_t value) noexcept
+    {
+        return value & 0xFFU;
+    }
+    static std::int32_t toInt8Value(double value) noexcept
+    {
+        return toInt8Value(toUInt32Value(value));
+    }
+    static std::int32_t toInt8Value(std::uint32_t value) noexcept
+    {
+        return static_cast<std::int8_t>(value & 0xFFU);
+    }
+    static std::int32_t toInt8Value(std::int32_t value) noexcept
+    {
+        return toInt8Value(static_cast<std::uint32_t>(value));
+    }
+    static std::uint32_t toUInt8ClampValue(double value) noexcept
+    {
+        if(std::isnan(value))
+            return 0;
+        if(value <= 0)
+            return 0;
+        if(value >= 0xFFU)
+            return 0xFFU;
+        std::uint32_t floorValue = static_cast<std::uint32_t>(std::floor(value));
+        if(floorValue + 0.5 < value)
+            return floorValue + 1;
+        if(floorValue + 0.5 > value)
+            return floorValue;
+        if(floorValue & 1)
+            return floorValue + 1;
+        return floorValue;
+    }
+    static std::uint32_t toUInt8ClampValue(std::uint32_t value) noexcept
+    {
+        return value > 0xFFU ? 0xFFU : value;
+    }
+    static std::uint32_t toUInt8ClampValue(std::int32_t value) noexcept
+    {
+        return value < 0 ? 0 : value > 0xFF ? 0xFFU : value;
+    }
+    double toInteger(GC &gc) const noexcept
+    {
+        return toIntegerValue(toDouble(gc));
+    }
+    std::uint32_t toUInt32(GC &gc) const noexcept
+    {
+        return isDouble() ? toUInt32Value(value.get().get<double>()) : isUInt32() ?
+                            value.get().get<std::uint32_t>() :
+                            static_cast<std::uint32_t>(value.get().get<std::int32_t>());
+    }
+    std::int32_t toInt32(GC &gc) const noexcept
+    {
+        return isDouble() ? toInt32Value(value.get().get<double>()) : isUInt32() ?
+                            static_cast<std::int32_t>(value.get().get<std::uint32_t>()) :
+                            value.get().get<std::int32_t>();
+    }
+    std::uint32_t toUInt16(GC &gc) const noexcept
+    {
+        return isDouble() ? toUInt16Value(value.get().get<double>()) : isUInt32() ?
+                            toUInt16Value(value.get().get<std::uint32_t>()) :
+                            toUInt16Value(value.get().get<std::int32_t>());
+    }
+    std::int32_t toInt16(GC &gc) const noexcept
+    {
+        return isDouble() ? toInt16Value(value.get().get<double>()) : isUInt32() ?
+                            toInt16Value(value.get().get<std::uint32_t>()) :
+                            toInt16Value(value.get().get<std::int32_t>());
+    }
+    std::uint32_t toUInt8(GC &gc) const noexcept
+    {
+        return isDouble() ? toUInt8Value(value.get().get<double>()) : isUInt32() ?
+                            toUInt8Value(value.get().get<std::uint32_t>()) :
+                            toUInt8Value(value.get().get<std::int32_t>());
+    }
+    std::int32_t toInt8(GC &gc) const noexcept
+    {
+        return isDouble() ? toInt8Value(value.get().get<double>()) : isUInt32() ?
+                            toInt8Value(value.get().get<std::uint32_t>()) :
+                            toInt8Value(value.get().get<std::int32_t>());
+    }
+    std::uint32_t toUInt8Clamp(GC &gc) const noexcept
+    {
+        return isDouble() ? toUInt8ClampValue(value.get().get<double>()) : isUInt32() ?
+                            toUInt8ClampValue(value.get().get<std::uint32_t>()) :
+                            toUInt8ClampValue(value.get().get<std::int32_t>());
+    }
+    StringHandle toString(GC &gc) const
+    {
+        return isDouble() ? getDouble().toString(gc) : isInt32() ? getInt32().toString(gc) :
+                                                                   getUInt32().toString(gc);
+    }
 };
 
 inline ValueHandle::ValueHandle(NumberHandle value) noexcept : value(value.get())
@@ -1365,6 +1658,59 @@ inline bool ValueHandle::isSameValueZero(const ValueHandle &rt) const noexcept
     if(!rt.isNumber())
         return false;
     return getNumber().isSameValueZero(rt.getNumber());
+}
+
+inline NumberHandle UndefinedHandle::toNumber(GC &gc) const
+{
+    DoubleHandle retval;
+    retval.value.get() = std::numeric_limits<double>::quiet_NaN();
+    return retval;
+}
+
+inline NumberHandle NullHandle::toNumber(GC &gc) const
+{
+    return DoubleHandle();
+}
+
+inline NumberHandle SymbolHandle::toNumber(GC &gc) const
+{
+    ObjectHandle::throwTypeError(u"Cannot convert a Symbol value to a number", gc);
+    return DoubleHandle();
+}
+
+inline NumberHandle StringHandle::toNumber(GC &gc) const
+{
+    return DoubleHandle(Handle<double>(value, toNumberValue(gc.readString(value))));
+}
+
+inline NumberHandle BooleanHandle::toNumber(GC &gc) const
+{
+    return DoubleHandle(Handle<double>(value, value.get() ? 1 : 0));
+}
+
+inline NumberHandle Int32Handle::toNumber(GC &gc) const
+{
+    return *this;
+}
+
+inline NumberHandle UInt32Handle::toNumber(GC &gc) const
+{
+    return *this;
+}
+
+inline NumberHandle DoubleHandle::toNumber(GC &gc) const
+{
+    return *this;
+}
+
+inline NumberHandle NameHandle::toNumber(GC &gc) const
+{
+    return isString() ? getString().toNumber(gc) : getSymbol().toNumber(gc);
+}
+
+inline NumberHandle IntegerHandle::toNumber(GC &gc) const
+{
+    return *this;
 }
 
 struct PrimitiveHandle final
@@ -1538,6 +1884,162 @@ struct PrimitiveHandle final
             return false;
         return getNumber().isSameValueZero(rt.getNumber());
     }
+
+private:
+    struct ToBooleanHelper final
+    {
+        GC &gc;
+        bool retval = false;
+        const Handle<ValueType> &valueHandle;
+        ToBooleanHelper(GC &gc, const Handle<ValueType> &valueHandle)
+            : gc(gc), valueHandle(valueHandle)
+        {
+        }
+        void operator()()
+        {
+            retval = false;
+        }
+        template <typename T>
+        void operator()(T) = delete;
+        void operator()(std::nullptr_t)
+        {
+            retval = false;
+        }
+        void operator()(gc::StringReference value)
+        {
+            retval = StringHandle(Handle<gc::StringReference>(valueHandle, value)).toBoolean(gc);
+        }
+        void operator()(gc::SymbolReference)
+        {
+            retval = true;
+        }
+        void operator()(double value)
+        {
+            retval = DoubleHandle::toBooleanValue(value);
+        }
+        void operator()(std::int32_t value)
+        {
+            retval = value != 0;
+        }
+        void operator()(std::uint32_t value)
+        {
+            retval = value != 0;
+        }
+        void operator()(bool value)
+        {
+            retval = value;
+        }
+    };
+
+public:
+    bool toBoolean(GC &gc) const
+    {
+        return value.get().apply(ToBooleanHelper(gc, value)).retval;
+    }
+
+private:
+    struct ToNumberHelper final
+    {
+        GC &gc;
+        NumberHandle retval;
+        const Handle<ValueType> &valueHandle;
+        ToNumberHelper(GC &gc, const Handle<ValueType> &valueHandle)
+            : gc(gc), retval(), valueHandle(valueHandle)
+        {
+        }
+        void operator()()
+        {
+            retval = UndefinedHandle().toNumber(gc);
+        }
+        template <typename T>
+        void operator()(T) = delete;
+        void operator()(std::nullptr_t)
+        {
+            retval = NullHandle().toNumber(gc);
+        }
+        void operator()(gc::StringReference value)
+        {
+            retval = StringHandle(Handle<gc::StringReference>(valueHandle, value)).toNumber(gc);
+        }
+        void operator()(gc::SymbolReference value)
+        {
+            retval = SymbolHandle(Handle<gc::SymbolReference>(valueHandle, value)).toNumber(gc);
+        }
+        void operator()(double value)
+        {
+            retval = DoubleHandle(Handle<double>(valueHandle, value));
+        }
+        void operator()(std::int32_t value)
+        {
+            retval = Int32Handle(Handle<std::int32_t>(valueHandle, value));
+        }
+        void operator()(std::uint32_t value)
+        {
+            retval = UInt32Handle(Handle<std::uint32_t>(valueHandle, value));
+        }
+        void operator()(bool value)
+        {
+            retval = Int32Handle(Handle<std::int32_t>(valueHandle, value ? 1 : 0));
+        }
+    };
+
+public:
+    NumberHandle toNumber(GC &gc) const
+    {
+        return value.get().apply(ToNumberHelper(gc, value)).retval;
+    }
+
+private:
+    struct ToStringHelper final
+    {
+        GC &gc;
+        StringHandle retval;
+        const Handle<ValueType> &valueHandle;
+        ToStringHelper(GC &gc, const Handle<ValueType> &valueHandle)
+            : gc(gc), retval(), valueHandle(valueHandle)
+        {
+        }
+        void operator()()
+        {
+            retval = UndefinedHandle().toString(gc);
+        }
+        template <typename T>
+        void operator()(T) = delete;
+        void operator()(std::nullptr_t)
+        {
+            retval = NullHandle().toString(gc);
+        }
+        void operator()(gc::StringReference value)
+        {
+            retval = StringHandle(Handle<gc::StringReference>(valueHandle, value));
+        }
+        void operator()(gc::SymbolReference value)
+        {
+            retval = SymbolHandle(Handle<gc::SymbolReference>(valueHandle, value)).toString(gc);
+        }
+        void operator()(double value)
+        {
+            retval = DoubleHandle(Handle<double>(valueHandle, value)).toString(gc);
+        }
+        void operator()(std::int32_t value)
+        {
+            retval = Int32Handle(Handle<std::int32_t>(valueHandle, value)).toString(gc);
+        }
+        void operator()(std::uint32_t value)
+        {
+            retval = UInt32Handle(Handle<std::uint32_t>(valueHandle, value)).toString(gc);
+        }
+        void operator()(bool value)
+        {
+            retval = UInt32Handle(Handle<bool>(valueHandle, value)).toString(gc);
+        }
+    };
+
+public:
+    StringHandle toString(GC &gc) const
+    {
+        return value.get().apply(ToStringHelper(gc, value)).retval;
+    }
 };
 
 inline ValueHandle::ValueHandle(PrimitiveHandle value) noexcept : value(value.get())
@@ -1556,6 +2058,44 @@ inline PrimitiveHandle ValueHandle::toPrimitive(ToPrimitivePreferredType preferr
     if(isObject())
         return getObject().toPrimitive(preferredType, gc);
     return getPrimitive();
+}
+
+inline bool ValueHandle::toBoolean(GC &gc) const
+{
+    if(isObject())
+        return getObject().toBoolean(gc);
+    return getPrimitive().toBoolean(gc);
+}
+
+inline NumberHandle ObjectHandle::toNumber(GC &gc) const
+{
+    return toPrimitive(ToPrimitivePreferredType::Number, gc).toNumber(gc);
+}
+
+inline NumberHandle ValueHandle::toNumber(GC &gc) const
+{
+    if(isObject())
+        return getObject().toNumber(gc);
+    return getPrimitive().toNumber(gc);
+}
+
+inline NumberHandle ObjectOrNullHandle::toNumber(GC &gc) const
+{
+    if(isObject())
+        return getObject().toNumber(gc);
+    return getNull().toNumber(gc);
+}
+
+inline StringHandle ObjectHandle::toString(GC &gc) const
+{
+    return toPrimitive(ToPrimitivePreferredType::String, gc).toString(gc);
+}
+
+inline StringHandle ValueHandle::toString(GC &gc) const
+{
+    if(isObject())
+        return getObject().toString(gc);
+    return getPrimitive().toString(gc);
 }
 
 inline PrimitiveHandle ObjectOrNullHandle::toPrimitive(ToPrimitivePreferredType preferredType,
