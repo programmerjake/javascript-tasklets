@@ -23,6 +23,7 @@
 #define JAVASCRIPT_TASKLETS_VALUE_H_
 
 #include "gc.h"
+#include "vm/vm.h"
 #include <utility>
 #include <cstdint>
 #include <vector>
@@ -202,6 +203,7 @@ struct ValueHandle final
 };
 
 struct PropertyHandle;
+struct LexicalEnvironmentHandle;
 
 struct ObjectHandle final
 {
@@ -286,6 +288,35 @@ struct ObjectHandle final
     static void throwTypeError(StringHandle message, GC &gc);
     static void throwTypeError(const String &message, GC &gc);
     static void throwTypeError(String &&message, GC &gc);
+    static ObjectHandle getStandardFunctionPrototype(GC &gc);
+    enum class FunctionKind
+    {
+        Normal,
+        NonConstructor,
+        Generator,
+    };
+    enum class ConstructorKind
+    {
+        Base,
+        Derived,
+    };
+    enum class ThisMode
+    {
+        Lexical,
+        Strict,
+        Global,
+    };
+    static ObjectHandle createFunction(std::unique_ptr<vm::Code> code,
+                                       std::uint32_t length,
+                                       const StringHandle &name,
+                                       const ObjectHandle &prototype,
+                                       const ObjectOrNullHandle &constructorPrototype,
+                                       const LexicalEnvironmentHandle &environment,
+                                       FunctionKind functionKind,
+                                       ConstructorKind constructorKind,
+                                       ThisMode thisMode,
+                                       bool strict,
+                                       const ObjectOrNullHandle &homeObject);
 
 private:
     PropertyHandle getOwnProperty(gc::Name name, GC &gc) const;

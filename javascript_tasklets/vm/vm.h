@@ -23,11 +23,14 @@
 #define JAVASCRIPT_TASKLETS_VM_VM_H_
 
 #include "../gc.h"
-#include "../value.h"
 #include "../array_ref.h"
 
 namespace javascript_tasklets
 {
+namespace value
+{
+struct ValueHandle;
+}
 namespace vm
 {
 struct ClosureInternalNameTag final
