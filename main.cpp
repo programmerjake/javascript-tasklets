@@ -30,18 +30,21 @@ namespace test
 {
 void main()
 {
-    gc::GC gc;
+    using namespace value;
+    GC gc;
     HandleScope handleScope(gc);
-    typedef vm::interpreter::Instruction Instruction;
-    typedef vm::interpreter::RegisterIndex RegisterIndex;
-    typedef vm::interpreter::InstructionAddress InstructionAddress;
-    std::vector<Instruction> instructions;
-    instructions.push_back(
-        Instruction::makeMathATanHD(parser::Location(), RegisterIndex(0), RegisterIndex(0)));
-    instructions.push_back(Instruction::makeReturn(parser::Location(), RegisterIndex(0)));
-    vm::interpreter::FunctionCode fn(std::move(instructions), 1, 1, gc);
-    std::cout << fn.run({value::DoubleHandle(0.2, gc)}, gc)
-                     .getDouble()
+    ObjectHandle fn = ObjectHandle::createBuiltinFunction(
+        [](ArrayRef<const ValueHandle> arguments, GC &gc) -> ValueHandle
+        {
+            return DoubleHandle(1.23, gc);
+        },
+        1,
+        u"fn",
+        ObjectHandle::FunctionKind::Normal,
+        ObjectHandle::ConstructorKind::Base,
+        gc);
+    std::cout << fn.call(UndefinedHandle(), {value::DoubleHandle(0.2, gc)}, gc)
+                     .toString(gc)
                      .getValue(gc) << std::endl;
 }
 }

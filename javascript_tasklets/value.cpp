@@ -39,7 +39,7 @@ struct ObjectHandle::FunctionObjectExtraData final : public gc::Object::ExtraDat
     ConstructorKind constructorKind;
     ThisMode thisMode;
     bool strict;
-    const ObjectOrNullHandle &homeObject;
+    ObjectOrNullHandle homeObject;
     FunctionObjectExtraData(std::shared_ptr<vm::Code> code,
                             ObjectOrNullHandle environment,
                             FunctionKind functionKind,

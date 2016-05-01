@@ -34,7 +34,6 @@ namespace javascript_tasklets
 {
 struct variant_base
 {
-    std::size_t type;
     template <typename... Types>
     struct implementation;
     template <typename FindType, typename... Types>
