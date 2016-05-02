@@ -23,12 +23,12 @@ var fs = require("fs");
 
 if(process.argv.length != 3 || process.argv[2] == '' || process.argv[2].substr(0, 1) == '-')
 {
-    console.log("usage: ./create_category_function.js <unicode category>");
-    console.log("generates a C++ function that recognizes the Unicode category <unicode category>.");
+    console.log("usage: ./create_property_function.js <unicode property>");
+    console.log("generates a C++ function that recognizes the Unicode property <unicode property>.");
     process.exit(1);
 }
 
-var generateCategory = process.argv[2];
+var generateProperty = process.argv[2];
 
 function writeProgress(progress)
 {
@@ -40,8 +40,8 @@ function writeProgress(progress)
 
 function loadUnicodeData()
 {
-    var unicodeData = fs.readFileSync("UCD/UnicodeData.txt", {encoding:"utf-8"}).split('\n');
-    var characterCategory = [];
+    var unicodeData = fs.readFileSync("UCD/PropList.txt", {encoding:"utf-8"}).split('\n');
+    var characterProperty = [];
     console.assert(unicodeData.length > 0);
     if(unicodeData[unicodeData.length - 1] === '')
     {
@@ -49,32 +49,34 @@ function loadUnicodeData()
     }
     for(var i = 0; i < unicodeData.length; i++)
     {
-        var line = unicodeData[i].split(';');
-        var category = line[2];
-        console.assert(line.length == 15);
-        if(/^<[^>]+, First>$/.test(line[1]))
+        var line = unicodeData[i].split('#')[0].trim();
+        if(line === '')
+            continue;
+        line = line.split(';').map(function(v){return v.trim();});
+        var property = line[1];
+        console.assert(line.length == 2);
+        if(property === generateProperty)
         {
-            i++;
-            console.assert(i < unicodeData.length);
-            var line2 = unicodeData[i].split(';');
-            console.assert(line2.length == 15);
-            console.assert(/^<[^>]+, Last>$/.test(line2[1]));
-            var start = +('0x' + line[0]);
-            var end = +('0x' + line2[0]);
-            for(var j = start; j <= end; j++)
+            var rangeMatch = line[0].match(/^([a-fA-F0-9]+)\.\.([a-fA-F0-9]+)$/);
+            if(rangeMatch)
             {
-                characterCategory[j] = category;
+                var start = +('0x' + rangeMatch[1]);
+                var end = +('0x' + rangeMatch[2]);
+                for(var j = start; j <= end; j++)
+                {
+                    characterProperty[j] = property;
+                }
+            }
+            else
+            {
+                characterProperty[+('0x' + line[0])] = property;
             }
         }
-        else
-        {
-            characterCategory[+('0x' + line[0])] = category;
-        }
     }
-    return characterCategory;
+    return characterProperty;
 }
 
-var characterCategory = loadUnicodeData();
+var characterProperty = loadUnicodeData();
 
 function Match(start, end, includeEven, includeOdd)
 {
@@ -130,9 +132,9 @@ Match.prototype =
 
 var matches = [];
 
-for(var codepoint = 0, lastMatched = false; codepoint < characterCategory.length; codepoint++)
+for(var codepoint = 0, lastMatched = false; codepoint < characterProperty.length; codepoint++)
 {
-    if(characterCategory[codepoint] === generateCategory)
+    if(characterProperty[codepoint] === generateProperty)
     {
         if(!lastMatched)
         {
@@ -185,11 +187,11 @@ for(var i = 0; i < oldMatches.length; i++)
 }
 
 var code = matches.join(' || ');
-console.log('constexpr bool category' + generateCategory + '(std::uint32_t codepoint) noexcept\n{\n    return ' + code.replace(/ \|\| /g, ' ||\n        ') + ';\n}\n');
+console.log('constexpr bool property' + generateProperty + '(std::uint32_t codepoint) noexcept\n{\n    return ' + code.replace(/ \|\| /g, ' ||\n        ') + ';\n}\n');
 var testFn = new Function('codepoint', 'codepoint >>>= 0; return ' + code.replace(/(0x[A-F0-9]+)UL?/g, '$1'));
-for(var codepoint = 0; codepoint < characterCategory.length; codepoint++)
+for(var codepoint = 0; codepoint < characterProperty.length; codepoint++)
 {
-    if(testFn(codepoint) !== (characterCategory[codepoint] === generateCategory))
+    if(testFn(codepoint) !== (characterProperty[codepoint] === generateProperty))
     {
         throw new Error('mismatch at ' + Match.getHex(codepoint));
     }
