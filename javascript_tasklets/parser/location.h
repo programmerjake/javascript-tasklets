@@ -32,19 +32,41 @@ namespace parser
 struct Location final
 {
     gc::SourceReference source;
-    std::size_t position;
-    constexpr Location() noexcept : source(), position(0)
+    std::size_t beginPosition;
+    std::size_t endPosition; // one past the end
+    constexpr Location() noexcept : source(), beginPosition(0), endPosition(0)
     {
     }
     Location(SourceHandle source, std::size_t position) noexcept : source(source.get()),
-                                                                   position(position)
+                                                                   beginPosition(position),
+                                                                   endPosition(position + 1)
     {
+    }
+    Location(SourceHandle source, std::size_t beginPosition, std::size_t endPosition) noexcept
+        : source(source.get()),
+          beginPosition(beginPosition),
+          endPosition(endPosition)
+    {
+        constexpr_assert(endPosition > beginPosition);
+    }
+    Location &operator+=(const Location &rt) noexcept
+    {
+        constexpr_assert(source == rt.source);
+        if(beginPosition > rt.beginPosition)
+            beginPosition = rt.beginPosition;
+        if(endPosition > rt.endPosition)
+            endPosition = rt.endPosition;
+        return *this;
+    }
+    Location operator+(const Location &rt) const noexcept
+    {
+        return Location(*this) += rt;
     }
     String toString() const
     {
         if(source == nullptr)
             return u"<no-location>";
-        return source->getLocationString(position);
+        return source->getLocationString(beginPosition);
     }
 };
 typedef Handle<Location> LocationHandle;
@@ -56,7 +78,7 @@ struct AddHandleToHandleScope<parser::Location> final
 {
     void operator()(HandleScope &handleScope, const parser::Location &value) const
     {
-        AddHandleToHandleScope<gc::SourceReference>()(handleScope, value.source);
+        AddHandleToHandleScope<SourceReference>()(handleScope, value.source);
     }
 };
 }
