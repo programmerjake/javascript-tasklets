@@ -1025,6 +1025,12 @@ constexpr bool categoryPc(std::uint32_t codepoint) noexcept
            || codepoint == 0x2054U || codepoint == 0xFE33U || codepoint == 0xFE34U
            || (codepoint >= 0xFE4DU && codepoint <= 0xFE4FU) || codepoint == 0xFF3FU;
 }
+constexpr bool categoryZs(std::uint32_t codepoint) noexcept
+{
+    return codepoint == 0x20U || codepoint == 0xA0U || codepoint == 0x1680U
+           || (codepoint >= 0x2000U && codepoint <= 0x200AU) || codepoint == 0x202FU
+           || codepoint == 0x205FU || codepoint == 0x3000U;
+}
 constexpr bool patternWhiteSpace(std::uint32_t codepoint) noexcept
 {
     return (codepoint >= 0x9U && codepoint <= 0xDU) || codepoint == 0x20U || codepoint == 0x85U
@@ -1054,6 +1060,24 @@ constexpr bool idContinue(std::uint32_t codepoint) noexcept
                false :
                idStart(codepoint) || otherIdContinue(codepoint) || categoryMn(codepoint)
                    || categoryMc(codepoint) || categoryNd(codepoint) || categoryPc(codepoint);
+}
+constexpr bool javascriptIdStart(std::uint32_t codepoint) noexcept
+{
+    return idStart(codepoint) || codepoint == 0x24U || codepoint == 0x5FU;
+}
+constexpr bool javascriptIdContinue(std::uint32_t codepoint) noexcept
+{
+    return idContinue(codepoint) || codepoint == 0x24U || codepoint == 0x5FU || codepoint == 0x200CU
+           || codepoint == 0x200DU;
+}
+constexpr bool javascriptWhiteSpace(std::uint32_t codepoint) noexcept
+{
+    return categoryZs(codepoint) || codepoint == 0x9U || codepoint == 0xBU || codepoint == 0xCU
+           || codepoint == 0xFEFFU;
+}
+constexpr bool javascriptLineTerminator(std::uint32_t codepoint) noexcept
+{
+    return codepoint == 0xAU || codepoint == 0xDU || codepoint == 0x2028U || codepoint == 0x2029U;
 }
 }
 }
