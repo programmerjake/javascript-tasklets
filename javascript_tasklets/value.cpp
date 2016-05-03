@@ -69,6 +69,66 @@ struct ObjectHandle::FunctionObjectExtraData final : public gc::Object::ExtraDat
     }
 };
 
+ObjectHandle UndefinedHandle::toObject(GC &gc) const
+{
+    ObjectHandle::throwTypeError(u"Cannot convert undefined or null to object", gc);
+    constexpr_assert(false);
+    return ObjectHandle();
+}
+
+ObjectHandle NullHandle::toObject(GC &gc) const
+{
+    return UndefinedHandle().toObject(gc);
+}
+
+ObjectHandle SymbolHandle::toObject(GC &gc) const
+{
+    constexpr_assert(!"implement SymbolHandle::toObject");
+#warning implement SymbolHandle::toObject
+    return ObjectHandle();
+}
+
+ObjectHandle StringHandle::toObject(GC &gc) const
+{
+    constexpr_assert(!"implement StringHandle::toObject");
+#warning implement StringHandle::toObject
+    return ObjectHandle();
+}
+
+ObjectHandle BooleanHandle::toObject(GC &gc) const
+{
+    constexpr_assert(!"implement BooleanHandle::toObject");
+#warning implement BooleanHandle::toObject
+    return ObjectHandle();
+}
+
+ObjectHandle Int32Handle::toObject(GC &gc) const
+{
+    return NumberHandle(*this).toObject(gc);
+}
+
+ObjectHandle UInt32Handle::toObject(GC &gc) const
+{
+    return NumberHandle(*this).toObject(gc);
+}
+
+ObjectHandle IntegerHandle::toObject(GC &gc) const
+{
+    return NumberHandle(*this).toObject(gc);
+}
+
+ObjectHandle DoubleHandle::toObject(GC &gc) const
+{
+    return NumberHandle(*this).toObject(gc);
+}
+
+ObjectHandle NumberHandle::toObject(GC &gc) const
+{
+    constexpr_assert(!"implement NumberHandle::toObject");
+#warning implement NumberHandle::toObject
+    return ObjectHandle();
+}
+
 ObjectHandle ObjectHandle::createBuiltinFunction(std::shared_ptr<vm::Code> code,
                                                  std::uint32_t length,
                                                  String name,

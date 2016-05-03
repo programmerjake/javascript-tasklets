@@ -67,6 +67,7 @@ struct UndefinedHandle final
     }
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
+    ObjectHandle toObject(GC &gc) const;
 };
 struct NullHandle final
 {
@@ -88,6 +89,7 @@ struct NullHandle final
     }
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
+    ObjectHandle toObject(GC &gc) const;
 };
 struct PrimitiveHandle;
 struct Int32Handle;
@@ -217,6 +219,7 @@ struct ValueHandle final
     bool toBoolean(GC &gc) const;
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
+    ObjectHandle toObject(GC &gc) const;
 };
 
 struct PropertyHandle;
@@ -388,6 +391,10 @@ struct ObjectHandle final
     }
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
+    ObjectHandle toObject(GC &gc) const
+    {
+        return *this;
+    }
 
 private:
     PropertyHandle getOwnProperty(gc::Name name, GC &gc) const;
@@ -491,6 +498,12 @@ struct ObjectOrNullHandle final
     }
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
+    ObjectHandle toObject(GC &gc) const
+    {
+        if(isNull())
+            return NullHandle().toObject(gc);
+        return getObject();
+    }
 };
 
 inline ValueHandle::ValueHandle(ObjectOrNullHandle value) noexcept : value(value.get())
@@ -912,6 +925,7 @@ public:
     }
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
+    ObjectHandle toObject(GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(SymbolHandle value) noexcept : value(value.get())
@@ -974,6 +988,7 @@ struct StringHandle final
     {
         return *this;
     }
+    ObjectHandle toObject(GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(StringHandle value) noexcept : value(value.get())
@@ -1040,6 +1055,7 @@ struct BooleanHandle final
     {
         return value.get() ? gc.internString(u"true") : gc.internString(u"false");
     }
+    ObjectHandle toObject(GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(BooleanHandle value) noexcept : value(value.get())
@@ -1090,6 +1106,7 @@ struct Int32Handle final
     {
         return gc.internString(toStringValue(value.get()));
     }
+    ObjectHandle toObject(GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(Int32Handle value) noexcept : value(value.get())
@@ -1140,6 +1157,7 @@ struct UInt32Handle final
     {
         return gc.internString(toStringValue(value.get()));
     }
+    ObjectHandle toObject(GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(UInt32Handle value) noexcept : value(value.get())
@@ -1204,6 +1222,7 @@ struct DoubleHandle final
     {
         return gc.internString(toStringValue(value.get()));
     }
+    ObjectHandle toObject(GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(DoubleHandle value) noexcept : value(value.get())
@@ -1273,6 +1292,12 @@ struct NameHandle final
     StringHandle toString(GC &gc) const
     {
         return isString() ? getString() : getSymbol().toString(gc);
+    }
+    ObjectHandle toObject(GC &gc) const
+    {
+        if(isString())
+            return getString().toObject(gc);
+        return getSymbol().toObject(gc);
     }
 };
 
@@ -1374,6 +1399,7 @@ struct IntegerHandle final
     {
         return isInt32() ? getInt32().toString(gc) : getUInt32().toString(gc);
     }
+    ObjectHandle toObject(GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(IntegerHandle value) noexcept : value(value.get())
@@ -1678,6 +1704,7 @@ struct NumberHandle final
         return isDouble() ? getDouble().toString(gc) : isInt32() ? getInt32().toString(gc) :
                                                                    getUInt32().toString(gc);
     }
+    ObjectHandle toObject(GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(NumberHandle value) noexcept : value(value.get())
@@ -2079,7 +2106,7 @@ private:
         }
         void operator()(bool value)
         {
-            retval = UInt32Handle(Handle<bool>(valueHandle, value)).toString(gc);
+            retval = BooleanHandle(Handle<bool>(valueHandle, value)).toString(gc);
         }
     };
 
@@ -2087,6 +2114,58 @@ public:
     StringHandle toString(GC &gc) const
     {
         return value.get().apply(ToStringHelper(gc, value)).retval;
+    }
+
+private:
+    struct ToObjectHelper final
+    {
+        GC &gc;
+        ObjectHandle retval;
+        const Handle<ValueType> &valueHandle;
+        ToObjectHelper(GC &gc, const Handle<ValueType> &valueHandle)
+            : gc(gc), retval(), valueHandle(valueHandle)
+        {
+        }
+        void operator()()
+        {
+            retval = UndefinedHandle().toObject(gc);
+        }
+        template <typename T>
+        void operator()(T) = delete;
+        void operator()(std::nullptr_t)
+        {
+            retval = NullHandle().toObject(gc);
+        }
+        void operator()(gc::StringReference value)
+        {
+            retval = StringHandle(Handle<gc::StringReference>(valueHandle, value)).toObject(gc);
+        }
+        void operator()(gc::SymbolReference value)
+        {
+            retval = SymbolHandle(Handle<gc::SymbolReference>(valueHandle, value)).toObject(gc);
+        }
+        void operator()(double value)
+        {
+            retval = DoubleHandle(Handle<double>(valueHandle, value)).toObject(gc);
+        }
+        void operator()(std::int32_t value)
+        {
+            retval = Int32Handle(Handle<std::int32_t>(valueHandle, value)).toObject(gc);
+        }
+        void operator()(std::uint32_t value)
+        {
+            retval = UInt32Handle(Handle<std::uint32_t>(valueHandle, value)).toObject(gc);
+        }
+        void operator()(bool value)
+        {
+            retval = BooleanHandle(Handle<bool>(valueHandle, value)).toObject(gc);
+        }
+    };
+
+public:
+    ObjectHandle toObject(GC &gc) const
+    {
+        return value.get().apply(ToObjectHelper(gc, value)).retval;
     }
 };
 
@@ -2137,6 +2216,13 @@ inline NumberHandle ObjectOrNullHandle::toNumber(GC &gc) const
 inline StringHandle ObjectHandle::toString(GC &gc) const
 {
     return toPrimitive(ToPrimitivePreferredType::String, gc).toString(gc);
+}
+
+inline ObjectHandle ValueHandle::toObject(GC &gc) const
+{
+    if(isObject())
+        return getObject();
+    return getPrimitive().toObject(gc);
 }
 
 inline StringHandle ValueHandle::toString(GC &gc) const
