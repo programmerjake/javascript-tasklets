@@ -830,6 +830,34 @@ void ObjectHandle::definePropertyOrThrow(NameHandle name, PropertyHandle propert
     }
 }
 
+ObjectHandle ObjectHandle::getGlobalObject(GC &gc)
+{
+    HandleScope handleScope(gc);
+    struct GlobalObjectTag final
+    {
+    };
+    ValueHandle globalObject = gc.getGlobalValue<GlobalObjectTag>();
+    if(globalObject.isUndefined())
+    {
+        globalObject = create(getObjectPrototype(gc), gc);
+        gc.setGlobalValue<GlobalObjectTag>(globalObject.get());
+        globalObject.getObject().definePropertyOrThrow(
+            StringHandle(u"undefined", gc),
+            PropertyHandle(UndefinedHandle(), false, false, false),
+            gc);
+        globalObject.getObject().definePropertyOrThrow(
+            StringHandle(u"Infinity", gc),
+            PropertyHandle(DoubleHandle(std::numeric_limits<double>::infinity(), gc), false, false, false),
+            gc);
+        globalObject.getObject().definePropertyOrThrow(
+            StringHandle(u"NaN", gc),
+            PropertyHandle(DoubleHandle(std::numeric_limits<double>::quiet_NaN(), gc), false, false, false),
+            gc);
+#warning add global members
+    }
+    return handleScope.escapeHandle(globalObject.getObject());
+}
+
 void ObjectHandle::setOwnProperty(gc::Name name,
                                   const PropertyHandle &property,
                                   GC &gc,

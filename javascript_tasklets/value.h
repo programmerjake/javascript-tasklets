@@ -317,6 +317,7 @@ struct ObjectHandle final
     }
     static ObjectHandle getObjectPrototype(GC &gc);
     static ObjectHandle getFunctionPrototype(GC &gc);
+    static ObjectHandle getGlobalObject(GC &gc);
     enum class FunctionKind
     {
         Normal,
