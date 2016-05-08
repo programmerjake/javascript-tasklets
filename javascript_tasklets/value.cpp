@@ -806,6 +806,28 @@ void ObjectHandle::throwTypeError(StringHandle message, GC &gc)
     constexpr_assert(false);
 }
 
+void ObjectHandle::throwTypeError(StringHandle message,
+                                  const parser::LocationHandle &location,
+                                  GC &gc)
+{
+#warning finish
+    constexpr_assert(false);
+}
+
+void ObjectHandle::throwSyntaxError(StringHandle message, GC &gc)
+{
+#warning finish
+    constexpr_assert(false);
+}
+
+void ObjectHandle::throwSyntaxError(StringHandle message,
+                                    const parser::LocationHandle &location,
+                                    GC &gc)
+{
+#warning finish
+    constexpr_assert(false);
+}
+
 ObjectHandle ObjectHandle::getObjectPrototype(GC &gc)
 {
     HandleScope handleScope(gc);
@@ -847,11 +869,13 @@ ObjectHandle ObjectHandle::getGlobalObject(GC &gc)
             gc);
         globalObject.getObject().definePropertyOrThrow(
             StringHandle(u"Infinity", gc),
-            PropertyHandle(DoubleHandle(std::numeric_limits<double>::infinity(), gc), false, false, false),
+            PropertyHandle(
+                DoubleHandle(std::numeric_limits<double>::infinity(), gc), false, false, false),
             gc);
         globalObject.getObject().definePropertyOrThrow(
             StringHandle(u"NaN", gc),
-            PropertyHandle(DoubleHandle(std::numeric_limits<double>::quiet_NaN(), gc), false, false, false),
+            PropertyHandle(
+                DoubleHandle(std::numeric_limits<double>::quiet_NaN(), gc), false, false, false),
             gc);
 #warning add global members
     }

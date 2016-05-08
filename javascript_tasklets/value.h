@@ -24,6 +24,7 @@
 
 #include "gc.h"
 #include "vm/vm.h"
+#include "parser/location.h"
 #include <utility>
 #include <cstdint>
 #include <vector>
@@ -308,12 +309,45 @@ struct ObjectHandle final
                                std::unique_ptr<gc::Object::ExtraData> extraData,
                                ObjectOrNullHandle prototype,
                                GC &gc);
+    static void throwTypeError(StringHandle message,
+                               const parser::LocationHandle &location,
+                               GC &gc);
+    static void throwTypeError(const String &message,
+                               const parser::LocationHandle &location,
+                               GC &gc);
+    static void throwTypeError(String &&message, const parser::LocationHandle &location, GC &gc);
+    static void throwTypeError(const char16_t *message,
+                               const parser::LocationHandle &location,
+                               GC &gc)
+    {
+        throwTypeError(String(message), location, gc);
+    }
+    static void throwSyntaxError(StringHandle message,
+                                 const parser::LocationHandle &location,
+                                 GC &gc);
+    static void throwSyntaxError(const String &message,
+                                 const parser::LocationHandle &location,
+                                 GC &gc);
+    static void throwSyntaxError(String &&message, const parser::LocationHandle &location, GC &gc);
+    static void throwSyntaxError(const char16_t *message,
+                                 const parser::LocationHandle &location,
+                                 GC &gc)
+    {
+        throwSyntaxError(String(message), location, gc);
+    }
     static void throwTypeError(StringHandle message, GC &gc);
     static void throwTypeError(const String &message, GC &gc);
     static void throwTypeError(String &&message, GC &gc);
     static void throwTypeError(const char16_t *message, GC &gc)
     {
         throwTypeError(String(message), gc);
+    }
+    static void throwSyntaxError(StringHandle message, GC &gc);
+    static void throwSyntaxError(const String &message, GC &gc);
+    static void throwSyntaxError(String &&message, GC &gc);
+    static void throwSyntaxError(const char16_t *message, GC &gc)
+    {
+        throwSyntaxError(String(message), gc);
     }
     static ObjectHandle getObjectPrototype(GC &gc);
     static ObjectHandle getFunctionPrototype(GC &gc);
@@ -2249,6 +2283,43 @@ inline void ObjectHandle::throwTypeError(const String &message, GC &gc)
 inline void ObjectHandle::throwTypeError(String &&message, GC &gc)
 {
     throwTypeError(gc.internString(std::move(message)), gc);
+}
+
+inline void ObjectHandle::throwTypeError(const String &message,
+                                         const parser::LocationHandle &location,
+                                         GC &gc)
+{
+    throwTypeError(gc.internString(message), location, gc);
+}
+
+inline void ObjectHandle::throwTypeError(String &&message,
+                                         const parser::LocationHandle &location,
+                                         GC &gc)
+{
+    throwTypeError(gc.internString(std::move(message)), location, gc);
+}
+inline void ObjectHandle::throwSyntaxError(const String &message, GC &gc)
+{
+    throwSyntaxError(gc.internString(message), gc);
+}
+
+inline void ObjectHandle::throwSyntaxError(String &&message, GC &gc)
+{
+    throwSyntaxError(gc.internString(std::move(message)), gc);
+}
+
+inline void ObjectHandle::throwSyntaxError(const String &message,
+                                           const parser::LocationHandle &location,
+                                           GC &gc)
+{
+    throwSyntaxError(gc.internString(message), location, gc);
+}
+
+inline void ObjectHandle::throwSyntaxError(String &&message,
+                                           const parser::LocationHandle &location,
+                                           GC &gc)
+{
+    throwSyntaxError(gc.internString(std::move(message)), location, gc);
 }
 }
 

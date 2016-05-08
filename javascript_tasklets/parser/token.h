@@ -145,6 +145,47 @@ struct Token final
           precededByLineTerminator(precededByLineTerminator)
     {
     }
+    class TokenRawSource final
+    {
+        friend class Token;
+        TokenRawSource(const TokenRawSource &) = delete;
+        TokenRawSource &operator=(const TokenRawSource &) = delete;
+
+    private:
+        const Token &token;
+        explicit TokenRawSource(const Token &token) noexcept : token(token)
+        {
+        }
+
+    public:
+        TokenRawSource(TokenRawSource &&) = default;
+        typedef String::const_iterator iterator;
+        typedef String::const_iterator const_iterator;
+        const_iterator begin() const
+        {
+            return token.location.source->contents.cbegin() + token.location.beginPosition;
+        }
+        const_iterator cbegin() const
+        {
+            return token.location.source->contents.cbegin() + token.location.beginPosition;
+        }
+        const_iterator end() const
+        {
+            return token.location.source->contents.cbegin() + token.location.endPosition;
+        }
+        const_iterator cend() const
+        {
+            return token.location.source->contents.cbegin() + token.location.endPosition;
+        }
+        std::size_t size() const
+        {
+            return token.location.endPosition - token.location.beginPosition;
+        }
+    };
+    TokenRawSource rawValue() const noexcept
+    {
+        return TokenRawSource(*this);
+    }
 };
 }
 namespace gc
