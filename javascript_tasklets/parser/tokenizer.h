@@ -83,7 +83,9 @@ public:
     {
         getCurrentCodePoint();
     }
-#error finish
+    Handle<Token> next(GC &gc);
+    Handle<Token> reparseAsTemplateContinuation(Handle<Token> token, GC &gc);
+    Handle<Token> reparseAsRegExp(Handle<Token> token, GC &gc);
 };
 }
 namespace gc
