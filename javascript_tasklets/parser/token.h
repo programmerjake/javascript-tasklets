@@ -145,6 +145,9 @@ struct Token final
           precededByLineTerminator(precededByLineTerminator)
     {
     }
+    Token() : type(), location(), processedValue(), precededByLineTerminator()
+    {
+    }
     class TokenRawSource final
     {
         friend class Token;

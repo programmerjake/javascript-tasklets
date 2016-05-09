@@ -43,9 +43,10 @@ void main()
         ObjectHandle::FunctionKind::Normal,
         ObjectHandle::ConstructorKind::Base,
         gc);
-    std::cout << fn.call(UndefinedHandle(), {value::DoubleHandle(0.2, gc)}, gc)
-                     .toString(gc)
-                     .getValue(gc) << std::endl;
+    writeString(
+        std::cout,
+        fn.call(UndefinedHandle(), {value::DoubleHandle(0.2, gc)}, gc).toString(gc).getValue(gc));
+    std::cout << std::endl;
 }
 }
 

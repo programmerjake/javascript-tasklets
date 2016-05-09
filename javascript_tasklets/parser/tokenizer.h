@@ -26,7 +26,6 @@
 #include "location.h"
 #include "source.h"
 #include "../gc.h"
-#include "../value.h"
 
 namespace javascript_tasklets
 {
@@ -39,49 +38,32 @@ class Tokenizer final
     void operator delete(void *) = delete;
 
 private:
+    struct State final
+    {
+        std::size_t currentLocation;
+        std::uint32_t peekCodePoint;
+        constexpr State() noexcept : currentLocation(), peekCodePoint()
+        {
+        }
+        constexpr State(std::size_t currentLocation, std::uint32_t peekCodePoint) noexcept
+            : currentLocation(currentLocation),
+              peekCodePoint(peekCodePoint)
+        {
+        }
+    };
+
+private:
     const SourceHandle source;
-    std::size_t currentLocation;
-    std::uint32_t peekCodePoint;
+    State currentState;
     constexpr std::uint32_t eofCodePoint = 0xFFFFFFFFUL;
-    void getCurrentCodePoint() const noexcept
-    {
-        if(currentLocation < source.get()->contents.size())
-        {
-            peekCodePoint = source.get()->contents[currentLocation] & 0xFFFFUL;
-            if(peekCodePoint >= 0xD800U && peekCodePoint <= 0xDBFFU
-               && currentLocation + 1 < source.get()->contents.size())
-            {
-                std::uint32_t nextValue = source.get()->contents[currentLocation + 1] & 0xFFFFUL;
-                if(nextValue >= 0xDC00U && nextValue <= 0xDFFFU)
-                {
-                    peekCodePoint <<= 10;
-                    peekCodePoint &= 0xFFC00UL;
-                    peekCodePoint |= nextValue & 0x3FFU;
-                    peekCodePoint += 0x10000UL;
-                }
-            }
-        }
-        else
-        {
-            peekCodePoint = eofCodePoint;
-        }
-    }
-    void nextCodePoint() const noexcept
-    {
-        if(peekCodePoint == eofCodePoint)
-            return;
-        if(peekCodePoint >= 0x10000UL)
-            currentLocation += 2; // surrogate pair
-        else
-            currentLocation += 1;
-        getCurrentCodePoint();
-    }
+    void getCurrentCodePoint() noexcept;
+    void nextCodePoint() noexcept;
 
 public:
-    explicit Tokenizer(const SourceHandle &source)
-        : source(source), currentLocation(0), peekCodePoint(0)
+    explicit Tokenizer(const SourceHandle &source);
+    SourceHandle getSource() const
     {
-        getCurrentCodePoint();
+        return source;
     }
     Handle<Token> next(GC &gc);
     Handle<Token> reparseAsTemplateContinuation(Handle<Token> token, GC &gc);
@@ -90,6 +72,14 @@ public:
 }
 namespace gc
 {
+template <>
+struct AddHandleToHandleScope<parser::Tokenizer> final
+{
+    void operator()(HandleScope &handleScope, const parser::Tokenizer &value) const
+    {
+        AddHandleToHandleScope<parser::SourceHandle>()(handleScope, value.getSource());
+    }
+};
 }
 }
 

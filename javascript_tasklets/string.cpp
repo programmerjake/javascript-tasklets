@@ -21,7 +21,7 @@
 #include "string.h"
 #include <ostream>
 
-std::ostream &javascript_tasklets::operator<<(std::ostream &os, const String &string)
+std::ostream &javascript_tasklets::writeString(std::ostream &os, const String &string)
 {
     return os << string_cast<std::string>(string);
 }

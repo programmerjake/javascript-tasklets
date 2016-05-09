@@ -77,7 +77,7 @@ String Source::getLocationString(std::size_t position) const
 
 void Source::writeLocation(std::ostream &os, std::size_t position) const
 {
-    os << fileName;
+    writeString(os, fileName);
     os << ":";
     os << getLineNumber(position);
     os << ":";

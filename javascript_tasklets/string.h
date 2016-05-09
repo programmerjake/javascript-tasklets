@@ -235,7 +235,6 @@ struct StringCastHelper<std::string, String> final
 template <>
 struct StringCastHelper<String, std::string> final
 {
-private:
     static void writeValue(String &retval, std::uint_fast32_t value)
     {
         if(value > 0x10000UL)
@@ -246,11 +245,9 @@ private:
         }
         else
         {
-            retval += static_cast<std::uint16_t>(value);
+            retval += static_cast<String::value_type>(value);
         }
     }
-
-public:
     static String convert(const std::string &src)
     {
         String retval;
@@ -393,7 +390,12 @@ inline String operator"" _js(const char16_t *str, std::size_t length)
     return string_cast<String>(std::u16string(str, length));
 }
 
-std::ostream &operator<<(std::ostream &os, const String &string);
+std::ostream &writeString(std::ostream &os, const String &string);
+String appendCodePoint(String str, std::uint32_t codePoint)
+{
+    StringCastHelper<String, std::string>::writeValue(str, codePoint);
+    return str;
+}
 }
 
 #endif /* JAVASCRIPT_TASKLETS_STRING_H_ */

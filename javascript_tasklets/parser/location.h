@@ -39,7 +39,7 @@ struct Location final
     }
     Location(SourceHandle source, std::size_t position) noexcept : source(source.get()),
                                                                    beginPosition(position),
-                                                                   endPosition(position + 1)
+                                                                   endPosition(position)
     {
     }
     Location(SourceHandle source, std::size_t beginPosition, std::size_t endPosition) noexcept
