@@ -74,13 +74,13 @@ Handle<Token> Tokenizer::next(GC &gc)
     bool precededByLineTerminator = false;
     while(character_properties::javascriptWhiteSpace(currentState.peekCodePoint)
           || character_properties::javascriptLineTerminator(currentState.peekCodePoint)
-          || currentState.peekCodePoint == '/')
+          || currentState.peekCodePoint == U'/')
     {
-        if(currentState.peekCodePoint == '\r')
+        if(currentState.peekCodePoint == U'\r')
         {
             precededByLineTerminator = true;
             nextCodePoint();
-            if(currentState.peekCodePoint == '\n')
+            if(currentState.peekCodePoint == U'\n')
                 nextCodePoint();
         }
         else if(character_properties::javascriptLineTerminator(currentState.peekCodePoint))
@@ -88,11 +88,11 @@ Handle<Token> Tokenizer::next(GC &gc)
             precededByLineTerminator = true;
             nextCodePoint();
         }
-        else if(currentState.peekCodePoint == '/')
+        else if(currentState.peekCodePoint == U'/')
         {
             auto stateBeforeFirstSlash = currentState;
             nextCodePoint();
-            if(currentState.peekCodePoint == '/')
+            if(currentState.peekCodePoint == U'/')
             {
                 while(
                     currentState.peekCodePoint != eofCodePoint
@@ -101,7 +101,7 @@ Handle<Token> Tokenizer::next(GC &gc)
                     nextCodePoint();
                 }
             }
-            else if(currentState.peekCodePoint == '*')
+            else if(currentState.peekCodePoint == U'*')
             {
                 nextCodePoint();
                 while(true)
@@ -115,13 +115,13 @@ Handle<Token> Tokenizer::next(GC &gc)
                         constexpr_assert(false);
                         return Handle<Token>();
                     }
-                    if(currentState.peekCodePoint == '*')
+                    if(currentState.peekCodePoint == U'*')
                     {
-                        while(currentState.peekCodePoint == '*')
+                        while(currentState.peekCodePoint == U'*')
                         {
                             nextCodePoint();
                         }
-                        if(currentState.peekCodePoint == '/')
+                        if(currentState.peekCodePoint == U'/')
                         {
                             nextCodePoint();
                             break;
@@ -129,7 +129,8 @@ Handle<Token> Tokenizer::next(GC &gc)
                     }
                     else
                     {
-                        if(character_properties::javascriptLineTerminator(currentState.peekCodePoint))
+                        if(character_properties::javascriptLineTerminator(
+                               currentState.peekCodePoint))
                         {
                             precededByLineTerminator = true;
                         }
@@ -148,13 +149,90 @@ Handle<Token> Tokenizer::next(GC &gc)
             nextCodePoint();
         }
     }
-    Handle<Token> retval;
+    if(currentState.peekCodePoint == eofCodePoint)
+    {
+        return Handle<Token>(gc,
+                             Token(Token::Type::EndOfFile,
+                                   Location(source, currentState.currentLocation),
+                                   nullptr,
+                                   precededByLineTerminator));
+    }
+    if(currentState.peekCodePoint == U'\\' || character_properties::javascriptIdStart(currentState.peekCodePoint))
+    {
+        auto startPosition = currentState.currentLocation;
+        String processedValue = u"";
+        bool gotEscape = false;
+        if(currentState.peekCodePoint == U'\\')
+        {
+            gotEscape = true;
+            nextCodePoint();
+            std::uint32_t codePoint = parseUnicodeEscapeSequence(gc);
+            if(!character_properties::javascriptIdStart(codePoint))
+            {
+                value::ObjectHandle::throwSyntaxError(
+                    u"invalid identifier start character from unicode escape",
+                    LocationHandle(gc, Location(source, currentState.currentLocation)),
+                    gc);
+                constexpr_assert(false);
+                return Handle<Token>();
+            }
+            processedValue = appendCodePoint(std::move(processedValue), codePoint);
+        }
+        else
+        {
+            processedValue = appendCodePoint(std::move(processedValue), currentState.peekCodePoint);
+            nextCodePoint();
+        }
+        while(currentState.peekCodePoint == U'\\' || character_properties::javascriptIdContinue(currentState.peekCodePoint))
+        {
+            if(currentState.peekCodePoint == U'\\')
+            {
+                gotEscape = true;
+                nextCodePoint();
+                std::uint32_t codePoint = parseUnicodeEscapeSequence(gc);
+                if(!character_properties::javascriptIdContinue(codePoint))
+                {
+                    value::ObjectHandle::throwSyntaxError(
+                        u"invalid identifier continue character from unicode escape",
+                        LocationHandle(gc, Location(source, currentState.currentLocation)),
+                        gc);
+                    constexpr_assert(false);
+                    return Handle<Token>();
+                }
+                processedValue = appendCodePoint(std::move(processedValue), codePoint);
+            }
+            else
+            {
+                processedValue = appendCodePoint(std::move(processedValue), currentState.peekCodePoint);
+                nextCodePoint();
+            }
+        }
+        Location location(source, startPosition, currentState.currentLocation);
+    }
 #error finish
 }
 
 Handle<Token> Tokenizer::reparseAsTemplateContinuation(Handle<Token> token, GC &gc)
 {
 #error finish
+}
+
+std::uint32_t Tokenizer::parseUnicodeEscapeSequence(GC &gc)
+{
+    if(currentState.peekCodePoint != U'u')
+    {
+        value::ObjectHandle::throwSyntaxError(
+            u"invalid identifier continue character from unicode escape",
+            LocationHandle(gc, Location(source, currentState.currentLocation)),
+            gc);
+        constexpr_assert(false);
+        return eofCodePoint;
+    }
+    nextCodePoint();
+    if(currentState.peekCodePoint == U'{')
+    {
+        nextCodePoint();
+    }
 }
 
 Handle<Token> Tokenizer::reparseAsRegExp(Handle<Token> token, GC &gc)

@@ -99,15 +99,15 @@ Match.prototype =
     {
         return this.start == this.end;
     },
-    includes: function(codepoint)
+    includes: function(codePoint)
     {
-        codepoint >>>= 0;
-        return codepoint >= this.start && codepoint <= this.end && (codepoint & 1 ? this.includeEven : this.includeOdd);
+        codePoint >>>= 0;
+        return codePoint >= this.start && codePoint <= this.end && (codePoint & 1 ? this.includeEven : this.includeOdd);
     },
     toString: function(varName)
     {
         if(!varName)
-            varName = 'codepoint'
+            varName = 'codePoint'
         if(this.start == this.end)
         {
             return varName + ' == ' + Match.getHex(this.start);
@@ -130,17 +130,17 @@ Match.prototype =
 
 var matches = [];
 
-for(var codepoint = 0, lastMatched = false; codepoint < characterCategory.length; codepoint++)
+for(var codePoint = 0, lastMatched = false; codePoint < characterCategory.length; codePoint++)
 {
-    if(characterCategory[codepoint] === generateCategory)
+    if(characterCategory[codePoint] === generateCategory)
     {
         if(!lastMatched)
         {
-            matches.push(new Match(codepoint, codepoint, true, true));
+            matches.push(new Match(codePoint, codePoint, true, true));
         }
         else
         {
-            matches[matches.length - 1].end = codepoint;
+            matches[matches.length - 1].end = codePoint;
         }
         lastMatched = true;
     }
@@ -185,13 +185,13 @@ for(var i = 0; i < oldMatches.length; i++)
 }
 
 var code = matches.join(' || ');
-console.log('constexpr bool category' + generateCategory + '(std::uint32_t codepoint) noexcept\n{\n    return ' + code.replace(/ \|\| /g, ' ||\n        ') + ';\n}\n');
-var testFn = new Function('codepoint', 'codepoint >>>= 0; return ' + code.replace(/(0x[A-F0-9]+)UL?/g, '$1'));
-for(var codepoint = 0; codepoint < characterCategory.length; codepoint++)
+console.log('constexpr bool category' + generateCategory + '(std::uint32_t codePoint) noexcept\n{\n    return ' + code.replace(/ \|\| /g, ' ||\n        ') + ';\n}\n');
+var testFn = new Function('codePoint', 'codePoint >>>= 0; return ' + code.replace(/(0x[A-F0-9]+)UL?/g, '$1'));
+for(var codePoint = 0; codePoint < characterCategory.length; codePoint++)
 {
-    if(testFn(codepoint) !== (characterCategory[codepoint] === generateCategory))
+    if(testFn(codePoint) !== (characterCategory[codePoint] === generateCategory))
     {
-        throw new Error('mismatch at ' + Match.getHex(codepoint));
+        throw new Error('mismatch at ' + Match.getHex(codePoint));
     }
 }
 

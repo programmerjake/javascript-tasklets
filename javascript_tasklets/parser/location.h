@@ -47,7 +47,7 @@ struct Location final
           beginPosition(beginPosition),
           endPosition(endPosition)
     {
-        constexpr_assert(endPosition > beginPosition);
+        constexpr_assert(endPosition >= beginPosition);
     }
     Location &operator+=(const Location &rt) noexcept
     {

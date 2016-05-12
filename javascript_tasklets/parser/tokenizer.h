@@ -58,6 +58,7 @@ private:
     constexpr std::uint32_t eofCodePoint = 0xFFFFFFFFUL;
     void getCurrentCodePoint() noexcept;
     void nextCodePoint() noexcept;
+    std::uint32_t parseUnicodeEscapeSequence(GC &gc);
 
 public:
     explicit Tokenizer(const SourceHandle &source);

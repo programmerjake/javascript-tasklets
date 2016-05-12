@@ -34,7 +34,7 @@ struct Token final
     enum class Type
     {
         EndOfFile,
-        IdentifierName,
+        Identifier,
         LBrace,
         RBrace,
         Ellipses,
@@ -188,6 +188,117 @@ struct Token final
     TokenRawSource rawValue() const noexcept
     {
         return TokenRawSource(*this);
+    }
+    static bool isIdentifierName(Type type) noexcept
+    {
+        switch(type)
+        {
+        case Type::EndOfFile:
+        case Type::LBrace:
+        case Type::RBrace:
+        case Type::Ellipses:
+        case Type::LParen:
+        case Type::RParen:
+        case Type::LBracket:
+        case Type::RBracket:
+        case Type::Period:
+        case Type::Semicolon:
+        case Type::Comma:
+        case Type::LAngle:
+        case Type::RAngle:
+        case Type::LEq:
+        case Type::REq:
+        case Type::DoubleEqual:
+        case Type::NotEqual:
+        case Type::TripleEqual:
+        case Type::NotDoubleEqual:
+        case Type::Plus:
+        case Type::Minus:
+        case Type::Star:
+        case Type::Percent:
+        case Type::Inc:
+        case Type::Dec:
+        case Type::LShift:
+        case Type::ARShift:
+        case Type::URShift:
+        case Type::Amp:
+        case Type::Pipe:
+        case Type::Caret:
+        case Type::EMark:
+        case Type::Tilde:
+        case Type::LAnd:
+        case Type::LOr:
+        case Type::QMark:
+        case Type::Colon:
+        case Type::SingleEqual:
+        case Type::PlusEqual:
+        case Type::MinusEqual:
+        case Type::StarEqual:
+        case Type::PercentEqual:
+        case Type::LShiftEqual:
+        case Type::ARShiftEqual:
+        case Type::URShiftEqual:
+        case Type::AmpEqual:
+        case Type::PipeEqual:
+        case Type::CaretEqual:
+        case Type::Arrow:
+        case Type::Div:
+        case Type::DivEqual:
+        case Type::NumericLiteral:
+        case Type::StringLiteral:
+        case Type::RegExLiteral:
+        case Type::NoSubstitutionTemplate:
+        case Type::TemplateHead:
+        case Type::TemplateMiddle:
+        case Type::TemplateTail:
+            return false;
+        case Type::Identifier:
+        case Type::BreakKW:
+        case Type::CaseKW:
+        case Type::CatchKW:
+        case Type::ClassKW:
+        case Type::ConstKW:
+        case Type::ContinueKW:
+        case Type::DebuggerKW:
+        case Type::DefaultKW:
+        case Type::DeleteKW:
+        case Type::DoKW:
+        case Type::ElseKW:
+        case Type::ExportKW:
+        case Type::ExtendsKW:
+        case Type::FinallyKW:
+        case Type::ForKW:
+        case Type::FunctionKW:
+        case Type::IfKW:
+        case Type::ImportKW:
+        case Type::InKW:
+        case Type::InstanceOfKW:
+        case Type::NewKW:
+        case Type::ReturnKW:
+        case Type::SuperKW:
+        case Type::SwitchKW:
+        case Type::ThisKW:
+        case Type::ThrowKW:
+        case Type::TryKW:
+        case Type::TypeOfKW:
+        case Type::VarKW:
+        case Type::VoidKW:
+        case Type::WhileKW:
+        case Type::WithKW:
+        case Type::YieldKW:
+        case Type::EnumKW:
+        case Type::AwaitKW:
+        case Type::NullLiteral:
+        case Type::TrueLiteral:
+        case Type::FalseLiteral:
+            return true;
+        }
+        constexpr_assert(false);
+        return false;
+    }
+    bool isIdentifierName() const noexcept
+    {
+        return isIdentifierName(type);
     }
 };
 }
