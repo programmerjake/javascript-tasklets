@@ -69,6 +69,17 @@ struct ObjectHandle::FunctionObjectExtraData final : public gc::Object::ExtraDat
     }
 };
 
+struct ObjectHandle::ErrorObjectExtraData final : public gc::Object::ExtraData
+{
+    virtual std::unique_ptr<ExtraData> clone() const override
+    {
+        return std::unique_ptr<ExtraData>(new ErrorObjectExtraData(*this));
+    }
+    virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
+    {
+    }
+};
+
 ObjectHandle UndefinedHandle::toObject(GC &gc) const
 {
     ObjectHandle::throwTypeError(u"Cannot convert undefined or null to object", gc);
@@ -765,7 +776,8 @@ ValueHandle ObjectHandle::call(ValueHandle thisValue,
         dynamic_cast<FunctionObjectExtraData *>(gc.readObject(value).extraData.get());
     if(functionObjectExtraData)
     {
-        return handleScope.escapeHandle(functionObjectExtraData->code->run(arguments, gc));
+        return handleScope.escapeHandle(
+            functionObjectExtraData->code->run(thisValue, arguments, gc));
     }
     throwTypeError(u"object is not callable", gc);
     constexpr_assert(false);
@@ -802,8 +814,11 @@ bool ObjectHandle::isConstructable(GC &gc) const
 
 void ObjectHandle::throwTypeError(StringHandle message, GC &gc)
 {
+    HandleScope handleScope(gc);
 #warning finish
-    constexpr_assert(false);
+    throw gc::ScriptException(
+        ValueHandle(createErrorObject(getTypeErrorPrototype(gc), message, gc)).get(),
+        gc.shared_from_this());
 }
 
 void ObjectHandle::throwTypeError(StringHandle message,
@@ -811,13 +826,16 @@ void ObjectHandle::throwTypeError(StringHandle message,
                                   GC &gc)
 {
 #warning finish
-    constexpr_assert(false);
+    throwTypeError(message, gc);
 }
 
 void ObjectHandle::throwSyntaxError(StringHandle message, GC &gc)
 {
+    HandleScope handleScope(gc);
 #warning finish
-    constexpr_assert(false);
+    throw gc::ScriptException(
+        ValueHandle(createErrorObject(getSyntaxErrorPrototype(gc), message, gc)).get(),
+        gc.shared_from_this());
 }
 
 void ObjectHandle::throwSyntaxError(StringHandle message,
@@ -826,7 +844,7 @@ void ObjectHandle::throwSyntaxError(StringHandle message,
                                     GC &gc)
 {
 #warning finish
-    constexpr_assert(false);
+    throwSyntaxError(message, gc);
 }
 
 ObjectHandle ObjectHandle::getObjectPrototype(GC &gc)
@@ -883,6 +901,133 @@ ObjectHandle ObjectHandle::getGlobalObject(GC &gc)
     return handleScope.escapeHandle(globalObject.getObject());
 }
 
+ObjectHandle ObjectHandle::getErrorPrototype(GC &gc)
+{
+    HandleScope handleScope(gc);
+    struct ErrorPrototypeTag final
+    {
+    };
+    ValueHandle errorPrototype = gc.getGlobalValue<ErrorPrototypeTag>();
+    if(errorPrototype.isUndefined())
+    {
+        errorPrototype = create(getObjectPrototype(gc), gc);
+        gc.setGlobalValue<ErrorPrototypeTag>(errorPrototype.get());
+        errorPrototype.getObject().definePropertyOrThrow(
+            StringHandle(u"message", gc),
+            PropertyHandle(StringHandle(u"", gc), true, false, true),
+            gc);
+        errorPrototype.getObject().definePropertyOrThrow(
+            StringHandle(u"name", gc),
+            PropertyHandle(StringHandle(u"Error", gc), true, false, true),
+            gc);
+        errorPrototype.getObject().definePropertyOrThrow(
+            StringHandle(u"toString", gc),
+            PropertyHandle(
+                createBuiltinFunction(
+                    [](const ValueHandle &thisValue, ArrayRef<const ValueHandle> arguments, GC &gc)
+                        -> ValueHandle
+                    {
+                        HandleScope handleScope(gc);
+                        if(!thisValue.isObject())
+                        {
+                            throwTypeError(u"Error.prototype.toString called on non-object", gc);
+                            constexpr_assert(false);
+                            return ValueHandle();
+                        }
+                        ValueHandle nameValue = thisValue.getObject().getValue(
+                            StringHandle(u"name", gc), thisValue, gc);
+                        if(nameValue.isUndefined())
+                            nameValue = StringHandle(u"Error", gc);
+                        else
+                            nameValue = nameValue.toString(gc);
+                        ValueHandle messageValue = thisValue.getObject().getValue(
+                            StringHandle(u"name", gc), thisValue, gc);
+                        if(messageValue.isUndefined())
+                            messageValue = StringHandle(u"", gc);
+                        else
+                            messageValue = messageValue.toString(gc);
+                        if(gc.readString(nameValue.getString().get()).empty())
+                        {
+                            return handleScope.escapeHandle(messageValue);
+                        }
+                        if(gc.readString(messageValue.getString().get()).empty())
+                        {
+                            return handleScope.escapeHandle(nameValue);
+                        }
+                        return handleScope.escapeHandle(
+                            StringHandle(gc.readString(nameValue.getString().get()) + u": "
+                                             + gc.readString(messageValue.getString().get()),
+                                         gc));
+                    },
+                    0,
+                    u"toString",
+                    FunctionKind::NonConstructor,
+                    ConstructorKind::Base,
+                    gc),
+                true,
+                false,
+                true),
+            gc);
+    }
+    return handleScope.escapeHandle(errorPrototype.getObject());
+}
+
+ObjectHandle ObjectHandle::createCustomErrorPrototype(StringHandle name, GC &gc)
+{
+    HandleScope handleScope(gc);
+    ObjectHandle retval = create(getErrorPrototype(gc), gc);
+    retval.definePropertyOrThrow(
+        StringHandle(u"message", gc), PropertyHandle(StringHandle(u"", gc), true, false, true), gc);
+    retval.definePropertyOrThrow(
+        StringHandle(u"name", gc), PropertyHandle(name, true, false, true), gc);
+    return retval;
+}
+
+ObjectHandle ObjectHandle::createErrorObject(ObjectHandle prototype, GC &gc)
+{
+    return create(std::unique_ptr<gc::Object::ExtraData>(new ErrorObjectExtraData), prototype, gc);
+}
+
+ObjectHandle ObjectHandle::createErrorObject(ObjectHandle prototype, StringHandle message, GC &gc)
+{
+    HandleScope handleScope(gc);
+    ObjectHandle retval =
+        create(std::unique_ptr<gc::Object::ExtraData>(new ErrorObjectExtraData), prototype, gc);
+    retval.definePropertyOrThrow(
+        StringHandle(u"message", gc), PropertyHandle(message, true, false, true), gc);
+    return handleScope.escapeHandle(retval);
+}
+
+ObjectHandle ObjectHandle::getTypeErrorPrototype(GC &gc)
+{
+    HandleScope handleScope(gc);
+    struct TypeErrorPrototypeTag final
+    {
+    };
+    ValueHandle typeErrorPrototype = gc.getGlobalValue<TypeErrorPrototypeTag>();
+    if(typeErrorPrototype.isUndefined())
+    {
+        typeErrorPrototype = createCustomErrorPrototype(u"TypeError", gc);
+        gc.setGlobalValue<TypeErrorPrototypeTag>(typeErrorPrototype.get());
+    }
+    return handleScope.escapeHandle(typeErrorPrototype.getObject());
+}
+
+ObjectHandle ObjectHandle::getSyntaxErrorPrototype(GC &gc)
+{
+    HandleScope handleScope(gc);
+    struct TypeErrorPrototypeTag final
+    {
+    };
+    ValueHandle typeErrorPrototype = gc.getGlobalValue<TypeErrorPrototypeTag>();
+    if(typeErrorPrototype.isUndefined())
+    {
+        typeErrorPrototype = createCustomErrorPrototype(u"SyntaxError", gc);
+        gc.setGlobalValue<TypeErrorPrototypeTag>(typeErrorPrototype.get());
+    }
+    return handleScope.escapeHandle(typeErrorPrototype.getObject());
+}
+
 void ObjectHandle::setOwnProperty(gc::Name name,
                                   const PropertyHandle &property,
                                   GC &gc,
@@ -928,7 +1073,7 @@ void ObjectHandle::setOwnProperty(gc::Name name,
 
 struct ObjectHandle::FunctionPrototypeCode final : public vm::Code
 {
-    virtual ValueHandle run(ArrayRef<const ValueHandle> arguments, GC &gc) const override
+    virtual ValueHandle run(const ValueHandle &thisValue, ArrayRef<const ValueHandle> arguments, GC &gc) const override
     {
         return UndefinedHandle();
     }

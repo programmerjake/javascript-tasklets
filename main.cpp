@@ -31,22 +31,32 @@ namespace test
 void main()
 {
     using namespace value;
-    GC gc;
-    HandleScope handleScope(gc);
-    ObjectHandle fn = ObjectHandle::createBuiltinFunction(
-        [](ArrayRef<const ValueHandle> arguments, GC &gc) -> ValueHandle
-        {
-            return DoubleHandle(1.23, gc);
-        },
-        1,
-        u"fn",
-        ObjectHandle::FunctionKind::Normal,
-        ObjectHandle::ConstructorKind::Base,
-        gc);
-    writeString(
-        std::cout,
-        fn.call(UndefinedHandle(), {value::DoubleHandle(0.2, gc)}, gc).toString(gc).getValue(gc));
-    std::cout << std::endl;
+    const std::shared_ptr<GC> gcPointer = std::make_shared<GC>();
+    HandleScope handleScope(*gcPointer);
+    try
+    {
+        ObjectHandle fn = ObjectHandle::createBuiltinFunction(
+            [](const ValueHandle &thisValue, ArrayRef<const ValueHandle> arguments, GC &gc)
+                -> ValueHandle
+            {
+                return DoubleHandle(1.23, gc);
+            },
+            1,
+            u"fn",
+            ObjectHandle::FunctionKind::Normal,
+            ObjectHandle::ConstructorKind::Base,
+            *gcPointer);
+        writeString(std::cout,
+                    fn.call(UndefinedHandle(), {value::DoubleHandle(0.2, *gcPointer)}, *gcPointer)
+                        .toString(*gcPointer)
+                        .getValue(*gcPointer));
+        std::cout << std::endl;
+        ObjectHandle::throwTypeError(u"test exception", *gcPointer);
+    }
+    catch(gc::ExceptionBase &e)
+    {
+        std::cerr << "exception: " << e.what() << std::endl;
+    }
 }
 }
 

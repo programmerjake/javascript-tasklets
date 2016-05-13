@@ -20,6 +20,7 @@
  */
 #include "gc.h"
 #include "parser/source.h"
+#include "value.h"
 #include <type_traits>
 
 namespace javascript_tasklets
@@ -967,6 +968,37 @@ struct GC::ObjectMemberDescriptorMarker final
 void GC::collectorMarkObjectMemberDescriptor(const ObjectMemberDescriptor &descriptor) noexcept
 {
     descriptor.value.apply(ObjectMemberDescriptorMarker(*this));
+}
+
+char *ScriptException::calculateWhat(GC &gc, const Handle<Value> &value) noexcept
+{
+    try
+    {
+        HandleScope handleScope(gc);
+        String message;
+        try
+        {
+            value::PrimitiveHandle primitive = value::ValueHandle(value).toPrimitive(value::ToPrimitivePreferredType::String, gc);
+            if(primitive.isSymbol())
+                message = primitive.getSymbol().getDescriptiveString(gc);
+            else
+                message = gc.readString(primitive.toString(gc).get());
+        }
+        catch(gc::ExceptionBase &)
+        {
+            message = u"<toString threw exception>";
+        }
+        std::string convertedMessage = string_cast<std::string>(message);
+        char *retval = new char[convertedMessage.size() + 1];
+        for(std::size_t i = 0; i < convertedMessage.size(); i++)
+            retval[i] = convertedMessage[i];
+        retval[convertedMessage.size()] = '\0';
+        return retval;
+    }
+    catch(std::exception &)
+    {
+        return nullptr;
+    }
 }
 }
 }

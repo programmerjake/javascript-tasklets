@@ -127,7 +127,9 @@ struct Registers final
 };
 }
 
-value::ValueHandle FunctionCode::run(ArrayRef<const value::ValueHandle> arguments, GC &gc) const
+value::ValueHandle FunctionCode::run(const value::ValueHandle &thisValue,
+                                     ArrayRef<const value::ValueHandle> arguments,
+                                     GC &gc) const
 {
     HandleScope handleScope(gc);
     InstructionAddress pc(0);

@@ -358,6 +358,14 @@ struct ObjectHandle final
     static ObjectHandle getObjectPrototype(GC &gc);
     static ObjectHandle getFunctionPrototype(GC &gc);
     static ObjectHandle getGlobalObject(GC &gc);
+    static ObjectHandle getErrorPrototype(GC &gc);
+    static ObjectHandle createCustomErrorPrototype(StringHandle name, GC &gc);
+    static ObjectHandle createCustomErrorPrototype(String &&name, GC &gc);
+    static ObjectHandle createCustomErrorPrototype(const String &name, GC &gc);
+    static ObjectHandle createErrorObject(ObjectHandle prototype, GC &gc);
+    static ObjectHandle createErrorObject(ObjectHandle prototype, StringHandle message, GC &gc);
+    static ObjectHandle getTypeErrorPrototype(GC &gc);
+    static ObjectHandle getSyntaxErrorPrototype(GC &gc);
     enum class FunctionKind
     {
         Normal,
@@ -401,17 +409,21 @@ struct ObjectHandle final
         explicit BuiltinCode(Fn fn) : fn(std::move(fn))
         {
         }
-        virtual ValueHandle run(ArrayRef<const ValueHandle> arguments, GC &gc) const override
+        virtual ValueHandle run(const ValueHandle &thisValue,
+                                ArrayRef<const ValueHandle> arguments,
+                                GC &gc) const override
         {
-            return fn(arguments, gc);
+            return fn(thisValue, arguments, gc);
         }
         virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
         {
         }
     };
     template <typename Fn,
-              typename = decltype(std::declval<const Fn &>()(
-                  std::declval<ArrayRef<const ValueHandle> &>(), std::declval<GC &>()))>
+              typename =
+                  decltype(std::declval<const Fn &>()(std::declval<const ValueHandle &>(),
+                                                      std::declval<ArrayRef<const ValueHandle> &>(),
+                                                      std::declval<GC &>()))>
     static ObjectHandle createBuiltinFunction(Fn fn,
                                               std::uint32_t length,
                                               String name,
@@ -452,6 +464,7 @@ private:
                         bool putInObjectDescriptor) const;
     struct FunctionPrototypeCode;
     struct FunctionObjectExtraData;
+    struct ErrorObjectExtraData;
 };
 
 inline ValueHandle::ValueHandle(ObjectHandle value) noexcept : value(value.get())
@@ -967,6 +980,10 @@ public:
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
     ObjectHandle toObject(GC &gc) const;
+    String getDescriptiveString(GC &gc) const
+    {
+        return u"Symbol(" + getDescription(gc) + u")";
+    }
 };
 
 inline ValueHandle::ValueHandle(SymbolHandle value) noexcept : value(value.get())
@@ -2328,6 +2345,16 @@ inline void ObjectHandle::throwSyntaxError(String &&message,
                                            GC &gc)
 {
     throwSyntaxError(gc.internString(std::move(message)), location, isPrefixOfValidSource, gc);
+}
+
+inline ObjectHandle ObjectHandle::createCustomErrorPrototype(String &&name, GC &gc)
+{
+    return createCustomErrorPrototype(gc.internString(std::move(name)), gc);
+}
+
+inline ObjectHandle ObjectHandle::createCustomErrorPrototype(const String &name, GC &gc)
+{
+    return createCustomErrorPrototype(gc.internString(name), gc);
 }
 }
 

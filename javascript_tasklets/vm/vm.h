@@ -39,7 +39,9 @@ struct ClosureInternalNameTag final
 struct Code
 {
     virtual ~Code() = default;
-    virtual value::ValueHandle run(ArrayRef<const value::ValueHandle> arguments, GC &gc) const = 0;
+    virtual value::ValueHandle run(const value::ValueHandle &thisValue,
+                                   ArrayRef<const value::ValueHandle> arguments,
+                                   GC &gc) const = 0;
     virtual void getGCReferences(gc::GCReferencesCallback &callback) const = 0;
 };
 }
