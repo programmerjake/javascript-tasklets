@@ -391,7 +391,7 @@ inline String operator"" _js(const char16_t *str, std::size_t length)
 }
 
 std::ostream &writeString(std::ostream &os, const String &string);
-String appendCodePoint(String str, std::uint32_t codePoint)
+inline String appendCodePoint(String str, std::uint32_t codePoint)
 {
     StringCastHelper<String, std::string>::writeValue(str, codePoint);
     return str;

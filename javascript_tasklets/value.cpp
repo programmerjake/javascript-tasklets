@@ -822,6 +822,7 @@ void ObjectHandle::throwSyntaxError(StringHandle message, GC &gc)
 
 void ObjectHandle::throwSyntaxError(StringHandle message,
                                     const parser::LocationHandle &location,
+                                    bool isPrefixOfValidSource,
                                     GC &gc)
 {
 #warning finish

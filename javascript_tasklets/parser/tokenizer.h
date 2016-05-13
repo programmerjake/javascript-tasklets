@@ -55,10 +55,12 @@ private:
 private:
     const SourceHandle source;
     State currentState;
-    constexpr std::uint32_t eofCodePoint = 0xFFFFFFFFUL;
+    static constexpr std::uint32_t eofCodePoint = 0xFFFFFFFFUL;
     void getCurrentCodePoint() noexcept;
     void nextCodePoint() noexcept;
     std::uint32_t parseUnicodeEscapeSequence(GC &gc);
+    void parseEscapeSequence(String &processedValue, GC &gc);
+    void parseExponentPart(GC &gc);
 
 public:
     explicit Tokenizer(const SourceHandle &source);

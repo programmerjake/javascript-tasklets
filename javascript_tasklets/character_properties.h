@@ -1081,6 +1081,55 @@ constexpr bool javascriptLineTerminator(std::uint32_t codePoint) noexcept
 {
     return codePoint == 0xAU || codePoint == 0xDU || codePoint == 0x2028U || codePoint == 0x2029U;
 }
+constexpr bool javascriptHexDigit(std::uint32_t codePoint) noexcept
+{
+    return (codePoint >= 0x30U && codePoint <= 0x39U) || (codePoint >= 0x41U && codePoint <= 0x5AU)
+           || (codePoint >= 0x61U && codePoint <= 0x7AU);
+}
+constexpr bool javascriptDecimalDigit(std::uint32_t codePoint) noexcept
+{
+    return codePoint >= 0x30U && codePoint <= 0x39U;
+}
+constexpr bool javascriptBinaryDigit(std::uint32_t codePoint) noexcept
+{
+    return codePoint >= 0x30U && codePoint <= 0x31U;
+}
+constexpr bool javascriptOctalDigit(std::uint32_t codePoint) noexcept
+{
+    return codePoint >= 0x30U && codePoint <= 0x37U;
+}
+constexpr bool javascriptNonZeroDigit(std::uint32_t codePoint) noexcept
+{
+    return codePoint >= 0x31U && codePoint <= 0x39U;
+}
+constexpr bool javascriptExponentIndicator(std::uint32_t codePoint) noexcept
+{
+    return codePoint == 0x45U || codePoint == 0x65U;
+}
+constexpr int javascriptDigitValue(std::uint32_t codePoint) noexcept
+{
+    return codePoint >= 0x30U && codePoint <= 0x39U ?
+               codePoint - 0x30U :
+               codePoint >= 0x41U && codePoint <= 0x5AU ?
+               codePoint - 0x41U + 0xAU :
+               codePoint >= 0x61U && codePoint <= 0x7AU ? codePoint - 0x61U + 0xAU : -1;
+}
+constexpr bool javascriptSingleEscapeCharacter(std::uint32_t codePoint) noexcept
+{
+    return codePoint == U'\'' || codePoint == U'\"' || codePoint == U'\\' || codePoint == U'b'
+           || codePoint == U'f' || codePoint == U'n' || codePoint == U'r' || codePoint == U't'
+           || codePoint == U'v';
+}
+constexpr bool javascriptEscapeCharacter(std::uint32_t codePoint) noexcept
+{
+    return javascriptSingleEscapeCharacter(codePoint) || javascriptDecimalDigit(codePoint)
+           || codePoint == U'x' || codePoint == U'u';
+}
+constexpr bool javascriptNonEscapeCharacter(std::uint32_t codePoint) noexcept
+{
+    return codePoint <= 0x10FFFFUL && !javascriptEscapeCharacter(codePoint)
+           && !javascriptLineTerminator(codePoint);
+}
 }
 }
 

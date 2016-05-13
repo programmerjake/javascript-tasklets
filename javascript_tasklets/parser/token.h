@@ -47,8 +47,8 @@ struct Token final
         Comma,
         LAngle,
         RAngle,
-        LEq,
-        REq,
+        LAngleEqual,
+        RAngleEqual,
         DoubleEqual,
         NotEqual,
         TripleEqual,
@@ -87,7 +87,7 @@ struct Token final
         DivEqual,
         NumericLiteral,
         StringLiteral,
-        RegExLiteral,
+        RegExpLiteral,
         NoSubstitutionTemplate,
         TemplateHead,
         TemplateMiddle,
@@ -134,34 +134,37 @@ struct Token final
     Type type;
     Location location;
     gc::StringReference processedValue;
+    gc::StringReference supplementaryValue; // raw value for templates, flags for RegExp
     bool precededByLineTerminator;
     Token(Type type,
           Location location,
-          gc::StringReference processedValue,
+          Handle<gc::StringReference> processedValue,
+          Handle<gc::StringReference> supplementaryValue,
           bool precededByLineTerminator) noexcept
         : type(type),
           location(location),
-          processedValue(processedValue),
+          processedValue(processedValue.get()),
+          supplementaryValue(supplementaryValue.get()),
           precededByLineTerminator(precededByLineTerminator)
     {
     }
     Token() : type(), location(), processedValue(), precededByLineTerminator()
     {
     }
-    class TokenRawSource final
+    class TokenSource final
     {
         friend class Token;
-        TokenRawSource(const TokenRawSource &) = delete;
-        TokenRawSource &operator=(const TokenRawSource &) = delete;
+        TokenSource(const TokenSource &) = delete;
+        TokenSource &operator=(const TokenSource &) = delete;
 
     private:
         const Token &token;
-        explicit TokenRawSource(const Token &token) noexcept : token(token)
+        explicit TokenSource(const Token &token) noexcept : token(token)
         {
         }
 
     public:
-        TokenRawSource(TokenRawSource &&) = default;
+        TokenSource(TokenSource &&) = default;
         typedef String::const_iterator iterator;
         typedef String::const_iterator const_iterator;
         const_iterator begin() const
@@ -185,9 +188,9 @@ struct Token final
             return token.location.endPosition - token.location.beginPosition;
         }
     };
-    TokenRawSource rawValue() const noexcept
+    TokenSource sourceValue() const noexcept
     {
-        return TokenRawSource(*this);
+        return TokenSource(*this);
     }
     static bool isIdentifierName(Type type) noexcept
     {
@@ -206,8 +209,8 @@ struct Token final
         case Type::Comma:
         case Type::LAngle:
         case Type::RAngle:
-        case Type::LEq:
-        case Type::REq:
+        case Type::LAngleEqual:
+        case Type::RAngleEqual:
         case Type::DoubleEqual:
         case Type::NotEqual:
         case Type::TripleEqual:
@@ -246,7 +249,7 @@ struct Token final
         case Type::DivEqual:
         case Type::NumericLiteral:
         case Type::StringLiteral:
-        case Type::RegExLiteral:
+        case Type::RegExpLiteral:
         case Type::NoSubstitutionTemplate:
         case Type::TemplateHead:
         case Type::TemplateMiddle:

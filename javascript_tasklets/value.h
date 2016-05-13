@@ -324,16 +324,22 @@ struct ObjectHandle final
     }
     static void throwSyntaxError(StringHandle message,
                                  const parser::LocationHandle &location,
+                                 bool isPrefixOfValidSource,
                                  GC &gc);
     static void throwSyntaxError(const String &message,
                                  const parser::LocationHandle &location,
+                                 bool isPrefixOfValidSource,
                                  GC &gc);
-    static void throwSyntaxError(String &&message, const parser::LocationHandle &location, GC &gc);
+    static void throwSyntaxError(String &&message,
+                                 const parser::LocationHandle &location,
+                                 bool isPrefixOfValidSource,
+                                 GC &gc);
     static void throwSyntaxError(const char16_t *message,
                                  const parser::LocationHandle &location,
+                                 bool isPrefixOfValidSource,
                                  GC &gc)
     {
-        throwSyntaxError(String(message), location, gc);
+        throwSyntaxError(String(message), location, isPrefixOfValidSource, gc);
     }
     static void throwTypeError(StringHandle message, GC &gc);
     static void throwTypeError(const String &message, GC &gc);
@@ -2310,16 +2316,18 @@ inline void ObjectHandle::throwSyntaxError(String &&message, GC &gc)
 
 inline void ObjectHandle::throwSyntaxError(const String &message,
                                            const parser::LocationHandle &location,
+                                           bool isPrefixOfValidSource,
                                            GC &gc)
 {
-    throwSyntaxError(gc.internString(message), location, gc);
+    throwSyntaxError(gc.internString(message), location, isPrefixOfValidSource, gc);
 }
 
 inline void ObjectHandle::throwSyntaxError(String &&message,
                                            const parser::LocationHandle &location,
+                                           bool isPrefixOfValidSource,
                                            GC &gc)
 {
-    throwSyntaxError(gc.internString(std::move(message)), location, gc);
+    throwSyntaxError(gc.internString(std::move(message)), location, isPrefixOfValidSource, gc);
 }
 }
 
