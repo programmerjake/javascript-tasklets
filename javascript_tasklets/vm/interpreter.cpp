@@ -128,6 +128,7 @@ struct Registers final
 }
 
 value::ValueHandle FunctionCode::run(const value::ValueHandle &thisValue,
+                                     const value::ObjectOrNullHandle &newTarget,
                                      ArrayRef<const value::ValueHandle> arguments,
                                      GC &gc) const
 {

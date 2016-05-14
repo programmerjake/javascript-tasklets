@@ -32,41 +32,31 @@ void main()
 {
     using namespace value;
     const std::shared_ptr<GC> gcPointer = std::make_shared<GC>();
-    HandleScope handleScope(*gcPointer);
+    GC &gc = *gcPointer;
+    HandleScope handleScope(gc);
     try
     {
         try
         {
-            gc::LocalLocationGetter locationGetter(*gcPointer, u"main");
-            ObjectHandle fn = ObjectHandle::createBuiltinFunction(
-                [](const ValueHandle &thisValue, ArrayRef<const ValueHandle> arguments, GC &gc)
-                    -> ValueHandle
-                {
-                    return DoubleHandle(1.23, gc);
-                },
-                1,
-                u"fn",
-                ObjectHandle::FunctionKind::Normal,
-                ObjectHandle::ConstructorKind::Base,
-                *gcPointer);
-            writeString(
-                std::cout,
-                fn.call(UndefinedHandle(), {value::DoubleHandle(0.2, *gcPointer)}, *gcPointer)
-                    .toString(*gcPointer)
-                    .getValue(*gcPointer));
+            gc::LocalLocationGetter locationGetter(gc, u"main");
+            ValueHandle value = ObjectHandle::getFunctionPrototype(gc);
+            writeString(std::cout,
+                        value.invoke(StringHandle(u"toString", gc), {}, gc)
+                            .toString(gc)
+                            .getValue(gc));
             std::cout << std::endl;
-            ObjectHandle::throwTypeError(u"test exception", *gcPointer);
+            ObjectHandle::throwTypeError(u"test exception", gc);
         }
         catch(gc::ScriptException &e)
         {
-            HandleScope handleScope(*gcPointer);
+            HandleScope handleScope(gc);
             std::cerr << "exception: " << e.what() << std::endl;
             ValueHandle value = e.value;
             if(value.isObject())
             {
-                if(value.getObject().isErrorObject(*gcPointer))
+                if(value.getObject().isErrorObject(gc))
                 {
-                    auto locations = value.getObject().getLocationsIfError(*gcPointer);
+                    auto locations = value.getObject().getLocationsIfError(gc);
                     std::cerr << "backtrace:" << std::endl;
                     for(const auto &location : locations.get())
                     {

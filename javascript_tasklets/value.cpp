@@ -797,7 +797,7 @@ ValueHandle ObjectHandle::call(ValueHandle thisValue,
     if(functionObjectExtraData)
     {
         return handleScope.escapeHandle(
-            functionObjectExtraData->code->run(thisValue, arguments, gc));
+            functionObjectExtraData->code->run(thisValue, NullHandle(), arguments, gc));
     }
     throwTypeError(u"object is not callable", gc);
     constexpr_assert(false);
@@ -883,9 +883,230 @@ ObjectHandle ObjectHandle::getObjectPrototype(GC &gc)
     {
         objectPrototype = create(NullHandle(), gc);
         gc.setGlobalValue<ObjectPrototypeTag>(objectPrototype.get());
-#warning add Object.prototype members
+        objectPrototype.getObject().definePropertyOrThrow(
+            StringHandle(u"hasOwnProperty", gc),
+            PropertyHandle(createBuiltinFunction(
+                               [](const ValueHandle &thisValue,
+                                  const value::ObjectOrNullHandle &newTarget,
+                                  ArrayRef<const ValueHandle> arguments,
+                                  GC &gc) -> ValueHandle
+                               {
+                                   HandleScope handleScope(gc);
+                                   gc::LocalLocationGetter locationGetter(
+                                       gc, u"Object.prototype.hasOwnProperty");
+                                   NameHandle propertyKey;
+                                   if(arguments.size() > 0)
+                                       propertyKey = arguments[0].toPropertyKey(gc);
+                                   else
+                                       propertyKey = UndefinedHandle().toPropertyKey(gc);
+                                   ObjectHandle thisObject = thisValue.toObject(gc);
+                                   return handleScope.escapeHandle(
+                                       thisObject.hasOwnProperty(propertyKey, gc));
+                               },
+                               1,
+                               u"hasOwnProperty",
+                               FunctionKind::NonConstructor,
+                               ConstructorKind::Base,
+                               gc),
+                           true,
+                           false,
+                           true),
+            gc);
+        objectPrototype.getObject().definePropertyOrThrow(
+            StringHandle(u"isPrototypeOf", gc),
+            PropertyHandle(createBuiltinFunction(
+                               [](const ValueHandle &thisValue,
+                                  const value::ObjectOrNullHandle &newTarget,
+                                  ArrayRef<const ValueHandle> arguments,
+                                  GC &gc) -> ValueHandle
+                               {
+                                   HandleScope handleScope(gc);
+                                   gc::LocalLocationGetter locationGetter(
+                                       gc, u"Object.prototype.isPrototypeOf");
+                                   ObjectHandle v;
+                                   if(arguments.size() <= 0 || !arguments[0].isObject())
+                                       return handleScope.escapeHandle(BooleanHandle(false, gc));
+                                   v = arguments[0].getObject();
+                                   ObjectHandle thisObject = thisValue.toObject(gc);
+                                   for(;;)
+                                   {
+                                       auto prototype = v.getPrototype(gc);
+                                       if(prototype.isNull())
+                                           return handleScope.escapeHandle(
+                                               BooleanHandle(false, gc));
+                                       if(prototype.getObject().isSameValue(thisObject))
+                                           break;
+                                   }
+                                   return handleScope.escapeHandle(BooleanHandle(true, gc));
+                               },
+                               1,
+                               u"isPrototypeOf",
+                               FunctionKind::NonConstructor,
+                               ConstructorKind::Base,
+                               gc),
+                           true,
+                           false,
+                           true),
+            gc);
+        objectPrototype.getObject().definePropertyOrThrow(
+            StringHandle(u"propertyIsEnumerable", gc),
+            PropertyHandle(
+                createBuiltinFunction(
+                    [](const ValueHandle &thisValue,
+                       const value::ObjectOrNullHandle &newTarget,
+                       ArrayRef<const ValueHandle> arguments,
+                       GC &gc) -> ValueHandle
+                    {
+                        HandleScope handleScope(gc);
+                        gc::LocalLocationGetter locationGetter(
+                            gc, u"Object.prototype.propertyIsEnumerable");
+                        NameHandle propertyKey;
+                        if(arguments.size() > 0)
+                            propertyKey = arguments[0].toPropertyKey(gc);
+                        else
+                            propertyKey = UndefinedHandle().toPropertyKey(gc);
+                        ObjectHandle thisObject = thisValue.toObject(gc);
+                        PropertyHandle property = thisObject.getOwnProperty(propertyKey, gc);
+                        if(property.empty())
+                            return handleScope.escapeHandle(BooleanHandle(false, gc));
+                        constexpr_assert(property.hasEnumerable);
+                        return handleScope.escapeHandle(BooleanHandle(property.enumerable, gc));
+                    },
+                    1,
+                    u"propertyIsEnumerable",
+                    FunctionKind::NonConstructor,
+                    ConstructorKind::Base,
+                    gc),
+                true,
+                false,
+                true),
+            gc);
+        objectPrototype.getObject().definePropertyOrThrow(
+            StringHandle(u"toLocaleString", gc),
+            PropertyHandle(createBuiltinFunction(
+                               [](const ValueHandle &thisValue,
+                                  const value::ObjectOrNullHandle &newTarget,
+                                  ArrayRef<const ValueHandle> arguments,
+                                  GC &gc) -> ValueHandle
+                               {
+                                   HandleScope handleScope(gc);
+                                   gc::LocalLocationGetter locationGetter(
+                                       gc, u"Object.prototype.toLocaleString");
+                                   return handleScope.escapeHandle(
+                                       thisValue.invoke(StringHandle(u"toString", gc), {}, gc));
+                               },
+                               0,
+                               u"toLocaleString",
+                               FunctionKind::NonConstructor,
+                               ConstructorKind::Base,
+                               gc),
+                           true,
+                           false,
+                           true),
+            gc);
+        objectPrototype.getObject().definePropertyOrThrow(
+            StringHandle(u"toString", gc),
+            PropertyHandle(
+                createBuiltinFunction(
+                    [](const ValueHandle &thisValue,
+                       const value::ObjectOrNullHandle &newTarget,
+                       ArrayRef<const ValueHandle> arguments,
+                       GC &gc) -> ValueHandle
+                    {
+                        HandleScope handleScope(gc);
+                        gc::LocalLocationGetter locationGetter(gc, u"Object.prototype.toString");
+                        if(thisValue.isUndefined())
+                            return handleScope.escapeHandle(
+                                StringHandle(u"[object Undefined]", gc));
+                        if(thisValue.isNull())
+                            return handleScope.escapeHandle(StringHandle(u"[object Null]", gc));
+                        ObjectHandle thisObject = thisValue.toObject(gc);
+                        auto builtInTag = u"Object";
+                        if(thisObject.isArray(gc))
+                            builtInTag = u"Array";
+                        else if(thisObject.isStringObject(gc))
+                            builtInTag = u"String";
+                        else if(thisObject.isArgumentsObject(gc))
+                            builtInTag = u"Arguments";
+                        else if(thisObject.isCallable(gc))
+                            builtInTag = u"Function";
+                        else if(thisObject.isErrorObject(gc))
+                            builtInTag = u"Error";
+                        else if(thisObject.isBooleanObject(gc))
+                            builtInTag = u"Boolean";
+                        else if(thisObject.isNumberObject(gc))
+                            builtInTag = u"Number";
+                        else if(thisObject.isDateObject(gc))
+                            builtInTag = u"Date";
+                        else if(thisObject.isRegExpObject(gc))
+                            builtInTag = u"RegExp";
+                        ValueHandle tagValue =
+                            thisObject.getValue(SymbolHandle::getToStringTag(gc), thisObject, gc);
+                        String tag = tagValue.isString() ?
+                                         gc.readString(tagValue.getString().get()) :
+                                         builtInTag;
+                        return handleScope.escapeHandle(
+                            StringHandle(u"[object " + std::move(tag) + u"]", gc));
+                    },
+                    0,
+                    u"toString",
+                    FunctionKind::NonConstructor,
+                    ConstructorKind::Base,
+                    gc),
+                true,
+                false,
+                true),
+            gc);
+        objectPrototype.getObject().definePropertyOrThrow(
+            StringHandle(u"valueOf", gc),
+            PropertyHandle(createBuiltinFunction(
+                               [](const ValueHandle &thisValue,
+                                  const value::ObjectOrNullHandle &newTarget,
+                                  ArrayRef<const ValueHandle> arguments,
+                                  GC &gc) -> ValueHandle
+                               {
+                                   HandleScope handleScope(gc);
+                                   gc::LocalLocationGetter locationGetter(
+                                       gc, u"Object.prototype.valueOf");
+                                   return handleScope.escapeHandle(thisValue.toObject(gc));
+                               },
+                               0,
+                               u"valueOf",
+                               FunctionKind::NonConstructor,
+                               ConstructorKind::Base,
+                               gc),
+                           true,
+                           false,
+                           true),
+            gc);
     }
     return handleScope.escapeHandle(objectPrototype.getObject());
+}
+
+ValueHandle ValueHandle::invoke(NameHandle propertyKey,
+                                ArrayRef<const ValueHandle> arguments,
+                                GC &gc) const
+{
+    HandleScope handleScope(gc);
+    ValueHandle function = toObject(gc).getValue(propertyKey, *this, gc);
+    if(!function.isObject())
+    {
+        ObjectHandle::throwTypeError(u"value is not a function", gc);
+        constexpr_assert(false);
+        return ValueHandle();
+    }
+    function.toObject(gc).call(*this, arguments, gc);
+    return handleScope.escapeHandle(function.toObject(gc).call(*this, arguments, gc));
+}
+
+ValueHandle ObjectHandle::invoke(NameHandle propertyKey,
+                                 ArrayRef<const ValueHandle> arguments,
+                                 GC &gc) const
+{
+    HandleScope handleScope(gc);
+    ValueHandle function = getValue(propertyKey, *this, gc);
+    function.toObject(gc).call(*this, arguments, gc);
+    return handleScope.escapeHandle(function.toObject(gc).call(*this, arguments, gc));
 }
 
 void ObjectHandle::definePropertyOrThrow(NameHandle name, PropertyHandle property, GC &gc) const
@@ -949,8 +1170,10 @@ ObjectHandle ObjectHandle::getErrorPrototype(GC &gc)
             StringHandle(u"toString", gc),
             PropertyHandle(
                 createBuiltinFunction(
-                    [](const ValueHandle &thisValue, ArrayRef<const ValueHandle> arguments, GC &gc)
-                        -> ValueHandle
+                    [](const ValueHandle &thisValue,
+                       const value::ObjectOrNullHandle &newTarget,
+                       ArrayRef<const ValueHandle> arguments,
+                       GC &gc) -> ValueHandle
                     {
                         HandleScope handleScope(gc);
                         gc::LocalLocationGetter locationGetter(gc, u"Error.prototype.toString");
@@ -1095,6 +1318,54 @@ Handle<std::vector<parser::Location>> ObjectHandle::getLocationsIfError(GC &gc) 
         Handle<std::vector<parser::Location>>(gc, errorObjectExtraData->locations));
 }
 
+bool ObjectHandle::isArray(GC &gc) const
+{
+#warning finish
+    return isArrayObject(gc);
+}
+
+bool ObjectHandle::isArrayObject(GC &gc) const
+{
+#warning finish
+    return false;
+}
+
+bool ObjectHandle::isStringObject(GC &gc) const
+{
+#warning finish
+    return false;
+}
+
+bool ObjectHandle::isArgumentsObject(GC &gc) const
+{
+#warning finish
+    return false;
+}
+
+bool ObjectHandle::isBooleanObject(GC &gc) const
+{
+#warning finish
+    return false;
+}
+
+bool ObjectHandle::isNumberObject(GC &gc) const
+{
+#warning finish
+    return false;
+}
+
+bool ObjectHandle::isDateObject(GC &gc) const
+{
+#warning finish
+    return false;
+}
+
+bool ObjectHandle::isRegExpObject(GC &gc) const
+{
+#warning finish
+    return false;
+}
+
 void ObjectHandle::setOwnProperty(gc::Name name,
                                   const PropertyHandle &property,
                                   GC &gc,
@@ -1141,6 +1412,7 @@ void ObjectHandle::setOwnProperty(gc::Name name,
 struct ObjectHandle::FunctionPrototypeCode final : public vm::Code
 {
     virtual ValueHandle run(const ValueHandle &thisValue,
+                            const value::ObjectOrNullHandle &newTarget,
                             ArrayRef<const ValueHandle> arguments,
                             GC &gc) const override
     {

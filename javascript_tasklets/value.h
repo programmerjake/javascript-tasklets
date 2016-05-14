@@ -69,6 +69,7 @@ struct UndefinedHandle final
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const;
 };
 struct NullHandle final
 {
@@ -91,6 +92,7 @@ struct NullHandle final
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const;
 };
 struct PrimitiveHandle;
 struct Int32Handle;
@@ -221,6 +223,8 @@ struct ValueHandle final
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const;
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const;
 };
 
 struct PropertyHandle;
@@ -374,6 +378,14 @@ struct ObjectHandle final
     static ObjectHandle getTypeErrorPrototype(GC &gc);
     static ObjectHandle getSyntaxErrorPrototype(GC &gc);
     bool isErrorObject(GC &gc) const;
+    bool isArray(GC &gc) const;
+    bool isArrayObject(GC &gc) const;
+    bool isStringObject(GC &gc) const;
+    bool isArgumentsObject(GC &gc) const;
+    bool isBooleanObject(GC &gc) const;
+    bool isNumberObject(GC &gc) const;
+    bool isDateObject(GC &gc) const;
+    bool isRegExpObject(GC &gc) const;
     Handle<std::vector<parser::Location>> getLocationsIfError(GC &gc) const;
     enum class FunctionKind
     {
@@ -419,10 +431,11 @@ struct ObjectHandle final
         {
         }
         virtual ValueHandle run(const ValueHandle &thisValue,
+                                const value::ObjectOrNullHandle &newTarget,
                                 ArrayRef<const ValueHandle> arguments,
                                 GC &gc) const override
         {
-            return fn(thisValue, arguments, gc);
+            return fn(thisValue, newTarget, arguments, gc);
         }
         virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
         {
@@ -431,6 +444,7 @@ struct ObjectHandle final
     template <typename Fn,
               typename =
                   decltype(std::declval<const Fn &>()(std::declval<const ValueHandle &>(),
+                                                      std::declval<const ObjectOrNullHandle &>(),
                                                       std::declval<ArrayRef<const ValueHandle> &>(),
                                                       std::declval<GC &>()))>
     static ObjectHandle createBuiltinFunction(Fn fn,
@@ -457,6 +471,8 @@ struct ObjectHandle final
     {
         return *this;
     }
+    NameHandle toPropertyKey(GC &gc) const;
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const;
 
 private:
     PropertyHandle getOwnProperty(gc::Name name, GC &gc) const;
@@ -567,6 +583,8 @@ struct ObjectOrNullHandle final
             return NullHandle().toObject(gc);
         return getObject();
     }
+    NameHandle toPropertyKey(GC &gc) const;
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(ObjectOrNullHandle value) noexcept : value(value.get())
@@ -989,10 +1007,12 @@ public:
     NumberHandle toNumber(GC &gc) const;
     StringHandle toString(GC &gc) const;
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const;
     String getDescriptiveString(GC &gc) const
     {
         return u"Symbol(" + getDescription(gc) + u")";
     }
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(SymbolHandle value) noexcept : value(value.get())
@@ -1056,6 +1076,8 @@ struct StringHandle final
         return *this;
     }
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const;
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(StringHandle value) noexcept : value(value.get())
@@ -1123,6 +1145,8 @@ struct BooleanHandle final
         return value.get() ? gc.internString(u"true") : gc.internString(u"false");
     }
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const;
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(BooleanHandle value) noexcept : value(value.get())
@@ -1174,6 +1198,8 @@ struct Int32Handle final
         return gc.internString(toStringValue(value.get()));
     }
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const;
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(Int32Handle value) noexcept : value(value.get())
@@ -1225,6 +1251,8 @@ struct UInt32Handle final
         return gc.internString(toStringValue(value.get()));
     }
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const;
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(UInt32Handle value) noexcept : value(value.get())
@@ -1290,6 +1318,8 @@ struct DoubleHandle final
         return gc.internString(toStringValue(value.get()));
     }
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const;
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const;
 };
 
 inline ValueHandle::ValueHandle(DoubleHandle value) noexcept : value(value.get())
@@ -1366,6 +1396,14 @@ struct NameHandle final
             return getString().toObject(gc);
         return getSymbol().toObject(gc);
     }
+    NameHandle toPropertyKey(GC &gc) const
+    {
+        return *this;
+    }
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+    {
+        return ValueHandle(*this).invoke(propertyKey, arguments, gc);
+    }
 };
 
 inline ValueHandle::ValueHandle(NameHandle value) noexcept : value(value.get())
@@ -1376,6 +1414,81 @@ inline NameHandle ValueHandle::getName() const noexcept
 {
     constexpr_assert(isName());
     return NameHandle(Handle<NameHandle::ValueType>(value));
+}
+
+inline NameHandle UndefinedHandle::toPropertyKey(GC &gc) const
+{
+    return toString(gc);
+}
+
+inline NameHandle NullHandle::toPropertyKey(GC &gc) const
+{
+    return toString(gc);
+}
+
+inline ValueHandle ObjectOrNullHandle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+{
+    return toObject(gc).invoke(propertyKey, arguments, gc);
+}
+
+inline NameHandle SymbolHandle::toPropertyKey(GC &gc) const
+{
+    return *this;
+}
+
+inline ValueHandle SymbolHandle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+{
+    return ValueHandle(*this).invoke(propertyKey, arguments, gc);
+}
+
+inline NameHandle StringHandle::toPropertyKey(GC &gc) const
+{
+    return *this;
+}
+
+inline ValueHandle StringHandle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+{
+    return ValueHandle(*this).invoke(propertyKey, arguments, gc);
+}
+
+inline NameHandle BooleanHandle::toPropertyKey(GC &gc) const
+{
+    return toString(gc);
+}
+
+inline ValueHandle BooleanHandle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+{
+    return ValueHandle(*this).invoke(propertyKey, arguments, gc);
+}
+
+inline NameHandle Int32Handle::toPropertyKey(GC &gc) const
+{
+    return toString(gc);
+}
+
+inline ValueHandle Int32Handle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+{
+    return ValueHandle(*this).invoke(propertyKey, arguments, gc);
+}
+
+inline NameHandle UInt32Handle::toPropertyKey(GC &gc) const
+{
+    return toString(gc);
+}
+
+inline ValueHandle UInt32Handle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+{
+    return ValueHandle(*this).invoke(propertyKey, arguments, gc);
+}
+
+inline NameHandle DoubleHandle::toPropertyKey(GC &gc) const
+{
+    return toString(gc);
+}
+
+inline ValueHandle DoubleHandle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+{
+    return ValueHandle(*this).invoke(propertyKey, arguments, gc);
 }
 
 struct IntegerHandle final
@@ -1467,6 +1580,14 @@ struct IntegerHandle final
         return isInt32() ? getInt32().toString(gc) : getUInt32().toString(gc);
     }
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const
+    {
+        return toString(gc);
+    }
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+    {
+        return ValueHandle(*this).invoke(propertyKey, arguments, gc);
+    }
 };
 
 inline ValueHandle::ValueHandle(IntegerHandle value) noexcept : value(value.get())
@@ -1772,6 +1893,14 @@ struct NumberHandle final
                                                                    getUInt32().toString(gc);
     }
     ObjectHandle toObject(GC &gc) const;
+    NameHandle toPropertyKey(GC &gc) const
+    {
+        return toString(gc);
+    }
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+    {
+        return ValueHandle(*this).invoke(propertyKey, arguments, gc);
+    }
 };
 
 inline ValueHandle::ValueHandle(NumberHandle value) noexcept : value(value.get())
@@ -2234,6 +2363,16 @@ public:
     {
         return value.get().apply(ToObjectHelper(gc, value)).retval;
     }
+    NameHandle toPropertyKey(GC &gc) const
+    {
+        if(isSymbol())
+            return getSymbol();
+        return toString(gc);
+    }
+    ValueHandle invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+    {
+        return ValueHandle(*this).invoke(propertyKey, arguments, gc);
+    }
 };
 
 inline ValueHandle::ValueHandle(PrimitiveHandle value) noexcept : value(value.get())
@@ -2305,6 +2444,21 @@ inline PrimitiveHandle ObjectOrNullHandle::toPrimitive(ToPrimitivePreferredType 
     if(isObject())
         return getObject().toPrimitive(preferredType, gc);
     return getNull();
+}
+
+inline NameHandle ObjectHandle::toPropertyKey(GC &gc) const
+{
+    return toPrimitive(ToPrimitivePreferredType::String, gc).toPropertyKey(gc);
+}
+
+inline NameHandle ObjectOrNullHandle::toPropertyKey(GC &gc) const
+{
+    return toPrimitive(ToPrimitivePreferredType::String, gc).toPropertyKey(gc);
+}
+
+inline NameHandle ValueHandle::toPropertyKey(GC &gc) const
+{
+    return toPrimitive(ToPrimitivePreferredType::String, gc).toPropertyKey(gc);
 }
 
 inline void ObjectHandle::throwTypeError(const String &message, GC &gc)

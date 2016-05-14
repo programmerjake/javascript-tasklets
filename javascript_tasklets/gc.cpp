@@ -22,6 +22,7 @@
 #include "parser/source.h"
 #include "value.h"
 #include <type_traits>
+#include <iostream>
 
 namespace javascript_tasklets
 {
@@ -412,6 +413,12 @@ void GC::collect() noexcept
                     }
                 }
             }
+#if 0
+#warning debugging source collection
+            std::cout << "destroyed source (" << sourceIndex << "): ";
+            writeString(std::cout, source->fileName);
+            std::cout << std::endl;
+#endif
             delete source;
             freeSourceIndex(sourceIndex);
         }
@@ -526,7 +533,7 @@ std::size_t GC::allocateSourceIndex()
         freeSourcesIndexesList.pop_back();
         return retval;
     }
-    std::size_t retval = strings.size();
+    std::size_t retval = sources.size();
     sources.push_back(nullptr);
     freeSourcesIndexesList.reserve(sources.capacity());
     oldSources.reserve(sources.capacity());
@@ -971,6 +978,12 @@ Handle<SourceReference> GC::createSource(String fileName, String contents)
     std::size_t index = allocateSourceIndex();
     SourceReference sourceReference(index, sourceValue.get());
     sources[index] = sourceValue.release();
+#if 0
+    std::cout << "created source (" << index << "): ";
+    writeString(std::cout, sourceReference->fileName);
+    std::cout << std::endl;
+#warning source creation debugging enabled
+#endif
     return Handle<SourceReference>(*this, sourceReference);
 }
 

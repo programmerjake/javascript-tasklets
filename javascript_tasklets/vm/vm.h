@@ -30,6 +30,7 @@ namespace javascript_tasklets
 namespace value
 {
 struct ValueHandle;
+struct ObjectOrNullHandle;
 }
 namespace vm
 {
@@ -40,6 +41,7 @@ struct Code
 {
     virtual ~Code() = default;
     virtual value::ValueHandle run(const value::ValueHandle &thisValue,
+                                   const value::ObjectOrNullHandle &newTarget,
                                    ArrayRef<const value::ValueHandle> arguments,
                                    GC &gc) const = 0;
     virtual void getGCReferences(gc::GCReferencesCallback &callback) const = 0;
