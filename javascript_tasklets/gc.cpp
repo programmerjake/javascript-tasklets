@@ -82,7 +82,8 @@ GC::GC(std::shared_ptr<const GC> parent)
       allocationsLeftTillNextCollect(startingAllocationsLeftTillNextCollect),
       memoryLeftTillNextCollect(startingMemoryLeftTillNextCollect),
       exceptionListHead(nullptr),
-      exceptionListTail(nullptr)
+      exceptionListTail(nullptr),
+      locationGetterStack(nullptr)
 {
     if(parent)
     {
@@ -96,7 +97,17 @@ GC::GC(std::shared_ptr<const GC> parent)
         oldStrings.reserve(strings.capacity());
         freeStringsIndexesList = parent->freeStringsIndexesList;
         freeStringsIndexesList.reserve(strings.capacity());
+        sources = parent->sources;
+        oldSources.reserve(sources.capacity());
+        freeSourcesIndexesList = parent->freeSourcesIndexesList;
+        freeSourcesIndexesList.reserve(sources.capacity());
+        objectDescriptors = parent->objectDescriptors;
+        oldObjectDescriptors.reserve(objectDescriptors.capacity());
+        freeObjectDescriptorIndexesList = parent->freeObjectDescriptorIndexesList;
+        freeObjectDescriptorIndexesList.reserve(objectDescriptors.capacity());
+        objectDescriptorsWorklist.reserve(objectDescriptors.capacity());
         stringHashToStringReferenceMap = parent->stringHashToStringReferenceMap;
+        builtinSourceHashToSourceReferenceMap = parent->builtinSourceHashToSourceReferenceMap;
         objectDescriptorTransitions = parent->objectDescriptorTransitions;
         globalValuesMap = parent->globalValuesMap;
     }
@@ -125,12 +136,25 @@ GC::~GC()
             if(parent->strings[i] == strings[i])
                 strings[i] = nullptr; // parent handles destruction
         }
+        constexpr_assert(sources.size() >= parent->sources.size());
+        for(std::size_t i = 0; i < parent->sources.size(); i++)
+        {
+            if(parent->sources[i] == sources[i])
+                sources[i] = nullptr; // parent handles destruction
+        }
     }
     for(String *string : strings)
     {
         if(string)
         {
             delete string;
+        }
+    }
+    for(parser::Source *source : sources)
+    {
+        if(source)
+        {
+            delete source;
         }
     }
     for(ObjectDescriptor *objectDescriptor : objectDescriptors)
@@ -250,6 +274,11 @@ void GC::collect() noexcept
     strings.resize(oldStrings.size());
     for(String *&string : strings)
         string = nullptr;
+    oldSources.swap(sources);
+    constexpr_assert(sources.capacity() >= oldSources.size());
+    sources.resize(oldSources.size());
+    for(parser::Source *&source : sources)
+        source = nullptr;
     oldObjectDescriptors.swap(objectDescriptors);
     constexpr_assert(objectDescriptors.capacity() >= oldObjectDescriptors.size());
     objectDescriptors.resize(oldObjectDescriptors.size());
@@ -355,6 +384,36 @@ void GC::collect() noexcept
             }
             delete string;
             freeStringIndex(stringIndex);
+        }
+    }
+    // sweep sources
+    for(auto iter = builtinSourceHashToSourceReferenceMap.begin();
+        iter != builtinSourceHashToSourceReferenceMap.end();)
+    {
+        SourceReference sourceReference = std::get<1>(*iter);
+        constexpr_assert(sourceReference.index < sources.size());
+        if(sources[sourceReference.index] == nullptr)
+            iter = builtinSourceHashToSourceReferenceMap.erase(iter);
+        else
+            ++iter;
+    }
+    for(std::size_t sourceIndex = 0; sourceIndex < sources.size(); sourceIndex++)
+    {
+        if(sources[sourceIndex] == nullptr && oldSources[sourceIndex] != nullptr)
+        {
+            parser::Source *source = oldSources[sourceIndex];
+            if(parent)
+            {
+                if(sourceIndex < parent->sources.size())
+                {
+                    if(parent->sources[sourceIndex] == source)
+                    {
+                        continue; // source owned by parent
+                    }
+                }
+            }
+            delete source;
+            freeSourceIndex(sourceIndex);
         }
     }
 }
@@ -786,6 +845,28 @@ Handle<StringReference> GC::internStringHelper(const String &value, std::size_t 
     return Handle<StringReference>();
 }
 
+Handle<SourceReference> GC::internBuiltinSource(String functionName)
+{
+    constexpr_assert(!immutable);
+    String name = std::move(functionName) + u" (native)";
+    std::size_t nameHash = std::hash<String>()(name);
+    auto iteratorRange = builtinSourceHashToSourceReferenceMap.equal_range(nameHash);
+    for(auto iter = std::get<0>(iteratorRange); iter != std::get<1>(iteratorRange); ++iter)
+    {
+        SourceReference sourceReference = std::get<1>(*iter);
+        constexpr_assert(sourceReference.index < sources.size());
+        constexpr_assert(sourceReference.ptr != nullptr);
+        constexpr_assert(sourceReference.ptr == sources[sourceReference.index]);
+        if(sourceReference->fileName == name)
+        {
+            return Handle<SourceReference>(*this, sourceReference);
+        }
+    }
+    Handle<SourceReference> retval = createSource(std::move(name), u"");
+    builtinSourceHashToSourceReferenceMap.emplace(nameHash, retval.get());
+    return retval;
+}
+
 Handle<StringReference> GC::internString(const String &value)
 {
     constexpr_assert(!immutable);
@@ -918,7 +999,10 @@ Handle<ObjectDescriptor *> ObjectDescriptor::duplicate(Handle<ObjectDescriptorRe
 {
     constexpr_assert(self.get() == this);
     constexpr_assert(typeid(*this) == typeid(ObjectDescriptor));
-    return gc.createObjectDescriptor(newParent);
+    auto retval = gc.createObjectDescriptor(newParent);
+    retval.get()->embeddedMemberCount = embeddedMemberCount;
+    retval.get()->members = members;
+    return retval;
 }
 
 Handle<Value> GC::getGlobalValue(const void *key)
@@ -978,7 +1062,8 @@ char *ScriptException::calculateWhat(GC &gc, const Handle<Value> &value) noexcep
         String message;
         try
         {
-            value::PrimitiveHandle primitive = value::ValueHandle(value).toPrimitive(value::ToPrimitivePreferredType::String, gc);
+            value::PrimitiveHandle primitive =
+                value::ValueHandle(value).toPrimitive(value::ToPrimitivePreferredType::String, gc);
             if(primitive.isSymbol())
                 message = primitive.getSymbol().getDescriptiveString(gc);
             else

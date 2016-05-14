@@ -71,12 +71,32 @@ struct ObjectHandle::FunctionObjectExtraData final : public gc::Object::ExtraDat
 
 struct ObjectHandle::ErrorObjectExtraData final : public gc::Object::ExtraData
 {
+    std::vector<parser::Location> locations;
+    explicit ErrorObjectExtraData(GC &gc) : locations()
+    {
+        for(parser::LocationHandle location : gc.getLocations())
+        {
+            locations.push_back(location.get());
+        }
+    }
+    explicit ErrorObjectExtraData(GC &gc, const parser::LocationHandle &extraLocation)
+        : locations(1, extraLocation.get())
+    {
+        for(parser::LocationHandle location : gc.getLocations())
+        {
+            locations.push_back(location.get());
+        }
+    }
     virtual std::unique_ptr<ExtraData> clone() const override
     {
         return std::unique_ptr<ExtraData>(new ErrorObjectExtraData(*this));
     }
     virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
     {
+        for(const auto &location : locations)
+        {
+            callback(location);
+        }
     }
 };
 
@@ -815,7 +835,6 @@ bool ObjectHandle::isConstructable(GC &gc) const
 void ObjectHandle::throwTypeError(StringHandle message, GC &gc)
 {
     HandleScope handleScope(gc);
-#warning finish
     throw gc::ScriptException(
         ValueHandle(createErrorObject(getTypeErrorPrototype(gc), message, gc)).get(),
         gc.shared_from_this());
@@ -825,14 +844,15 @@ void ObjectHandle::throwTypeError(StringHandle message,
                                   const parser::LocationHandle &location,
                                   GC &gc)
 {
-#warning finish
-    throwTypeError(message, gc);
+    HandleScope handleScope(gc);
+    throw gc::ScriptException(
+        ValueHandle(createErrorObject(getTypeErrorPrototype(gc), message, location, gc)).get(),
+        gc.shared_from_this());
 }
 
 void ObjectHandle::throwSyntaxError(StringHandle message, GC &gc)
 {
     HandleScope handleScope(gc);
-#warning finish
     throw gc::ScriptException(
         ValueHandle(createErrorObject(getSyntaxErrorPrototype(gc), message, gc)).get(),
         gc.shared_from_this());
@@ -843,8 +863,13 @@ void ObjectHandle::throwSyntaxError(StringHandle message,
                                     bool isPrefixOfValidSource,
                                     GC &gc)
 {
-#warning finish
-    throwSyntaxError(message, gc);
+    HandleScope handleScope(gc);
+    ObjectHandle exception = createErrorObject(getSyntaxErrorPrototype(gc), message, location, gc);
+    exception.definePropertyOrThrow(
+        StringHandle(u"isPrefixOfValidSource", gc),
+        PropertyHandle(BooleanHandle(isPrefixOfValidSource, gc), true, false, true),
+        gc);
+    throw gc::ScriptException(ValueHandle(exception).get(), gc.shared_from_this());
 }
 
 ObjectHandle ObjectHandle::getObjectPrototype(GC &gc)
@@ -928,6 +953,7 @@ ObjectHandle ObjectHandle::getErrorPrototype(GC &gc)
                         -> ValueHandle
                     {
                         HandleScope handleScope(gc);
+                        gc::LocalLocationGetter locationGetter(gc, u"Error.prototype.toString");
                         if(!thisValue.isObject())
                         {
                             throwTypeError(u"Error.prototype.toString called on non-object", gc);
@@ -941,7 +967,7 @@ ObjectHandle ObjectHandle::getErrorPrototype(GC &gc)
                         else
                             nameValue = nameValue.toString(gc);
                         ValueHandle messageValue = thisValue.getObject().getValue(
-                            StringHandle(u"name", gc), thisValue, gc);
+                            StringHandle(u"message", gc), thisValue, gc);
                         if(messageValue.isUndefined())
                             messageValue = StringHandle(u"", gc);
                         else
@@ -983,16 +1009,41 @@ ObjectHandle ObjectHandle::createCustomErrorPrototype(StringHandle name, GC &gc)
     return retval;
 }
 
+ObjectHandle ObjectHandle::createErrorObject(ObjectHandle prototype,
+                                             const parser::LocationHandle &location,
+                                             GC &gc)
+{
+    return create(std::unique_ptr<gc::Object::ExtraData>(new ErrorObjectExtraData(gc, location)),
+                  prototype,
+                  gc);
+}
+
+ObjectHandle ObjectHandle::createErrorObject(ObjectHandle prototype,
+                                             StringHandle message,
+                                             const parser::LocationHandle &location,
+                                             GC &gc)
+{
+    HandleScope handleScope(gc);
+    ObjectHandle retval =
+        create(std::unique_ptr<gc::Object::ExtraData>(new ErrorObjectExtraData(gc, location)),
+               prototype,
+               gc);
+    retval.definePropertyOrThrow(
+        StringHandle(u"message", gc), PropertyHandle(message, true, false, true), gc);
+    return handleScope.escapeHandle(retval);
+}
+
 ObjectHandle ObjectHandle::createErrorObject(ObjectHandle prototype, GC &gc)
 {
-    return create(std::unique_ptr<gc::Object::ExtraData>(new ErrorObjectExtraData), prototype, gc);
+    return create(
+        std::unique_ptr<gc::Object::ExtraData>(new ErrorObjectExtraData(gc)), prototype, gc);
 }
 
 ObjectHandle ObjectHandle::createErrorObject(ObjectHandle prototype, StringHandle message, GC &gc)
 {
     HandleScope handleScope(gc);
     ObjectHandle retval =
-        create(std::unique_ptr<gc::Object::ExtraData>(new ErrorObjectExtraData), prototype, gc);
+        create(std::unique_ptr<gc::Object::ExtraData>(new ErrorObjectExtraData(gc)), prototype, gc);
     retval.definePropertyOrThrow(
         StringHandle(u"message", gc), PropertyHandle(message, true, false, true), gc);
     return handleScope.escapeHandle(retval);
@@ -1026,6 +1077,22 @@ ObjectHandle ObjectHandle::getSyntaxErrorPrototype(GC &gc)
         gc.setGlobalValue<TypeErrorPrototypeTag>(typeErrorPrototype.get());
     }
     return handleScope.escapeHandle(typeErrorPrototype.getObject());
+}
+
+bool ObjectHandle::isErrorObject(GC &gc) const
+{
+    return dynamic_cast<ErrorObjectExtraData *>(gc.readObject(value).extraData.get()) != nullptr;
+}
+
+Handle<std::vector<parser::Location>> ObjectHandle::getLocationsIfError(GC &gc) const
+{
+    HandleScope handleScope(gc);
+    ErrorObjectExtraData *errorObjectExtraData =
+        dynamic_cast<ErrorObjectExtraData *>(gc.readObject(value).extraData.get());
+    if(!errorObjectExtraData)
+        return handleScope.escapeHandle(Handle<std::vector<parser::Location>>());
+    return handleScope.escapeHandle(
+        Handle<std::vector<parser::Location>>(gc, errorObjectExtraData->locations));
 }
 
 void ObjectHandle::setOwnProperty(gc::Name name,
@@ -1073,7 +1140,9 @@ void ObjectHandle::setOwnProperty(gc::Name name,
 
 struct ObjectHandle::FunctionPrototypeCode final : public vm::Code
 {
-    virtual ValueHandle run(const ValueHandle &thisValue, ArrayRef<const ValueHandle> arguments, GC &gc) const override
+    virtual ValueHandle run(const ValueHandle &thisValue,
+                            ArrayRef<const ValueHandle> arguments,
+                            GC &gc) const override
     {
         return UndefinedHandle();
     }

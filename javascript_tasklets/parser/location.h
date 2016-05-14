@@ -24,6 +24,7 @@
 
 #include "source.h"
 #include "../gc.h"
+#include <iterator>
 
 namespace javascript_tasklets
 {
@@ -79,6 +80,144 @@ struct AddHandleToHandleScope<parser::Location> final
     void operator()(HandleScope &handleScope, const parser::Location &value) const
     {
         AddHandleToHandleScope<SourceReference>()(handleScope, value.source);
+    }
+};
+
+class LocationGetter
+{
+    friend class GC;
+    friend class GC::LocationIterator;
+    LocationGetter(const LocationGetter &rt) = delete;
+    LocationGetter &operator=(const LocationGetter &rt) = delete;
+    void *operator new(std::size_t) = delete;
+
+private:
+    const LocationGetter *next;
+    GC &gc;
+
+public:
+    explicit LocationGetter(GC &gc) noexcept : next(gc.locationGetterStack), gc(gc)
+    {
+        gc.locationGetterStack = this;
+    }
+    virtual ~LocationGetter()
+    {
+        gc.locationGetterStack = next;
+    }
+    virtual parser::LocationHandle get(GC &gc) const = 0;
+};
+
+class GC::LocationIterator final : public std::iterator<std::input_iterator_tag,
+                                                        parser::LocationHandle,
+                                                        std::ptrdiff_t,
+                                                        parser::LocationHandle *,
+                                                        parser::LocationHandle>
+{
+    friend class GC;
+
+private:
+    GC *gc;
+    const LocationGetter *currentLocationGetter;
+    constexpr explicit LocationIterator(GC *gc,
+                                        const LocationGetter *currentLocationGetter) noexcept
+        : gc(gc),
+          currentLocationGetter(currentLocationGetter)
+    {
+    }
+
+public:
+    constexpr LocationIterator() noexcept : gc(nullptr), currentLocationGetter(nullptr)
+    {
+    }
+    LocationIterator &operator++()
+    {
+        constexpr_assert(gc != nullptr);
+        constexpr_assert(currentLocationGetter != nullptr);
+        constexpr_assert(&currentLocationGetter->gc == gc);
+        currentLocationGetter = currentLocationGetter->next;
+        return *this;
+    }
+    LocationIterator operator++(int)
+    {
+        LocationIterator retval(*this);
+        operator++();
+        return retval;
+    }
+    constexpr bool operator==(const LocationIterator &rt) const noexcept
+    {
+        return currentLocationGetter == rt.currentLocationGetter;
+    }
+    constexpr bool operator!=(const LocationIterator &rt) const noexcept
+    {
+        return currentLocationGetter != rt.currentLocationGetter;
+    }
+    parser::LocationHandle operator*() const
+    {
+        constexpr_assert(gc != nullptr);
+        constexpr_assert(currentLocationGetter != nullptr);
+        constexpr_assert(&currentLocationGetter->gc == gc);
+        return currentLocationGetter->get(*gc);
+    }
+    class LocationHandleHolder final
+    {
+        friend class LocationIterator;
+
+    private:
+        parser::LocationHandle value;
+        explicit LocationHandleHolder(parser::LocationHandle value) : value(value)
+        {
+        }
+
+    public:
+        const parser::LocationHandle *operator->() const noexcept
+        {
+            return &value;
+        }
+    };
+    LocationHandleHolder operator->() const
+    {
+        return LocationHandleHolder(operator*());
+    }
+};
+
+inline GC::LocationIterator GC::locationsBegin() noexcept
+{
+    return LocationIterator(this, locationGetterStack);
+}
+
+inline GC::LocationIterator GC::locationsEnd() noexcept
+{
+    return LocationIterator(this, nullptr);
+}
+
+inline GC::LocationIterator GC::Locations::begin() noexcept
+{
+    return gc->locationsBegin();
+}
+
+inline GC::LocationIterator GC::Locations::end() noexcept
+{
+    return gc->locationsEnd();
+}
+
+struct LocalLocationGetter final : public LocationGetter
+{
+    parser::LocationHandle location;
+    LocalLocationGetter(GC &gc, parser::LocationHandle location)
+        : LocationGetter(gc), location(location)
+    {
+    }
+    LocalLocationGetter(GC &gc, const parser::Location &location)
+        : LocalLocationGetter(gc, parser::LocationHandle(gc, location))
+    {
+    }
+    LocalLocationGetter(GC &gc, String builtinFunctionName)
+        : LocalLocationGetter(gc, parser::Location(gc.internBuiltinSource(std::move(builtinFunctionName)), 0))
+    {
+    }
+    virtual parser::LocationHandle get(GC &gc) const override
+    {
+        return location;
     }
 };
 }

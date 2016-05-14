@@ -41,6 +41,7 @@ namespace javascript_tasklets
 namespace parser
 {
 class Source;
+struct Location;
 }
 namespace gc
 {
@@ -1051,11 +1052,11 @@ public:
         removeFromGC();
     }
     template <typename T>
-    T escapeHandle(const T &handle)
+    T &&escapeHandle(T &&handle)
     {
         constexpr_assert(parent);
-        AddHandleToHandleScope<T>()(*parent, handle);
-        return handle;
+        AddHandleToHandleScope<typename std::decay<T>::type>()(*parent, handle);
+        return std::forward<T>(handle);
     }
     struct ObjectHandleAdder
     {
@@ -1129,6 +1130,18 @@ struct AddHandleToHandleScope<SymbolReference> final : public HandleScope::Symbo
 {
 };
 
+template <typename T>
+struct AddHandleToHandleScope<std::vector<T>> final
+{
+    void operator()(HandleScope &handleScope, const std::vector<T> &value) const
+    {
+        for(const T &element : value)
+        {
+            AddHandleToHandleScope<T>()(handleScope, element);
+        }
+    }
+};
+
 class GCReferencesCallback final
 {
     friend class GC;
@@ -1151,11 +1164,13 @@ public:
 };
 
 class ExceptionBase;
+class LocationGetter; // implemented in parser/location.h
 
 class GC final : public std::enable_shared_from_this<GC>
 {
     friend class HandleScope;
     friend class ExceptionBase;
+    friend class LocationGetter;
     template <typename T>
     friend class Handle;
     GC &operator=(const GC &) = delete;
@@ -1217,9 +1232,11 @@ private:
     std::size_t memoryLeftTillNextCollect;
     std::vector<std::forward_list<ObjectDescriptorTransition>> objectDescriptorTransitions;
     std::unordered_multimap<std::size_t, StringReference> stringHashToStringReferenceMap;
+    std::unordered_multimap<std::size_t, SourceReference> builtinSourceHashToSourceReferenceMap;
     std::unordered_map<const void *, Value> globalValuesMap;
     ExceptionBase *exceptionListHead;
     ExceptionBase *exceptionListTail;
+    const LocationGetter *locationGetterStack;
 
 private:
     ObjectReference allocateObjectIndex();
@@ -1328,6 +1345,7 @@ public:
     Handle<StringReference> internString(const String &value);
     Handle<StringReference> internString(String &&value);
     Handle<SourceReference> createSource(String fileName, String contents);
+    Handle<SourceReference> internBuiltinSource(String functionName);
     Handle<SymbolReference> createSymbol(String description);
     Handle<ObjectReference> create(Handle<ObjectDescriptorReference> objectDescriptor,
                                    std::unique_ptr<Object::ExtraData> extraData = nullptr);
@@ -1409,11 +1427,34 @@ public:
                             ObjectMemberDescriptor::DataInObject(
                                 configurable, enumerable, ObjectMemberIndex(), writable));
     }
+    class LocationIterator; // implemented in parser/location.h
+    LocationIterator locationsBegin() noexcept; // implemented in parser/location.h
+    LocationIterator locationsEnd() noexcept; // implemented in parser/location.h
+    class Locations final
+    {
+        friend class GC;
+
+    private:
+        GC *gc;
+        explicit Locations(GC *gc) : gc(gc)
+        {
+        }
+
+    public:
+        typedef LocationIterator iterator;
+        LocationIterator begin() noexcept; // implemented in parser/location.h
+        LocationIterator end() noexcept; // implemented in parser/location.h
+    };
+    Locations getLocations() noexcept
+    {
+        return Locations(this);
+    }
 };
 
 class ExceptionBase : public std::exception
 {
     friend class GC;
+
 private:
     std::shared_ptr<GC> gc;
     ExceptionBase *next;

@@ -362,10 +362,19 @@ struct ObjectHandle final
     static ObjectHandle createCustomErrorPrototype(StringHandle name, GC &gc);
     static ObjectHandle createCustomErrorPrototype(String &&name, GC &gc);
     static ObjectHandle createCustomErrorPrototype(const String &name, GC &gc);
+    static ObjectHandle createErrorObject(ObjectHandle prototype,
+                                          const parser::LocationHandle &location,
+                                          GC &gc);
+    static ObjectHandle createErrorObject(ObjectHandle prototype,
+                                          StringHandle message,
+                                          const parser::LocationHandle &location,
+                                          GC &gc);
     static ObjectHandle createErrorObject(ObjectHandle prototype, GC &gc);
     static ObjectHandle createErrorObject(ObjectHandle prototype, StringHandle message, GC &gc);
     static ObjectHandle getTypeErrorPrototype(GC &gc);
     static ObjectHandle getSyntaxErrorPrototype(GC &gc);
+    bool isErrorObject(GC &gc) const;
+    Handle<std::vector<parser::Location>> getLocationsIfError(GC &gc) const;
     enum class FunctionKind
     {
         Normal,
