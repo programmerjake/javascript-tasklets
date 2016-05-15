@@ -20,7 +20,8 @@
  */
 #include "javascript_tasklets/gc.h"
 #include "javascript_tasklets/string.h"
-#include "javascript_tasklets/vm/interpreter.h"
+#include "javascript_tasklets/value.h"
+#include "javascript_tasklets/parser/tokenizer.h"
 #include <iostream>
 #include <sstream>
 
@@ -28,24 +29,42 @@ using namespace javascript_tasklets;
 
 namespace test
 {
+const auto testSource =
+    uR"(// test
+console.log(`this is a test\u{1D7DF}`);
+)";
 void main()
 {
     using namespace value;
+    using namespace parser;
     const std::shared_ptr<GC> gcPointer = std::make_shared<GC>();
     GC &gc = *gcPointer;
     HandleScope handleScope(gc);
+    gc::LocalLocationGetter locationGetter(gc, u"main");
     try
     {
         try
         {
-            gc::LocalLocationGetter locationGetter(gc, u"main");
-            ValueHandle value = ObjectHandle::getFunctionPrototype(gc);
-            writeString(std::cout,
-                        value.invoke(StringHandle(u"toString", gc), {}, gc)
-                            .toString(gc)
-                            .getValue(gc));
-            std::cout << std::endl;
-            ObjectHandle::throwTypeError(u"test exception", gc);
+            Tokenizer tokenizer(gc.createSource(u"test", testSource));
+            for(Handle<Token> token = tokenizer.next(gc);
+                token.get().type != Token::Type::EndOfFile;
+                token = tokenizer.next(gc))
+            {
+                writeString(std::cout, token.get().location.toString());
+                std::cout << ": '";
+                writeString(std::cout, static_cast<String>(token.get().sourceValue()));
+                std::cout << "': ";
+                writeString(std::cout, Token::getTypeString(token.get().type));
+                if(token.get().processedValue != nullptr)
+                    writeString(std::cout << ": processedValue = '",
+                                gc.readString(Handle<gc::StringReference>(
+                                    token, token.get().processedValue))) << "'";
+                if(token.get().supplementaryValue != nullptr)
+                    writeString(std::cout << ": supplementaryValue = '",
+                                gc.readString(Handle<gc::StringReference>(
+                                    token, token.get().supplementaryValue))) << "'";
+                std::cout << std::endl;
+            }
         }
         catch(gc::ScriptException &e)
         {

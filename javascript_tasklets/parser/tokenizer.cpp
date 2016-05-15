@@ -304,9 +304,10 @@ Handle<Token> Tokenizer::next(GC &gc)
     if(character_properties::javascriptDecimalDigit(currentState.peekCodePoint)
        || currentState.peekCodePoint == U'.')
     {
-        bool isPeriod = false;
+        bool isPeriod = true;
         if(currentState.peekCodePoint == U'0')
         {
+            isPeriod = false;
             nextCodePoint();
             if(currentState.peekCodePoint == U'b'
                || currentState.peekCodePoint == U'B') // binary literal
@@ -1027,7 +1028,7 @@ void Tokenizer::parseEscapeSequence(String &processedValue, GC &gc)
             constexpr_assert(false);
             return;
         }
-        codePoint *= 4;
+        codePoint *= 0x10;
         codePoint += character_properties::javascriptDigitValue(currentState.peekCodePoint);
         nextCodePoint();
         processedValue = appendCodePoint(std::move(processedValue), codePoint);
@@ -1111,7 +1112,7 @@ std::uint32_t Tokenizer::parseUnicodeEscapeSequence(GC &gc)
         std::uint32_t value = 0;
         while(character_properties::javascriptHexDigit(currentState.peekCodePoint))
         {
-            value *= 4;
+            value *= 0x10;
             value += character_properties::javascriptDigitValue(currentState.peekCodePoint);
             if(value > 0x10FFFFUL)
             {
@@ -1161,7 +1162,7 @@ std::uint32_t Tokenizer::parseUnicodeEscapeSequence(GC &gc)
             constexpr_assert(false);
             return eofCodePoint;
         }
-        value *= 4;
+        value *= 0x10;
         value += character_properties::javascriptDigitValue(currentState.peekCodePoint);
         nextCodePoint();
     }

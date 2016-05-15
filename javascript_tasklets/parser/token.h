@@ -131,6 +131,207 @@ struct Token final
         TrueLiteral,
         FalseLiteral,
     };
+    static String getTypeString(Type type)
+    {
+        switch(type)
+        {
+        case Type::EndOfFile:
+            return u"EndOfFile";
+        case Type::Identifier:
+            return u"Identifier";
+        case Type::LBrace:
+            return u"LBrace";
+        case Type::RBrace:
+            return u"RBrace";
+        case Type::Ellipses:
+            return u"Ellipses";
+        case Type::LParen:
+            return u"LParen";
+        case Type::RParen:
+            return u"RParen";
+        case Type::LBracket:
+            return u"LBracket";
+        case Type::RBracket:
+            return u"RBracket";
+        case Type::Period:
+            return u"Period";
+        case Type::Semicolon:
+            return u"Semicolon";
+        case Type::Comma:
+            return u"Comma";
+        case Type::LAngle:
+            return u"LAngle";
+        case Type::RAngle:
+            return u"RAngle";
+        case Type::LAngleEqual:
+            return u"LAngleEqual";
+        case Type::RAngleEqual:
+            return u"RAngleEqual";
+        case Type::DoubleEqual:
+            return u"DoubleEqual";
+        case Type::NotEqual:
+            return u"NotEqual";
+        case Type::TripleEqual:
+            return u"TripleEqual";
+        case Type::NotDoubleEqual:
+            return u"NotDoubleEqual";
+        case Type::Plus:
+            return u"Plus";
+        case Type::Minus:
+            return u"Minus";
+        case Type::Star:
+            return u"Star";
+        case Type::Percent:
+            return u"Percent";
+        case Type::Inc:
+            return u"Inc";
+        case Type::Dec:
+            return u"Dec";
+        case Type::LShift:
+            return u"LShift";
+        case Type::ARShift:
+            return u"ARShift";
+        case Type::URShift:
+            return u"URShift";
+        case Type::Amp:
+            return u"Amp";
+        case Type::Pipe:
+            return u"Pipe";
+        case Type::Caret:
+            return u"Caret";
+        case Type::EMark:
+            return u"EMark";
+        case Type::Tilde:
+            return u"Tilde";
+        case Type::LAnd:
+            return u"LAnd";
+        case Type::LOr:
+            return u"LOr";
+        case Type::QMark:
+            return u"QMark";
+        case Type::Colon:
+            return u"Colon";
+        case Type::SingleEqual:
+            return u"SingleEqual";
+        case Type::PlusEqual:
+            return u"PlusEqual";
+        case Type::MinusEqual:
+            return u"MinusEqual";
+        case Type::StarEqual:
+            return u"StarEqual";
+        case Type::PercentEqual:
+            return u"PercentEqual";
+        case Type::LShiftEqual:
+            return u"LShiftEqual";
+        case Type::ARShiftEqual:
+            return u"ARShiftEqual";
+        case Type::URShiftEqual:
+            return u"URShiftEqual";
+        case Type::AmpEqual:
+            return u"AmpEqual";
+        case Type::PipeEqual:
+            return u"PipeEqual";
+        case Type::CaretEqual:
+            return u"CaretEqual";
+        case Type::Arrow:
+            return u"Arrow";
+        case Type::Div:
+            return u"Div";
+        case Type::DivEqual:
+            return u"DivEqual";
+        case Type::NumericLiteral:
+            return u"NumericLiteral";
+        case Type::StringLiteral:
+            return u"StringLiteral";
+        case Type::RegExpLiteral:
+            return u"RegExpLiteral";
+        case Type::NoSubstitutionTemplate:
+            return u"NoSubstitutionTemplate";
+        case Type::TemplateHead:
+            return u"TemplateHead";
+        case Type::TemplateMiddle:
+            return u"TemplateMiddle";
+        case Type::TemplateTail:
+            return u"TemplateTail";
+        case Type::BreakKW:
+            return u"BreakKW";
+        case Type::CaseKW:
+            return u"CaseKW";
+        case Type::CatchKW:
+            return u"CatchKW";
+        case Type::ClassKW:
+            return u"ClassKW";
+        case Type::ConstKW:
+            return u"ConstKW";
+        case Type::ContinueKW:
+            return u"ContinueKW";
+        case Type::DebuggerKW:
+            return u"DebuggerKW";
+        case Type::DefaultKW:
+            return u"DefaultKW";
+        case Type::DeleteKW:
+            return u"DeleteKW";
+        case Type::DoKW:
+            return u"DoKW";
+        case Type::ElseKW:
+            return u"ElseKW";
+        case Type::ExportKW:
+            return u"ExportKW";
+        case Type::ExtendsKW:
+            return u"ExtendsKW";
+        case Type::FinallyKW:
+            return u"FinallyKW";
+        case Type::ForKW:
+            return u"ForKW";
+        case Type::FunctionKW:
+            return u"FunctionKW";
+        case Type::IfKW:
+            return u"IfKW";
+        case Type::ImportKW:
+            return u"ImportKW";
+        case Type::InKW:
+            return u"InKW";
+        case Type::InstanceOfKW:
+            return u"InstanceOfKW";
+        case Type::NewKW:
+            return u"NewKW";
+        case Type::ReturnKW:
+            return u"ReturnKW";
+        case Type::SuperKW:
+            return u"SuperKW";
+        case Type::SwitchKW:
+            return u"SwitchKW";
+        case Type::ThisKW:
+            return u"ThisKW";
+        case Type::ThrowKW:
+            return u"ThrowKW";
+        case Type::TryKW:
+            return u"TryKW";
+        case Type::TypeOfKW:
+            return u"TypeOfKW";
+        case Type::VarKW:
+            return u"VarKW";
+        case Type::VoidKW:
+            return u"VoidKW";
+        case Type::WhileKW:
+            return u"WhileKW";
+        case Type::WithKW:
+            return u"WithKW";
+        case Type::YieldKW:
+            return u"YieldKW";
+        case Type::EnumKW:
+            return u"EnumKW";
+        case Type::AwaitKW:
+            return u"AwaitKW";
+        case Type::NullLiteral:
+            return u"NullLiteral";
+        case Type::TrueLiteral:
+            return u"TrueLiteral";
+        case Type::FalseLiteral:
+            return u"FalseLiteral";
+        }
+        return u"<unknown>";
+    }
     Type type;
     Location location;
     gc::StringReference processedValue;
@@ -186,6 +387,10 @@ struct Token final
         std::size_t size() const
         {
             return token.location.endPosition - token.location.beginPosition;
+        }
+        explicit operator String() const
+        {
+            return String(begin(), end());
         }
     };
     TokenSource sourceValue() const noexcept
