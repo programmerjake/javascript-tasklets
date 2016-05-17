@@ -178,7 +178,8 @@ struct InstructionAddress final : public BaseIndex
     JAVASCRIPT_TASKLETS_JUMP(Jump) /* goto target */                                 \
     JAVASCRIPT_TASKLETS_COND_JUMP(JumpIfTrue) /* if(bool) goto target */             \
     JAVASCRIPT_TASKLETS_COND_JUMP(JumpIfFalse) /* if(!bool) goto target */           \
-    JAVASCRIPT_TASKLETS_RETURN(Return) /* return any */                              \
+    JAVASCRIPT_TASKLETS_RETURN_VALUE(ReturnValue) /* return any */                   \
+    JAVASCRIPT_TASKLETS_RETURN(ReturnUndefined) /* return undefined */               \
     JAVASCRIPT_TASKLETS_END()
 
 
@@ -300,8 +301,23 @@ struct Instruction
     };
     struct Return
     {
+        constexpr Return() noexcept
+        {
+        }
+        template <typename Fn>
+        void forEachSourceRegister(Fn &&fn) const noexcept
+        {
+        }
+        template <typename Fn>
+        void forEachDestRegister(Fn &&fn) const noexcept
+        {
+        }
+    };
+    struct ReturnValue : public Return
+    {
         RegisterIndex returnValue;
-        constexpr explicit Return(RegisterIndex returnValue) noexcept : returnValue(returnValue)
+        constexpr explicit ReturnValue(RegisterIndex returnValue) noexcept
+            : returnValue(returnValue)
         {
         }
         template <typename Fn>
@@ -355,6 +371,11 @@ struct Instruction
     {                                              \
         using ConditionalJump::ConditionalJump;    \
     };
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name) \
+    struct Op##name final : public ReturnValue \
+    {                                          \
+        using ReturnValue::ReturnValue;        \
+    };
 #define JAVASCRIPT_TASKLETS_RETURN(name)  \
     struct Op##name final : public Return \
     {                                     \
@@ -370,6 +391,7 @@ struct Instruction
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
 
@@ -383,6 +405,7 @@ struct Instruction
 #define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name) name,
 #define JAVASCRIPT_TASKLETS_JUMP(name) name,
 #define JAVASCRIPT_TASKLETS_COND_JUMP(name) name,
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name) name,
 #define JAVASCRIPT_TASKLETS_RETURN(name) name,
 #define JAVASCRIPT_TASKLETS_END()
         JAVASCRIPT_TASKLETS_INSTRUCTIONS()
@@ -394,6 +417,7 @@ struct Instruction
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
             Empty
@@ -411,6 +435,7 @@ private:
 #define JAVASCRIPT_TASKLETS_UNARY_DEOPT(name) Op##name value##name;
 #define JAVASCRIPT_TASKLETS_JUMP(name) Op##name value##name;
 #define JAVASCRIPT_TASKLETS_COND_JUMP(name) Op##name value##name;
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name) Op##name value##name;
 #define JAVASCRIPT_TASKLETS_RETURN(name) Op##name value##name;
 #define JAVASCRIPT_TASKLETS_END()
         JAVASCRIPT_TASKLETS_INSTRUCTIONS()
@@ -422,6 +447,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         char valueEmpty;
@@ -488,10 +514,15 @@ public:
     {                                                                                      \
         return Instruction(location, Op##name(condition, jumpTarget));                     \
     }
-#define JAVASCRIPT_TASKLETS_RETURN(name)                                                \
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name)                                          \
     static Instruction make##name(parser::Location location, RegisterIndex returnValue) \
     {                                                                                   \
         return Instruction(location, Op##name(returnValue));                            \
+    }
+#define JAVASCRIPT_TASKLETS_RETURN(name)                     \
+    static Instruction make##name(parser::Location location) \
+    {                                                        \
+        return Instruction(location, Op##name());            \
     }
 #define JAVASCRIPT_TASKLETS_END()
     JAVASCRIPT_TASKLETS_INSTRUCTIONS()
@@ -503,6 +534,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
 
@@ -594,6 +626,17 @@ public:
         constexpr_assert(type == Type::name);  \
         return value##name;                    \
     }
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name) \
+    Op##name &get##name() noexcept             \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }                                          \
+    const Op##name &get##name() const noexcept \
+    {                                          \
+        constexpr_assert(type == Type::name);  \
+        return value##name;                    \
+    }
 #define JAVASCRIPT_TASKLETS_RETURN(name)       \
     Op##name &get##name() noexcept             \
     {                                          \
@@ -615,6 +658,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
 
@@ -674,6 +718,13 @@ public:
           location(location)                                                        \
     {                                                                               \
     }
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name)                                      \
+    constexpr Instruction(parser::Location location, Op##name value##name) noexcept \
+        : type(Type::name),                                                         \
+          value##name(value##name),                                                 \
+          location(location)                                                        \
+    {                                                                               \
+    }
 #define JAVASCRIPT_TASKLETS_RETURN(name)                                            \
     constexpr Instruction(parser::Location location, Op##name value##name) noexcept \
         : type(Type::name),                                                         \
@@ -691,6 +742,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
 
@@ -731,6 +783,10 @@ private:
     case Type::name:                        \
         value##name.~Op##name();            \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name) \
+    case Type::name:                           \
+        value##name.~Op##name();               \
+        return;
 #define JAVASCRIPT_TASKLETS_RETURN(name) \
     case Type::name:                     \
         value##name.~Op##name();         \
@@ -745,6 +801,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
@@ -790,6 +847,10 @@ private:
     case Type::name:                                  \
         ::new(&value##name) Op##name(rt.value##name); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name)        \
+    case Type::name:                                  \
+        ::new(&value##name) Op##name(rt.value##name); \
+        return;
 #define JAVASCRIPT_TASKLETS_RETURN(name)              \
     case Type::name:                                  \
         ::new(&value##name) Op##name(rt.value##name); \
@@ -804,6 +865,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
@@ -849,6 +911,10 @@ private:
     case Type::name:                                             \
         ::new(&value##name) Op##name(std::move(rt.value##name)); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name)                   \
+    case Type::name:                                             \
+        ::new(&value##name) Op##name(std::move(rt.value##name)); \
+        return;
 #define JAVASCRIPT_TASKLETS_RETURN(name)                         \
     case Type::name:                                             \
         ::new(&value##name) Op##name(std::move(rt.value##name)); \
@@ -863,6 +929,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
@@ -908,6 +975,10 @@ private:
     case Type::name:                        \
         value##name = rt.value##name;       \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name) \
+    case Type::name:                           \
+        value##name = rt.value##name;          \
+        return;
 #define JAVASCRIPT_TASKLETS_RETURN(name) \
     case Type::name:                     \
         value##name = rt.value##name;    \
@@ -922,6 +993,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
@@ -967,6 +1039,10 @@ private:
     case Type::name:                             \
         value##name = std::move(rt.value##name); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name)   \
+    case Type::name:                             \
+        value##name = std::move(rt.value##name); \
+        return;
 #define JAVASCRIPT_TASKLETS_RETURN(name)         \
     case Type::name:                             \
         value##name = std::move(rt.value##name); \
@@ -981,6 +1057,7 @@ private:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
@@ -1055,6 +1132,8 @@ public:
     &&noexcept(std::declval<Fn>()(std::declval<parser::Location &>(), std::declval<Op##name &>()))
 #define JAVASCRIPT_TASKLETS_COND_JUMP(name) \
     &&noexcept(std::declval<Fn>()(std::declval<parser::Location &>(), std::declval<Op##name &>()))
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name) \
+    &&noexcept(std::declval<Fn>()(std::declval<parser::Location &>(), std::declval<Op##name &>()))
 #define JAVASCRIPT_TASKLETS_RETURN(name) \
     &&noexcept(std::declval<Fn>()(std::declval<parser::Location &>(), std::declval<Op##name &>()))
 #define JAVASCRIPT_TASKLETS_END()
@@ -1067,6 +1146,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
                                                 )
@@ -1105,6 +1185,10 @@ public:
     case Type::name:                                                         \
         std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name)                               \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
+        return;
 #define JAVASCRIPT_TASKLETS_RETURN(name)                                     \
     case Type::name:                                                         \
         std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
@@ -1119,6 +1203,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
@@ -1154,6 +1239,9 @@ public:
 #define JAVASCRIPT_TASKLETS_COND_JUMP(name)                                 \
     &&noexcept(std::declval<Fn>()(std::declval<const parser::Location &>(), \
                                   std::declval<const Op##name &>()))
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name)                              \
+    &&noexcept(std::declval<Fn>()(std::declval<const parser::Location &>(), \
+                                  std::declval<const Op##name &>()))
 #define JAVASCRIPT_TASKLETS_RETURN(name)                                    \
     &&noexcept(std::declval<Fn>()(std::declval<const parser::Location &>(), \
                                   std::declval<const Op##name &>()))
@@ -1167,6 +1255,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
                                                 )
@@ -1205,6 +1294,10 @@ public:
     case Type::name:                                                         \
         std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name)                               \
+    case Type::name:                                                         \
+        std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
+        return;
 #define JAVASCRIPT_TASKLETS_RETURN(name)                                     \
     case Type::name:                                                         \
         std::forward<Fn>(fn)(instruction.location, instruction.value##name); \
@@ -1219,6 +1312,7 @@ public:
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
         case Type::Empty:
@@ -1433,6 +1527,14 @@ struct AddHandleToHandleScope<vm::interpreter::Instruction::Return> final
     {
     }
 };
+template <>
+struct AddHandleToHandleScope<vm::interpreter::Instruction::ReturnValue> final
+{
+    void operator()(HandleScope &handleScope,
+                    const vm::interpreter::Instruction::ReturnValue &value) const
+    {
+    }
+};
 #define JAVASCRIPT_TASKLETS_BINARY(name)                                                          \
     template <>                                                                                   \
     struct AddHandleToHandleScope<vm::interpreter::Instruction::Op##name> final                   \
@@ -1518,6 +1620,17 @@ struct AddHandleToHandleScope<vm::interpreter::Instruction::Return> final
                                                                                     value);      \
         }                                                                                        \
     };
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name)                                               \
+    template <>                                                                              \
+    struct AddHandleToHandleScope<vm::interpreter::Instruction::Op##name> final              \
+    {                                                                                        \
+        void operator()(HandleScope & handleScope,                                           \
+                        const vm::interpreter::Instruction::Op##name &value) const           \
+        {                                                                                    \
+            AddHandleToHandleScope<vm::interpreter::Instruction::ReturnValue>()(handleScope, \
+                                                                                value);      \
+        }                                                                                    \
+    };
 #define JAVASCRIPT_TASKLETS_RETURN(name)                                                        \
     template <>                                                                                 \
     struct AddHandleToHandleScope<vm::interpreter::Instruction::Op##name> final                 \
@@ -1538,6 +1651,7 @@ JAVASCRIPT_TASKLETS_INSTRUCTIONS()
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
 }

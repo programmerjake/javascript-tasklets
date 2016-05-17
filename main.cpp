@@ -21,7 +21,7 @@
 #include "javascript_tasklets/gc.h"
 #include "javascript_tasklets/string.h"
 #include "javascript_tasklets/value.h"
-#include "javascript_tasklets/parser/tokenizer.h"
+#include "javascript_tasklets/parser/parser.h"
 #include <iostream>
 #include <sstream>
 
@@ -31,7 +31,7 @@ namespace test
 {
 const auto testSource =
     uR"(// test
-console.log(`this is a test\u{1D7DF}`);
+123;
 )";
 void main()
 {
@@ -45,26 +45,12 @@ void main()
     {
         try
         {
-            Tokenizer tokenizer(gc.createSource(u"test", testSource));
-            for(Handle<Token> token = tokenizer.next(gc);
-                token.get().type != Token::Type::EndOfFile;
-                token = tokenizer.next(gc))
-            {
-                writeString(std::cout, token.get().location.toString());
-                std::cout << ": '";
-                writeString(std::cout, static_cast<String>(token.get().sourceValue()));
-                std::cout << "': ";
-                writeString(std::cout, Token::getTypeString(token.get().type));
-                if(token.get().processedValue != nullptr)
-                    writeString(std::cout << ": processedValue = '",
-                                gc.readString(Handle<gc::StringReference>(
-                                    token, token.get().processedValue))) << "'";
-                if(token.get().supplementaryValue != nullptr)
-                    writeString(std::cout << ": supplementaryValue = '",
-                                gc.readString(Handle<gc::StringReference>(
-                                    token, token.get().supplementaryValue))) << "'";
-                std::cout << std::endl;
-            }
+            auto value =
+                parser::parseScript(gc.createSource(u"builtin:testSource.js", testSource), gc)
+                    .call(ObjectHandle::getGlobalObject(gc), {}, gc)
+                    .toString(gc);
+            writeString(std::cout, value.getValue(gc));
+            std::cout << std::endl;
         }
         catch(gc::ScriptException &e)
         {

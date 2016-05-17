@@ -66,6 +66,10 @@ void Instruction::addHandleToHandleScope(HandleScope &handleScope) const
     case Type::name:                                                      \
         gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
         return;
+#define JAVASCRIPT_TASKLETS_RETURN_VALUE(name)                            \
+    case Type::name:                                                      \
+        gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
+        return;
 #define JAVASCRIPT_TASKLETS_RETURN(name)                                  \
     case Type::name:                                                      \
         gc::AddHandleToHandleScope<Op##name>()(handleScope, value##name); \
@@ -80,6 +84,7 @@ void Instruction::addHandleToHandleScope(HandleScope &handleScope) const
 #undef JAVASCRIPT_TASKLETS_UNARY_DEOPT
 #undef JAVASCRIPT_TASKLETS_JUMP
 #undef JAVASCRIPT_TASKLETS_COND_JUMP
+#undef JAVASCRIPT_TASKLETS_RETURN_VALUE
 #undef JAVASCRIPT_TASKLETS_RETURN
 #undef JAVASCRIPT_TASKLETS_END
     case Type::Empty:
@@ -895,11 +900,15 @@ value::ValueHandle FunctionCode::run(const value::ValueHandle &thisValue,
                 pc = args.jumpTarget;
             continue;
         }
-        case Type::Return:
+        case Type::ReturnValue:
         {
-            auto &args = instruction.getReturn();
+            auto &args = instruction.getReturnValue();
             return handleScope.escapeHandle(
                 value::ValueHandle(Handle<gc::Value>(closureHandle, registers[args.returnValue])));
+        }
+        case Type::ReturnUndefined:
+        {
+            return handleScope.escapeHandle(value::UndefinedHandle());
         }
         }
         constexpr_assert(false);
