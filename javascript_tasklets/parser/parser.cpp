@@ -22,6 +22,7 @@
 #include "parser.h"
 #include "tokenizer.h"
 #include "../vm/interpreter.h"
+#include "../constexpr_assert.h"
 
 namespace javascript_tasklets
 {
@@ -57,6 +58,68 @@ struct CodeEmitter : public gc::Object::ExtraData
             value::ObjectHandle::FunctionKind::NonConstructor,
             value::ObjectHandle::ConstructorKind::Base,
             gc));
+    }
+    struct Value final
+    {
+        enum class Type
+        {
+            Empty,
+            NonstrictReference,
+            StrictReference,
+            Value,
+        };
+        Type type;
+        RegisterIndex baseOrValue;
+        RegisterIndex referencedName;
+        constexpr Value() noexcept : type(Type::Empty), baseOrValue(), referencedName()
+        {
+        }
+        constexpr Value(RegisterIndex value) noexcept : type(Type::Value),
+                                                        baseOrValue(value),
+                                                        referencedName()
+        {
+        }
+        constexpr Value(RegisterIndex base,
+                        RegisterIndex referencedName,
+                        bool isStrictReference) noexcept
+            : type(isStrictReference ? Type::StrictReference : Type::NonstrictReference),
+              baseOrValue(base),
+              referencedName(referencedName)
+        {
+        }
+        constexpr bool isEmpty() const noexcept
+        {
+            return type == Type::Empty;
+        }
+        constexpr bool isReference() const noexcept
+        {
+            return type == Type::NonstrictReference || type == Type::StrictReference;
+        }
+        constexpr bool isStrict() const noexcept
+        {
+            return type == Type::StrictReference;
+        }
+        constexpr bool isValue() const noexcept
+        {
+            return type == Type::Value;
+        }
+    };
+    std::vector<Value> valueStack;
+    void valueStackMerge()
+    {
+        constexpr_assert(valueStack.size() >= 2);
+        if(valueStack.back().isEmpty())
+            valueStack.pop_back();
+        else
+        {
+            Value value = std::move(valueStack.back());
+            valueStack.pop_back();
+            valueStack.back() = std::move(value);
+        }
+    }
+    void valueStackPushEmpty()
+    {
+        valueStack.emplace_back();
     }
 };
 
