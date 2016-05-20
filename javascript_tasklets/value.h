@@ -328,22 +328,16 @@ struct ObjectHandle final
     }
     static void throwSyntaxError(StringHandle message,
                                  const parser::LocationHandle &location,
-                                 bool isPrefixOfValidSource,
                                  GC &gc);
     static void throwSyntaxError(const String &message,
                                  const parser::LocationHandle &location,
-                                 bool isPrefixOfValidSource,
                                  GC &gc);
-    static void throwSyntaxError(String &&message,
-                                 const parser::LocationHandle &location,
-                                 bool isPrefixOfValidSource,
-                                 GC &gc);
+    static void throwSyntaxError(String &&message, const parser::LocationHandle &location, GC &gc);
     static void throwSyntaxError(const char16_t *message,
                                  const parser::LocationHandle &location,
-                                 bool isPrefixOfValidSource,
                                  GC &gc)
     {
-        throwSyntaxError(String(message), location, isPrefixOfValidSource, gc);
+        throwSyntaxError(String(message), location, gc);
     }
     static void throwTypeError(StringHandle message, GC &gc);
     static void throwTypeError(const String &message, GC &gc);
@@ -1426,7 +1420,9 @@ inline NameHandle NullHandle::toPropertyKey(GC &gc) const
     return toString(gc);
 }
 
-inline ValueHandle ObjectOrNullHandle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+inline ValueHandle ObjectOrNullHandle::invoke(NameHandle propertyKey,
+                                              ArrayRef<const ValueHandle> arguments,
+                                              GC &gc) const
 {
     return toObject(gc).invoke(propertyKey, arguments, gc);
 }
@@ -1436,7 +1432,9 @@ inline NameHandle SymbolHandle::toPropertyKey(GC &gc) const
     return *this;
 }
 
-inline ValueHandle SymbolHandle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+inline ValueHandle SymbolHandle::invoke(NameHandle propertyKey,
+                                        ArrayRef<const ValueHandle> arguments,
+                                        GC &gc) const
 {
     return ValueHandle(*this).invoke(propertyKey, arguments, gc);
 }
@@ -1446,7 +1444,9 @@ inline NameHandle StringHandle::toPropertyKey(GC &gc) const
     return *this;
 }
 
-inline ValueHandle StringHandle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+inline ValueHandle StringHandle::invoke(NameHandle propertyKey,
+                                        ArrayRef<const ValueHandle> arguments,
+                                        GC &gc) const
 {
     return ValueHandle(*this).invoke(propertyKey, arguments, gc);
 }
@@ -1456,7 +1456,9 @@ inline NameHandle BooleanHandle::toPropertyKey(GC &gc) const
     return toString(gc);
 }
 
-inline ValueHandle BooleanHandle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+inline ValueHandle BooleanHandle::invoke(NameHandle propertyKey,
+                                         ArrayRef<const ValueHandle> arguments,
+                                         GC &gc) const
 {
     return ValueHandle(*this).invoke(propertyKey, arguments, gc);
 }
@@ -1466,7 +1468,9 @@ inline NameHandle Int32Handle::toPropertyKey(GC &gc) const
     return toString(gc);
 }
 
-inline ValueHandle Int32Handle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+inline ValueHandle Int32Handle::invoke(NameHandle propertyKey,
+                                       ArrayRef<const ValueHandle> arguments,
+                                       GC &gc) const
 {
     return ValueHandle(*this).invoke(propertyKey, arguments, gc);
 }
@@ -1476,7 +1480,9 @@ inline NameHandle UInt32Handle::toPropertyKey(GC &gc) const
     return toString(gc);
 }
 
-inline ValueHandle UInt32Handle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+inline ValueHandle UInt32Handle::invoke(NameHandle propertyKey,
+                                        ArrayRef<const ValueHandle> arguments,
+                                        GC &gc) const
 {
     return ValueHandle(*this).invoke(propertyKey, arguments, gc);
 }
@@ -1486,7 +1492,9 @@ inline NameHandle DoubleHandle::toPropertyKey(GC &gc) const
     return toString(gc);
 }
 
-inline ValueHandle DoubleHandle::invoke(NameHandle propertyKey, ArrayRef<const ValueHandle> arguments, GC &gc) const
+inline ValueHandle DoubleHandle::invoke(NameHandle propertyKey,
+                                        ArrayRef<const ValueHandle> arguments,
+                                        GC &gc) const
 {
     return ValueHandle(*this).invoke(propertyKey, arguments, gc);
 }
@@ -2496,18 +2504,16 @@ inline void ObjectHandle::throwSyntaxError(String &&message, GC &gc)
 
 inline void ObjectHandle::throwSyntaxError(const String &message,
                                            const parser::LocationHandle &location,
-                                           bool isPrefixOfValidSource,
                                            GC &gc)
 {
-    throwSyntaxError(gc.internString(message), location, isPrefixOfValidSource, gc);
+    throwSyntaxError(gc.internString(message), location, gc);
 }
 
 inline void ObjectHandle::throwSyntaxError(String &&message,
                                            const parser::LocationHandle &location,
-                                           bool isPrefixOfValidSource,
                                            GC &gc)
 {
-    throwSyntaxError(gc.internString(std::move(message)), location, isPrefixOfValidSource, gc);
+    throwSyntaxError(gc.internString(std::move(message)), location, gc);
 }
 
 inline ObjectHandle ObjectHandle::createCustomErrorPrototype(String &&name, GC &gc)

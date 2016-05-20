@@ -860,15 +860,10 @@ void ObjectHandle::throwSyntaxError(StringHandle message, GC &gc)
 
 void ObjectHandle::throwSyntaxError(StringHandle message,
                                     const parser::LocationHandle &location,
-                                    bool isPrefixOfValidSource,
                                     GC &gc)
 {
     HandleScope handleScope(gc);
     ObjectHandle exception = createErrorObject(getSyntaxErrorPrototype(gc), message, location, gc);
-    exception.definePropertyOrThrow(
-        StringHandle(u"isPrefixOfValidSource", gc),
-        PropertyHandle(BooleanHandle(isPrefixOfValidSource, gc), true, false, true),
-        gc);
     throw gc::ScriptException(ValueHandle(exception).get(), gc.shared_from_this());
 }
 

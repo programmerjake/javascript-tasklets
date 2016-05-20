@@ -204,6 +204,19 @@ struct CodeEmitter : public gc::Object::ExtraData
     {
         valueStack.emplace_back();
     }
+    void valueStackPop()
+    {
+        constexpr_assert(valueStack.size() >= 1);
+        valueStack.pop_back();
+    }
+    void valueStackGetValue()
+    {
+        constexpr_assert(valueStack.size() >= 1);
+        if(!valueStack.back().isReference())
+            return;
+        constexpr_assert(false);
+#warning finish
+    }
 };
 
 struct Parser : public gc::Object::ExtraData
@@ -214,29 +227,13 @@ struct Parser : public gc::Object::ExtraData
     explicit Parser(CodeEmitter &codeEmitter) : codeEmitter(codeEmitter), peek(), putBackStack()
     {
     }
-    void throwSyntaxError(const String &message,
-                          const Location &location,
-                          bool isPrefixOfValidSource,
-                          GC &gc)
-    {
-        value::ObjectHandle::throwSyntaxError(
-            message, LocationHandle(gc, location), isPrefixOfValidSource, gc);
-    }
     void throwSyntaxError(const String &message, const Location &location, GC &gc)
     {
-        throwSyntaxError(message, location, false, gc);
-    }
-    void throwSyntaxError(String &&message,
-                          const Location &location,
-                          bool isPrefixOfValidSource,
-                          GC &gc)
-    {
-        value::ObjectHandle::throwSyntaxError(
-            std::move(message), LocationHandle(gc, location), isPrefixOfValidSource, gc);
+        value::ObjectHandle::throwSyntaxError(message, LocationHandle(gc, location), gc);
     }
     void throwSyntaxError(String &&message, const Location &location, GC &gc)
     {
-        throwSyntaxError(std::move(message), location, false, gc);
+        value::ObjectHandle::throwSyntaxError(std::move(message), LocationHandle(gc, location), gc);
     }
     virtual std::unique_ptr<ExtraData> clone() const override final
     {
@@ -312,116 +309,69 @@ struct Parser : public gc::Object::ExtraData
             throwSyntaxError(u"expected ;", peek.location, gc);
         }
     }
-    void parseExpression(bool yieldFlag, GC &gc)
+    void parseConditionalExpression(bool inFlag, bool yieldFlag, GC &gc)
     {
 #warning finish
     }
-    bool isStartExpressionToken(bool yieldFlag, GC &gc)
+    bool isStartConditionalExpressionToken(bool inFlag, bool yieldFlag, GC &gc)
     {
-        switch(peek.type)
-        {
-        case Token::Type::EndOfFile:
-        case Token::Type::Identifier:
-        case Token::Type::LBrace:
-        case Token::Type::RBrace:
-        case Token::Type::Ellipses:
-        case Token::Type::LParen:
-        case Token::Type::RParen:
-        case Token::Type::LBracket:
-        case Token::Type::RBracket:
-        case Token::Type::Period:
-        case Token::Type::Semicolon:
-        case Token::Type::Comma:
-        case Token::Type::LAngle:
-        case Token::Type::RAngle:
-        case Token::Type::LAngleEqual:
-        case Token::Type::RAngleEqual:
-        case Token::Type::DoubleEqual:
-        case Token::Type::NotEqual:
-        case Token::Type::TripleEqual:
-        case Token::Type::NotDoubleEqual:
-        case Token::Type::Plus:
-        case Token::Type::Minus:
-        case Token::Type::Star:
-        case Token::Type::Percent:
-        case Token::Type::Inc:
-        case Token::Type::Dec:
-        case Token::Type::LShift:
-        case Token::Type::ARShift:
-        case Token::Type::URShift:
-        case Token::Type::Amp:
-        case Token::Type::Pipe:
-        case Token::Type::Caret:
-        case Token::Type::EMark:
-        case Token::Type::Tilde:
-        case Token::Type::LAnd:
-        case Token::Type::LOr:
-        case Token::Type::QMark:
-        case Token::Type::Colon:
-        case Token::Type::SingleEqual:
-        case Token::Type::PlusEqual:
-        case Token::Type::MinusEqual:
-        case Token::Type::StarEqual:
-        case Token::Type::PercentEqual:
-        case Token::Type::LShiftEqual:
-        case Token::Type::ARShiftEqual:
-        case Token::Type::URShiftEqual:
-        case Token::Type::AmpEqual:
-        case Token::Type::PipeEqual:
-        case Token::Type::CaretEqual:
-        case Token::Type::Arrow:
-        case Token::Type::Div:
-        case Token::Type::DivEqual:
-        case Token::Type::NumericLiteral:
-        case Token::Type::StringLiteral:
-        case Token::Type::RegExpLiteral:
-        case Token::Type::NoSubstitutionTemplate:
-        case Token::Type::TemplateHead:
-        case Token::Type::TemplateMiddle:
-        case Token::Type::TemplateTail:
-        case Token::Type::BreakKW:
-        case Token::Type::CaseKW:
-        case Token::Type::CatchKW:
-        case Token::Type::ClassKW:
-        case Token::Type::ConstKW:
-        case Token::Type::ContinueKW:
-        case Token::Type::DebuggerKW:
-        case Token::Type::DefaultKW:
-        case Token::Type::DeleteKW:
-        case Token::Type::DoKW:
-        case Token::Type::ElseKW:
-        case Token::Type::ExportKW:
-        case Token::Type::ExtendsKW:
-        case Token::Type::FinallyKW:
-        case Token::Type::ForKW:
-        case Token::Type::FunctionKW:
-        case Token::Type::IfKW:
-        case Token::Type::ImportKW:
-        case Token::Type::InKW:
-        case Token::Type::InstanceOfKW:
-        case Token::Type::NewKW:
-        case Token::Type::ReturnKW:
-        case Token::Type::SuperKW:
-        case Token::Type::SwitchKW:
-        case Token::Type::ThisKW:
-        case Token::Type::ThrowKW:
-        case Token::Type::TryKW:
-        case Token::Type::TypeOfKW:
-        case Token::Type::VarKW:
-        case Token::Type::VoidKW:
-        case Token::Type::WhileKW:
-        case Token::Type::WithKW:
-        case Token::Type::YieldKW:
-        case Token::Type::EnumKW:
-        case Token::Type::AwaitKW:
-        case Token::Type::NullLiteral:
-        case Token::Type::TrueLiteral:
-        case Token::Type::FalseLiteral:
 #warning finish
-            return false;
-        }
-        constexpr_assert(false);
+    }
+    void parseYieldExpression(bool inFlag, GC &gc)
+    {
+#warning finish
+    }
+    bool isStartYieldExpressionToken(bool inFlag, GC &gc)
+    {
+#warning finish
+    }
+    void parseArrowFunction(bool inFlag, bool yieldFlag, GC &gc)
+    {
+#warning finish
+    }
+    bool isStartArrowFunctionToken(bool inFlag, bool yieldFlag, GC &gc)
+    {
+#warning finish
+    }
+    void parseLeftHandSideExpression(bool yieldFlag, GC &gc)
+    {
+#warning finish
+    }
+    bool isStartLeftHandSideExpressionToken(bool yieldFlag, GC &gc)
+    {
+#warning finish
+    }
+    void parseAssignmentExpression(bool inFlag, bool yieldFlag, GC &gc)
+    {
+#warning finish
+    }
+    bool isStartAssignmentExpressionToken(bool inFlag, bool yieldFlag, GC &gc)
+    {
+        if(isStartConditionalExpressionToken(inFlag, yieldFlag, gc))
+            return true;
+        if(yieldFlag && isStartYieldExpressionToken(inFlag, gc))
+            return true;
+        if(isStartArrowFunctionToken(inFlag, yieldFlag, gc))
+            return true;
+        if(isStartLeftHandSideExpressionToken(yieldFlag, gc))
+            return true;
         return false;
+    }
+    void parseExpression(bool inFlag, bool yieldFlag, GC &gc)
+    {
+        parseAssignmentExpression(inFlag, yieldFlag, gc);
+        while(peek.type == Token::Type::Comma)
+        {
+            codeEmitter.valueStackGetValue();
+            codeEmitter.valueStackPop();
+            next(gc);
+            parseAssignmentExpression(inFlag, yieldFlag, gc);
+            codeEmitter.valueStackGetValue();
+        }
+    }
+    bool isStartExpressionToken(bool inFlag, bool yieldFlag, GC &gc)
+    {
+        return isStartAssignmentExpressionToken(inFlag, yieldFlag, gc);
     }
     void parseDeclaration(bool yieldFlag, GC &gc)
     {
@@ -586,12 +536,17 @@ struct Parser : public gc::Object::ExtraData
     }
     void parseExpressionStatement(bool yieldFlag, GC &gc)
     {
-        parseExpression(yieldFlag, gc);
+        parseExpression(true, yieldFlag, gc);
+        codeEmitter.valueStackGetValue();
         getOrInsertSemicolon(gc, false);
     }
     bool isStartExpressionStatementToken(bool yieldFlag, GC &gc)
     {
-        return isStartExpressionToken(yieldFlag, gc);
+        if(peek.type == Token::Type::LBrace || peek.type == Token::Type::FunctionKW
+           || peek.type == Token::Type::ClassKW
+           || isLetLBracket(gc))
+            return false;
+        return isStartExpressionToken(true, yieldFlag, gc);
     }
     void parseStatement(bool yieldFlag, bool returnFlag, GC &gc)
     {

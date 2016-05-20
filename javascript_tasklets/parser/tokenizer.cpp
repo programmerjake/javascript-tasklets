@@ -112,7 +112,6 @@ Handle<Token> Tokenizer::next(GC &gc)
                         value::ObjectHandle::throwSyntaxError(
                             u"missing closing */",
                             LocationHandle(gc, Location(source, currentState.currentLocation)),
-                            true,
                             gc);
                         constexpr_assert(false);
                         return Handle<Token>();
@@ -177,7 +176,6 @@ Handle<Token> Tokenizer::next(GC &gc)
                 value::ObjectHandle::throwSyntaxError(
                     u"invalid identifier start character from unicode escape sequence",
                     LocationHandle(gc, Location(source, currentState.currentLocation)),
-                    false,
                     gc);
                 constexpr_assert(false);
                 return Handle<Token>();
@@ -202,7 +200,6 @@ Handle<Token> Tokenizer::next(GC &gc)
                     value::ObjectHandle::throwSyntaxError(
                         u"invalid identifier continue character from unicode escape sequence",
                         LocationHandle(gc, Location(source, currentState.currentLocation)),
-                        false,
                         gc);
                     constexpr_assert(false);
                     return Handle<Token>();
@@ -318,7 +315,6 @@ Handle<Token> Tokenizer::next(GC &gc)
                     value::ObjectHandle::throwSyntaxError(
                         u"missing binary digit in binary literal",
                         LocationHandle(gc, Location(source, currentState.currentLocation)),
-                        currentState.peekCodePoint == eofCodePoint,
                         gc);
                     constexpr_assert(false);
                     return Handle<Token>();
@@ -344,7 +340,6 @@ Handle<Token> Tokenizer::next(GC &gc)
                     value::ObjectHandle::throwSyntaxError(
                         u"missing binary digit in octal literal",
                         LocationHandle(gc, Location(source, currentState.currentLocation)),
-                        currentState.peekCodePoint == eofCodePoint,
                         gc);
                     constexpr_assert(false);
                     return Handle<Token>();
@@ -370,7 +365,6 @@ Handle<Token> Tokenizer::next(GC &gc)
                     value::ObjectHandle::throwSyntaxError(
                         u"missing binary digit in hex literal",
                         LocationHandle(gc, Location(source, currentState.currentLocation)),
-                        currentState.peekCodePoint == eofCodePoint,
                         gc);
                     constexpr_assert(false);
                     return Handle<Token>();
@@ -459,7 +453,6 @@ Handle<Token> Tokenizer::next(GC &gc)
                         + u" in string literal",
                     LocationHandle(gc,
                                    Location(source, startPosition, currentState.currentLocation)),
-                    currentState.peekCodePoint == eofCodePoint,
                     gc);
                 constexpr_assert(false);
                 return Handle<Token>();
@@ -513,7 +506,6 @@ Handle<Token> Tokenizer::next(GC &gc)
                     u"missing closing ` in template",
                     LocationHandle(gc,
                                    Location(source, startPosition, currentState.currentLocation)),
-                    true,
                     gc);
                 constexpr_assert(false);
                 return Handle<Token>();
@@ -841,7 +833,6 @@ Handle<Token> Tokenizer::next(GC &gc)
         value::ObjectHandle::throwSyntaxError(
             u"invalid token",
             LocationHandle(gc, Location(source, currentState.currentLocation)),
-            false,
             gc);
         constexpr_assert(false);
         return Handle<Token>();
@@ -874,7 +865,6 @@ Handle<Token> Tokenizer::reparseAsTemplateContinuation(Handle<Token> token, GC &
             value::ObjectHandle::throwSyntaxError(
                 u"missing closing ` in template",
                 LocationHandle(gc, Location(source, startPosition, currentState.currentLocation)),
-                true,
                 gc);
             constexpr_assert(false);
             return Handle<Token>();
@@ -990,7 +980,6 @@ void Tokenizer::parseEscapeSequence(String &processedValue, GC &gc)
             value::ObjectHandle::throwSyntaxError(
                 u"invalid escape sequence in string literal",
                 LocationHandle(gc, Location(source, currentState.currentLocation)),
-                false,
                 gc);
             constexpr_assert(false);
             return;
@@ -1010,7 +999,6 @@ void Tokenizer::parseEscapeSequence(String &processedValue, GC &gc)
             value::ObjectHandle::throwSyntaxError(
                 u"invalid hex escape sequence: missing hex digit",
                 LocationHandle(gc, Location(source, currentState.currentLocation)),
-                currentState.peekCodePoint == eofCodePoint,
                 gc);
             constexpr_assert(false);
             return;
@@ -1023,7 +1011,6 @@ void Tokenizer::parseEscapeSequence(String &processedValue, GC &gc)
             value::ObjectHandle::throwSyntaxError(
                 u"invalid hex escape sequence: missing hex digit",
                 LocationHandle(gc, Location(source, currentState.currentLocation)),
-                currentState.peekCodePoint == eofCodePoint,
                 gc);
             constexpr_assert(false);
             return;
@@ -1075,7 +1062,6 @@ void Tokenizer::parseEscapeSequence(String &processedValue, GC &gc)
             value::ObjectHandle::throwSyntaxError(
                 u"invalid escape sequence in string literal",
                 LocationHandle(gc, Location(source, currentState.currentLocation)),
-                currentState.peekCodePoint == eofCodePoint,
                 gc);
             constexpr_assert(false);
             return;
@@ -1090,7 +1076,6 @@ std::uint32_t Tokenizer::parseUnicodeEscapeSequence(GC &gc)
         value::ObjectHandle::throwSyntaxError(
             u"invalid unicode escape sequence: missing u",
             LocationHandle(gc, Location(source, currentState.currentLocation)),
-            currentState.peekCodePoint == eofCodePoint,
             gc);
         constexpr_assert(false);
         return eofCodePoint;
@@ -1104,7 +1089,6 @@ std::uint32_t Tokenizer::parseUnicodeEscapeSequence(GC &gc)
             value::ObjectHandle::throwSyntaxError(
                 u"invalid unicode escape sequence: missing hex digit",
                 LocationHandle(gc, Location(source, currentState.currentLocation)),
-                currentState.peekCodePoint == eofCodePoint,
                 gc);
             constexpr_assert(false);
             return eofCodePoint;
@@ -1119,7 +1103,6 @@ std::uint32_t Tokenizer::parseUnicodeEscapeSequence(GC &gc)
                 value::ObjectHandle::throwSyntaxError(
                     u"invalid unicode escape sequence: value out of range",
                     LocationHandle(gc, Location(source, currentState.currentLocation)),
-                    false,
                     gc);
                 constexpr_assert(false);
                 return eofCodePoint;
@@ -1131,7 +1114,6 @@ std::uint32_t Tokenizer::parseUnicodeEscapeSequence(GC &gc)
             value::ObjectHandle::throwSyntaxError(
                 u"invalid unicode escape sequence: missing }",
                 LocationHandle(gc, Location(source, currentState.currentLocation)),
-                currentState.peekCodePoint == eofCodePoint,
                 gc);
             constexpr_assert(false);
             return eofCodePoint;
@@ -1145,7 +1127,6 @@ std::uint32_t Tokenizer::parseUnicodeEscapeSequence(GC &gc)
         value::ObjectHandle::throwSyntaxError(
             u"invalid unicode escape sequence: missing hex digit or {",
             LocationHandle(gc, Location(source, currentState.currentLocation)),
-            currentState.peekCodePoint == eofCodePoint,
             gc);
         constexpr_assert(false);
         return eofCodePoint;
@@ -1157,7 +1138,6 @@ std::uint32_t Tokenizer::parseUnicodeEscapeSequence(GC &gc)
             value::ObjectHandle::throwSyntaxError(
                 u"invalid unicode escape sequence: missing hex digit",
                 LocationHandle(gc, Location(source, currentState.currentLocation)),
-                currentState.peekCodePoint == eofCodePoint,
                 gc);
             constexpr_assert(false);
             return eofCodePoint;
@@ -1180,7 +1160,6 @@ void Tokenizer::parseExponentPart(GC &gc)
         value::ObjectHandle::throwSyntaxError(
             u"invalid numeric literal: missing digit in exponent",
             LocationHandle(gc, Location(source, currentState.currentLocation)),
-            currentState.peekCodePoint == eofCodePoint,
             gc);
         constexpr_assert(false);
         return;
@@ -1218,7 +1197,6 @@ Handle<Token> Tokenizer::reparseAsRegExp(Handle<Token> token, GC &gc)
             value::ObjectHandle::throwSyntaxError(
                 u"invalid regular expression literal: * is first character",
                 LocationHandle(gc, Location(source, currentState.currentLocation)),
-                false,
                 gc);
             constexpr_assert(false);
             return Handle<Token>();
@@ -1232,7 +1210,6 @@ Handle<Token> Tokenizer::reparseAsRegExp(Handle<Token> token, GC &gc)
             value::ObjectHandle::throwSyntaxError(
                 u"invalid regular expression literal: missing closing /",
                 LocationHandle(gc, Location(source, currentState.currentLocation)),
-                currentState.peekCodePoint == eofCodePoint,
                 gc);
             constexpr_assert(false);
             return Handle<Token>();
@@ -1247,7 +1224,6 @@ Handle<Token> Tokenizer::reparseAsRegExp(Handle<Token> token, GC &gc)
                 value::ObjectHandle::throwSyntaxError(
                     u"invalid regular expression literal: missing escaped character",
                     LocationHandle(gc, Location(source, currentState.currentLocation)),
-                    currentState.peekCodePoint == eofCodePoint,
                     gc);
                 constexpr_assert(false);
                 return Handle<Token>();
@@ -1267,7 +1243,6 @@ Handle<Token> Tokenizer::reparseAsRegExp(Handle<Token> token, GC &gc)
                     value::ObjectHandle::throwSyntaxError(
                         u"invalid regular expression literal: missing closing ]",
                         LocationHandle(gc, Location(source, currentState.currentLocation)),
-                        currentState.peekCodePoint == eofCodePoint,
                         gc);
                     constexpr_assert(false);
                     return Handle<Token>();
@@ -1283,7 +1258,6 @@ Handle<Token> Tokenizer::reparseAsRegExp(Handle<Token> token, GC &gc)
                         value::ObjectHandle::throwSyntaxError(
                             u"invalid regular expression literal: missing escaped character",
                             LocationHandle(gc, Location(source, currentState.currentLocation)),
-                            currentState.peekCodePoint == eofCodePoint,
                             gc);
                         constexpr_assert(false);
                         return Handle<Token>();
@@ -1322,7 +1296,6 @@ Handle<Token> Tokenizer::reparseAsRegExp(Handle<Token> token, GC &gc)
         value::ObjectHandle::throwSyntaxError(
             u"escape sequence not allowed in regular expression flags",
             LocationHandle(gc, Location(source, currentState.currentLocation)),
-            false,
             gc);
         constexpr_assert(false);
         return Handle<Token>();
