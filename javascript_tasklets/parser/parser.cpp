@@ -29,7 +29,7 @@ namespace javascript_tasklets
 namespace parser
 {
 using namespace vm::interpreter;
-struct CodeEmitter : public gc::Object::ExtraData
+struct CodeEmitter final : public gc::Object::ExtraData
 {
     std::vector<Instruction> instructions;
     std::size_t registerCount;
@@ -219,21 +219,142 @@ struct CodeEmitter : public gc::Object::ExtraData
     }
 };
 
+struct ASTTranslator final : public gc::Object::ExtraData
+{
+    CodeEmitter &codeEmitter;
+    explicit ASTTranslator(CodeEmitter &codeEmitter) : codeEmitter(codeEmitter)
+    {
+    }
+    virtual std::unique_ptr<ExtraData> clone() const override final
+    {
+        constexpr_assert(!"ASTTranslator::clone called");
+        return std::unique_ptr<ExtraData>();
+    }
+    virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
+    {
+    }
+};
+
 struct Parser : public gc::Object::ExtraData
 {
     CodeEmitter &codeEmitter;
-    Token peek;
-    std::vector<Token> putBackStack;
-    explicit Parser(CodeEmitter &codeEmitter) : codeEmitter(codeEmitter), peek(), putBackStack()
+    enum class RuleStatus
     {
+        Unknown,
+        Succeded,
+        Failed
+    };
+    struct TokenAndRuleStatuses final
+    {
+        Token token;
+        explicit TokenAndRuleStatuses(Token token = Token()) : token(std::move(token))
+        {
+        }
+        RuleStatus scriptStatus = RuleStatus::Unknown;
+        RuleStatus scriptBodyStatus = RuleStatus::Unknown;
+    };
+    std::vector<TokenAndRuleStatuses> tokens;
+    std::size_t currentPosition;
+    String errorMessage;
+    Location errorLocation;
+    bool doSetError(const Location &location)
+    {
+        return errorLocation.source == nullptr
+               || location.beginPosition > errorLocation.beginPosition
+               || (location.beginPosition == errorLocation.beginPosition
+                   && location.endPosition > errorLocation.endPosition);
     }
-    void throwSyntaxError(const String &message, const Location &location, GC &gc)
+    template <typename Message>
+    void setError(const Location &location, Message &&message)
     {
-        value::ObjectHandle::throwSyntaxError(message, LocationHandle(gc, location), gc);
+        if(doSetError(location))
+        {
+            errorLocation = location;
+            errorMessage = std::forward<Message>(message);
+        }
     }
-    void throwSyntaxError(String &&message, const Location &location, GC &gc)
+    TokenAndRuleStatuses &getCurrent(GC &gc)
     {
-        value::ObjectHandle::throwSyntaxError(std::move(message), LocationHandle(gc, location), gc);
+        while(currentPosition >= tokens.size())
+        {
+            HandleScope handleScope(gc);
+            if(!tokens.empty() && tokens.back().token.type == Token::Type::EndOfFile)
+            {
+                auto eofToken = tokens.back();
+                tokens.push_back(std::move(eofToken));
+            }
+            else
+            {
+                tokens.emplace_back(readNextTokenFromInput(gc));
+            }
+        }
+        return tokens[currentPosition];
+    }
+    TokenAndRuleStatuses &getNext(GC &gc)
+    {
+        currentPosition++;
+        return getCurrent(gc);
+    }
+    template <typename Message>
+    bool matchTokenType(Token::Type type,
+                        bool errorOnMatchFail,
+                        bool errorOnMatchSuccess,
+                        bool extractOnMatchSuccess,
+                        Message &&message,
+                        GC &gc)
+    {
+        if(getCurrent(gc).token.type == type)
+        {
+            if(errorOnMatchSuccess)
+            {
+                setError(getCurrent(gc).token.location, std::forward<Message>(message));
+            }
+            if(extractOnMatchSuccess)
+            {
+                getNext(gc);
+            }
+            return true;
+        }
+        if(errorOnMatchFail)
+        {
+            setError(getCurrent(gc).token.location, std::forward<Message>(message));
+        }
+        return false;
+    }
+    template <typename Name, typename Message>
+    bool matchIdentifierName(Name &&name,
+                             bool errorOnMatchFail,
+                             bool errorOnMatchSuccess,
+                             bool extractOnMatchSuccess,
+                             Message &&message,
+                             GC &gc)
+    {
+        if(getCurrent(gc).token.type == Token::Type::Identifier)
+        {
+            HandleScope handleScope(gc);
+            if(gc.readString(Handle<gc::StringReference>(gc, getCurrent(gc).token.processedValue))
+               == std::forward<Name>(name))
+            {
+                if(errorOnMatchSuccess)
+                {
+                    setError(getCurrent(gc).token.location, std::forward<Message>(message));
+                }
+                if(extractOnMatchSuccess)
+                {
+                    getNext(gc);
+                }
+                return true;
+            }
+        }
+        if(errorOnMatchFail)
+        {
+            setError(getCurrent(gc).token.location, std::forward<Message>(message));
+        }
+        return false;
+    }
+    explicit Parser(CodeEmitter &codeEmitter)
+        : codeEmitter(codeEmitter), tokens(), currentPosition(0)
+    {
     }
     virtual std::unique_ptr<ExtraData> clone() const override final
     {
@@ -242,8 +363,11 @@ struct Parser : public gc::Object::ExtraData
     }
     virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
     {
-        callback(peek);
-        callback(putBackStack);
+        for(const auto &v : tokens)
+        {
+            callback(v.token);
+        }
+        callback(errorLocation);
     }
     virtual Handle<Token> readNextTokenFromInput(GC &gc) = 0;
     virtual Handle<Token> reparseAsTemplateContinuation(Handle<Token> token, GC &gc) = 0;
@@ -617,7 +741,7 @@ struct Parser : public gc::Object::ExtraData
 #warning check if ContainsUndefinedBreakTarget({}) of StatementList is true
 #warning check if ContainsUndefinedContinueTarget({}, {}) of StatementList is true
     }
-    void parseScript(GC &gc)
+    bool parseScript(GC &gc)
     {
         if(isStartScriptBodyToken(gc))
         {
@@ -665,12 +789,19 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
     auto &codeEmitter = *codeEmitterUniquePtr;
     auto codeEmitterObject =
         value::ObjectHandle::create(std::move(codeEmitterUniquePtr), value::NullHandle(), gc);
-    auto parserUniquePtr = std::unique_ptr<Parser>(new SourceParser(codeEmitter, source, gc));
+    static_cast<void>(codeEmitterObject);
+    auto astTranslatorUniquePtr = std::unique_ptr<ASTTranslator>(new ASTTranslator(codeEmitter));
+    auto &astTranslator = *astTranslatorUniquePtr;
+    auto astTranslatorObject =
+        value::ObjectHandle::create(std::move(astTranslatorUniquePtr), value::NullHandle(), gc);
+    static_cast<void>(astTranslatorObject);
+    auto parserUniquePtr = std::unique_ptr<Parser>(new SourceParser(astTranslator, source, gc));
     auto &parser = *parserUniquePtr;
     auto parserObject =
         value::ObjectHandle::create(std::move(parserUniquePtr), value::NullHandle(), gc);
+    static_cast<void>(parserObject);
     parser.parseScript(gc);
-    return codeEmitter.finishGlobalCode(parser.peek.location, gc);
+    return handleScope.escapeHandle(codeEmitter.finishGlobalCode(parser.peek.location, gc));
 }
 }
 }
