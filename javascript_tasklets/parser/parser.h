@@ -30,7 +30,6 @@ namespace javascript_tasklets
 namespace parser
 {
 struct Parser;
-struct SourceParser;
 struct ASTTranslator;
 struct CodeEmitter;
 value::ObjectHandle parseScript(SourceHandle source, GC &gc); // returns a function object

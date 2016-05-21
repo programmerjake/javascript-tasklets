@@ -23,6 +23,7 @@
 #include "tokenizer.h"
 #include "../vm/interpreter.h"
 #include "../constexpr_assert.h"
+#include <deque>
 
 namespace javascript_tasklets
 {
@@ -235,99 +236,246 @@ struct ASTTranslator final : public gc::Object::ExtraData
     }
 };
 
-struct Parser : public gc::Object::ExtraData
+struct Parser final : public gc::Object::ExtraData
 {
-    CodeEmitter &codeEmitter;
-    enum class RuleStatus
+    Parser(const Parser &) = delete;
+    Parser &operator=(const Parser &) = delete;
+
+public:
+    struct RuleStatus
     {
-        Unknown,
-        Succeded,
-        Failed
+        static constexpr std::size_t failedValue = static_cast<std::size_t>(-2);
+        static constexpr std::size_t emptyValue = static_cast<std::size_t>(-1);
+        std::size_t value = emptyValue;
+        static constexpr RuleStatus makeEmpty() noexcept
+        {
+            return RuleStatus{emptyValue};
+        }
+        static constexpr RuleStatus makeFailed() noexcept
+        {
+            return RuleStatus{failedValue};
+        }
+        static constexpr RuleStatus makeSuccess(std::size_t advanceDistance) noexcept
+        {
+            return RuleStatus{
+                (constexpr_assert(advanceDistance != emptyValue && advanceDistance != failedValue),
+                 advanceDistance)};
+        }
+        constexpr bool empty() const noexcept
+        {
+            return value == emptyValue;
+        }
+        constexpr bool fail() const noexcept
+        {
+            return value == failedValue;
+        }
+        constexpr bool success() const noexcept
+        {
+            return !empty() && !fail();
+        }
     };
-    struct TokenAndRuleStatuses final
+    struct RuleResult final
     {
-        Token token;
-        explicit TokenAndRuleStatuses(Token token = Token()) : token(std::move(token))
+        std::size_t startPosition;
+        std::size_t endPosition;
+        constexpr bool success() const noexcept
+        {
+            return endPosition >= startPosition;
+        }
+        constexpr bool fail() const noexcept
+        {
+            return !success();
+        }
+        constexpr RuleResult(std::size_t startPosition, std::size_t endPosition) noexcept
+            : startPosition(startPosition),
+              endPosition(endPosition)
         {
         }
-        RuleStatus scriptStatus = RuleStatus::Unknown;
-        RuleStatus scriptBodyStatus = RuleStatus::Unknown;
+        constexpr RuleResult() noexcept : startPosition(1), endPosition(0)
+        {
+        }
+        static constexpr RuleResult makeSuccess(std::size_t startPosition,
+                                                std::size_t endPosition) noexcept
+        {
+            return constexpr_assert(endPosition >= startPosition),
+                   RuleResult(startPosition, endPosition);
+        }
+        static constexpr RuleResult makeFailure() noexcept
+        {
+            return RuleResult();
+        }
+        constexpr explicit operator RuleStatus() noexcept
+        {
+            return success() ? RuleStatus::makeSuccess(endPosition - startPosition) :
+                               RuleStatus::makeFailed();
+        }
     };
-    std::vector<TokenAndRuleStatuses> tokens;
+    struct RuleStatuses final
+    {
+        gc::StringReference identifierNameValue;
+        gc::StringReference numericLiteralValue;
+        gc::StringReference stringLiteralValue;
+        gc::StringReference regExpLiteralValue;
+        gc::StringReference regExpLiteralFlagsValue;
+        gc::StringReference templateRawValue;
+        gc::StringReference templateValue;
+        RuleStatus identifierNameStatus;
+        RuleStatus stringLiteralStatus;
+        void getGCReferences(gc::GCReferencesCallback &callback) const
+        {
+            callback(stringLiteralValue);
+            callback(identifierNameValue);
+            callback(numericLiteralValue);
+            callback(regExpLiteralValue);
+            callback(regExpLiteralFlagsValue);
+            callback(templateRawValue);
+            callback(templateValue);
+        }
+    };
+    enum class ErrorPriority
+    {
+        // in order of ascending priority
+        NoError,
+        Default,
+        Token
+    };
+
+public:
+    static constexpr std::uint32_t eofCodePoint = 0xFFFFFFFFUL;
+
+public:
+    CodeEmitter &codeEmitter;
+    std::vector<std::unique_ptr<RuleStatuses>> ruleStatusesArray;
+    gc::SourceReference source;
     std::size_t currentPosition;
     String errorMessage;
-    Location errorLocation;
-    bool doSetError(const Location &location)
+    std::size_t errorPosition;
+    ErrorPriority errorPriority;
+
+public:
+    explicit Parser(CodeEmitter &codeEmitter, gc::SourceReference source)
+        : codeEmitter(codeEmitter),
+          ruleStatusesArray(source->contents.size() + 1), // one extra for EndOfFile
+          source(source),
+          currentPosition(0),
+          errorMessage(),
+          errorPosition(0),
+          errorPriority(ErrorPriority::NoError)
     {
-        return errorLocation.source == nullptr
-               || location.beginPosition > errorLocation.beginPosition
-               || (location.beginPosition == errorLocation.beginPosition
-                   && location.endPosition > errorLocation.endPosition);
+    }
+    virtual std::unique_ptr<ExtraData> clone() const override
+    {
+        constexpr_assert(!"Parser::clone called");
+        return std::unique_ptr<ExtraData>();
+    }
+    virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
+    {
+        for(const auto &ruleStatuses : ruleStatusesArray)
+        {
+            if(ruleStatuses)
+            {
+                ruleStatuses->getGCReferences(callback);
+            }
+        }
+        callback(source);
+    }
+    RuleStatuses &getRuleStatuses(std::size_t position)
+    {
+        constexpr_assert(position < ruleStatusesArray.size());
+        auto &retval = ruleStatusesArray[position];
+        if(!retval)
+            retval = std::unique_ptr<RuleStatuses>(new RuleStatuses);
+        return *retval;
+    }
+    std::uint32_t getCodePoint(std::size_t position)
+    {
+        if(position >= source->contents.size())
+        {
+            return eofCodePoint;
+        }
+        std::uint32_t retval = 0xFFFFU & source->contents[position];
+        if(retval >= 0xD800U && retval <= 0xDBFFU && position + 1 < source->contents.size())
+        {
+            std::uint32_t nextValue = source->contents[position + 1] & 0xFFFFUL;
+            if(nextValue >= 0xDC00U && nextValue <= 0xDFFFU)
+            {
+                retval <<= 10;
+                retval &= 0xFFC00UL;
+                retval |= nextValue & 0x3FFU;
+                retval += 0x10000UL;
+                return retval;
+            }
+        }
+        return retval;
+    }
+    std::uint32_t getCodePoint(std::size_t position, std::size_t &nextPosition)
+    {
+        if(position >= source->contents.size())
+        {
+            nextPosition = position;
+            return eofCodePoint;
+        }
+        std::uint32_t retval = 0xFFFFU & source->contents[position];
+        if(retval >= 0xD800U && retval <= 0xDBFFU && position + 1 < source->contents.size())
+        {
+            std::uint32_t nextValue = source->contents[position + 1] & 0xFFFFUL;
+            if(nextValue >= 0xDC00U && nextValue <= 0xDFFFU)
+            {
+                retval <<= 10;
+                retval &= 0xFFC00UL;
+                retval |= nextValue & 0x3FFU;
+                retval += 0x10000UL;
+                nextPosition = position + 2;
+                return retval;
+            }
+        }
+        nextPosition = position + 1;
+        return retval;
     }
     template <typename Message>
-    void setError(const Location &location, Message &&message)
+    void setError(std::size_t position,
+                  Message &&message,
+                  ErrorPriority priority = ErrorPriority::Default)
     {
-        if(doSetError(location))
+        if(position > errorPosition || (position == errorPosition && priority > errorPriority))
         {
-            errorLocation = location;
+            errorPosition = position;
+            errorPriority = priority;
             errorMessage = std::forward<Message>(message);
         }
     }
-    TokenAndRuleStatuses &getCurrent(GC &gc)
+    RuleResult parseUnicodeEscapeSequence(bool errorOnMatchFail,
+                                          bool errorOnMatchSuccess,
+                                          GC &gc,
+                                          std::uint32_t *value = nullptr)
     {
-        while(currentPosition >= tokens.size())
+        std::size_t startPosition = currentPosition;
+        if(getCodePoint(currentPosition, currentPosition) != U'u')
         {
-            HandleScope handleScope(gc);
-            if(!tokens.empty() && tokens.back().token.type == Token::Type::EndOfFile)
-            {
-                auto eofToken = tokens.back();
-                tokens.push_back(std::move(eofToken));
-            }
-            else
-            {
-                tokens.emplace_back(readNextTokenFromInput(gc));
-            }
+            currentPosition = startPosition;
+            if(errorOnMatchFail)
+                setError(currentPosition, u"unicode escape sequence is missing u", ErrorPriority::Token);
+            return RuleResult::makeFailure();
         }
-        return tokens[currentPosition];
-    }
-    TokenAndRuleStatuses &getNext(GC &gc)
-    {
-        currentPosition++;
-        return getCurrent(gc);
-    }
-    template <typename Message>
-    bool matchTokenType(Token::Type type,
-                        bool errorOnMatchFail,
-                        bool errorOnMatchSuccess,
-                        bool extractOnMatchSuccess,
-                        Message &&message,
-                        GC &gc)
-    {
-        if(getCurrent(gc).token.type == type)
+        std::size_t nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint == U'{')
         {
-            if(errorOnMatchSuccess)
-            {
-                setError(getCurrent(gc).token.location, std::forward<Message>(message));
-            }
-            if(extractOnMatchSuccess)
-            {
-                getNext(gc);
-            }
-            return true;
+#error finish
         }
-        if(errorOnMatchFail)
+        else if(character_properties::javascriptHexDigit(codePoint))
         {
-            setError(getCurrent(gc).token.location, std::forward<Message>(message));
+#error finish
         }
-        return false;
+        else
+        {
+            if(errorOnMatchFail)
+                setError(currentPosition, u"unicode escape sequence is missing { or a hex digit", ErrorPriority::Token);
+            currentPosition = startPosition;
+            return RuleResult::makeFailure();
+        }
     }
-    template <typename Name, typename Message>
-    bool matchIdentifierName(Name &&name,
-                             bool errorOnMatchFail,
-                             bool errorOnMatchSuccess,
-                             bool extractOnMatchSuccess,
-                             Message &&message,
-                             GC &gc)
+    RuleResult parseIdentifierName(bool errorOnMatchFail, bool errorOnMatchSuccess, GC &gc)
     {
         if(getCurrent(gc).token.type == Token::Type::Identifier)
         {
@@ -351,23 +499,6 @@ struct Parser : public gc::Object::ExtraData
             setError(getCurrent(gc).token.location, std::forward<Message>(message));
         }
         return false;
-    }
-    explicit Parser(CodeEmitter &codeEmitter)
-        : codeEmitter(codeEmitter), tokens(), currentPosition(0)
-    {
-    }
-    virtual std::unique_ptr<ExtraData> clone() const override final
-    {
-        constexpr_assert(!"Parser::clone called");
-        return std::unique_ptr<ExtraData>();
-    }
-    virtual void getGCReferences(gc::GCReferencesCallback &callback) const override
-    {
-        for(const auto &v : tokens)
-        {
-            callback(v.token);
-        }
-        callback(errorLocation);
     }
     virtual Handle<Token> readNextTokenFromInput(GC &gc) = 0;
     virtual Handle<Token> reparseAsTemplateContinuation(Handle<Token> token, GC &gc) = 0;
@@ -757,28 +888,6 @@ struct Parser : public gc::Object::ExtraData
         {
             throwSyntaxError(u"unexpected token", peek.location, gc);
         }
-    }
-};
-
-struct SourceParser final : public Parser
-{
-    Tokenizer tokenizer;
-    SourceParser(CodeEmitter &codeEmitter, SourceHandle source, GC &gc)
-        : Parser(codeEmitter), tokenizer(source)
-    {
-        init(gc);
-    }
-    virtual Handle<Token> readNextTokenFromInput(GC &gc) override
-    {
-        return tokenizer.next(gc);
-    }
-    virtual Handle<Token> reparseAsTemplateContinuation(Handle<Token> token, GC &gc) override
-    {
-        return tokenizer.reparseAsTemplateContinuation(token, gc);
-    }
-    virtual Handle<Token> reparseAsRegExp(Handle<Token> token, GC &gc) override
-    {
-        return tokenizer.reparseAsRegExp(token, gc);
     }
 };
 
