@@ -304,14 +304,14 @@ public:
     };
     struct RuleStatuses final
     {
-        gc::StringReference tokenIdentifierNameValue;
-        double tokenNumericLiteralValue = 0;
-        bool tokenBooleanLiteralValue = false;
-        gc::StringReference tokenStringLiteralValue;
-        gc::StringReference tokenRegExpLiteralValue;
-        gc::StringReference tokenRegExpLiteralFlagsValue;
-        gc::StringReference tokenTemplateRawValue;
-        gc::StringReference tokenTemplateValue;
+        gc::StringReference identifierNameValue;
+        double numericLiteralValue = 0;
+        bool booleanLiteralValue = false;
+        gc::StringReference stringLiteralValue;
+        gc::StringReference regularExpressionLiteralValue;
+        gc::StringReference regularExpressionLiteralFlagsValue;
+        gc::StringReference templateRawValue;
+        gc::StringReference templateValue;
         RuleStatus tokenIdentifierNameStatus;
         RuleStatus tokenIdentifierStatus;
         RuleStatus tokenEscapelessIdentifierNameStatus;
@@ -323,14 +323,20 @@ public:
         RuleStatus tokenBooleanLiteralStatus;
         RuleStatus tokenReservedWordStatus;
         RuleStatus tokenNumericLiteralStatus;
+        RuleStatus tokenRegularExpressionLiteralStatus;
+        RuleStatus tokenTemplateCharactersStatus;
+        RuleStatus tokenNoSubstitutionTemplateStatus;
+        RuleStatus tokenTemplateHeadStatus;
+        RuleStatus tokenTemplateTailStatus;
+        RuleStatus tokenTemplateMiddleStatus;
         void getGCReferences(gc::GCReferencesCallback &callback) const
         {
-            callback(tokenIdentifierNameValue);
-            callback(tokenStringLiteralValue);
-            callback(tokenRegExpLiteralValue);
-            callback(tokenRegExpLiteralFlagsValue);
-            callback(tokenTemplateRawValue);
-            callback(tokenTemplateValue);
+            callback(identifierNameValue);
+            callback(stringLiteralValue);
+            callback(regularExpressionLiteralValue);
+            callback(regularExpressionLiteralFlagsValue);
+            callback(templateRawValue);
+            callback(templateValue);
         }
     };
 
@@ -718,10 +724,12 @@ public:
         if(!retval.empty())
         {
             constexpr_assert(!statuses.tokenEscapelessIdentifierNameStatus.empty());
+            if(retval.success())
+                currentPosition = retval.endPosition;
             return retval;
         }
         constexpr_assert(statuses.tokenEscapelessIdentifierNameStatus.empty());
-        constexpr_assert(statuses.tokenIdentifierNameValue == nullptr);
+        constexpr_assert(statuses.identifierNameValue == nullptr);
         std::size_t startPosition = currentPosition;
         std::size_t nextPosition;
         auto codePoint = getCodePoint(currentPosition, nextPosition);
@@ -778,7 +786,7 @@ public:
             identifierValue = appendCodePoint(std::move(identifierValue), codePoint);
             codePoint = getCodePoint(currentPosition, nextPosition);
         }
-        statuses.tokenIdentifierNameValue = gc.internString(std::move(identifierValue)).get();
+        statuses.identifierNameValue = gc.internString(std::move(identifierValue)).get();
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         if(statuses.tokenEscapelessIdentifierNameStatus.empty())
             statuses.tokenEscapelessIdentifierNameStatus = static_cast<RuleStatus>(retval);
@@ -800,7 +808,7 @@ public:
         RuleStatus retval = parseTokenEscapelessIdentifierName(gc);
         if(retval.fail()
            || gc.readString(Handle<gc::StringReference>(
-                  gc, getRuleStatuses(startPosition).tokenIdentifierNameValue)) != text)
+                  gc, getRuleStatuses(startPosition).identifierNameValue)) != text)
         {
             retval = RuleStatus::makeFailure(retval.startPosition, errorMessage);
             currentPosition = startPosition;
@@ -965,6 +973,8 @@ public:
         RuleStatus &retval = statuses.tokenKeywordStatus;
         if(!retval.empty())
         {
+            if(retval.success())
+                currentPosition = retval.endPosition;
             return retval;
         }
         retval = parseTokenBreak(gc);
@@ -1136,6 +1146,8 @@ public:
         RuleStatus &retval = statuses.tokenFutureReservedWordStatus;
         if(!retval.empty())
         {
+            if(retval.success())
+                currentPosition = retval.endPosition;
             return retval;
         }
         retval = parseTokenAwait(gc);
@@ -1152,18 +1164,20 @@ public:
         RuleStatus &retval = statuses.tokenBooleanLiteralStatus;
         if(!retval.empty())
         {
+            if(retval.success())
+                currentPosition = retval.endPosition;
             return retval;
         }
         retval = parseTokenFalse(gc);
         if(retval.success())
         {
-            statuses.tokenBooleanLiteralValue = false;
+            statuses.booleanLiteralValue = false;
             return retval;
         }
         retval /= parseTokenTrue(gc);
         if(retval.success())
         {
-            statuses.tokenBooleanLiteralValue = true;
+            statuses.booleanLiteralValue = true;
         }
         return retval;
     }
@@ -1173,6 +1187,8 @@ public:
         RuleStatus &retval = statuses.tokenReservedWordStatus;
         if(!retval.empty())
         {
+            if(retval.success())
+                currentPosition = retval.endPosition;
             return retval;
         }
         retval = parseTokenKeyword(gc);
@@ -1199,6 +1215,8 @@ public:
         RuleStatus &retval = statuses.tokenIdentifierStatus;
         if(!retval.empty())
         {
+            if(retval.success())
+                currentPosition = retval.endPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
@@ -1219,6 +1237,8 @@ public:
         RuleStatus &retval = statuses.tokenNumericLiteralStatus;
         if(!retval.empty())
         {
+            if(retval.success())
+                currentPosition = retval.endPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
@@ -1257,7 +1277,7 @@ public:
                     codePoint = getCodePoint(currentPosition, nextPosition);
                 }
                 retval = RuleStatus::makeSuccess(startPosition, currentPosition);
-                statuses.tokenNumericLiteralValue = value::StringHandle::toNumberValue(stringValue);
+                statuses.numericLiteralValue = value::StringHandle::toNumberValue(stringValue);
                 return retval;
             }
             if(codePoint == U'o' || codePoint == U'O')
@@ -1279,7 +1299,7 @@ public:
                     codePoint = getCodePoint(currentPosition, nextPosition);
                 }
                 retval = RuleStatus::makeSuccess(startPosition, currentPosition);
-                statuses.tokenNumericLiteralValue = value::StringHandle::toNumberValue(stringValue);
+                statuses.numericLiteralValue = value::StringHandle::toNumberValue(stringValue);
                 return retval;
             }
             if(codePoint == U'x' || codePoint == U'X')
@@ -1301,13 +1321,13 @@ public:
                     codePoint = getCodePoint(currentPosition, nextPosition);
                 }
                 retval = RuleStatus::makeSuccess(startPosition, currentPosition);
-                statuses.tokenNumericLiteralValue = value::StringHandle::toNumberValue(stringValue);
+                statuses.numericLiteralValue = value::StringHandle::toNumberValue(stringValue);
                 return retval;
             }
             stringValue = appendCodePoint(std::move(stringValue), codePoint);
             currentPosition = nextPosition;
             retval = RuleStatus::makeSuccess(startPosition, currentPosition);
-            statuses.tokenNumericLiteralValue = 0;
+            statuses.numericLiteralValue = 0;
             return retval;
         }
         while(character_properties::javascriptDecimalDigit(codePoint))
@@ -1360,7 +1380,7 @@ public:
             return retval;
         }
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
-        statuses.tokenNumericLiteralValue = value::StringHandle::toNumberValue(stringValue);
+        statuses.numericLiteralValue = value::StringHandle::toNumberValue(stringValue);
         return retval;
     }
     RuleStatus parseTokenStringLiteral(GC &gc)
@@ -1370,6 +1390,8 @@ public:
         RuleStatus &retval = statuses.tokenStringLiteralStatus;
         if(!retval.empty())
         {
+            if(retval.success())
+                currentPosition = retval.endPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
@@ -1423,7 +1445,412 @@ public:
             }
         }
         currentPosition = nextPosition;
-        statuses.tokenStringLiteralValue = gc.internString(std::move(stringValue));
+        statuses.stringLiteralValue = gc.internString(std::move(stringValue));
+        retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+        return retval;
+    }
+    RuleStatus parseTokenRegularExpressionLiteral(GC &gc)
+    {
+        HandleScope handleScope(gc);
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.tokenRegularExpressionLiteralStatus;
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPosition;
+            return retval;
+        }
+        std::size_t startPosition = currentPosition;
+        std::size_t nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        String bodyValue;
+        if(codePoint != U'/')
+        {
+            retval = RuleStatus::makeFailure(startPosition, u"missing regular expression literal");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint == U'/' || codePoint == U'*')
+        {
+            retval = RuleStatus::makeFailure(startPosition, u"missing regular expression literal");
+            currentPosition = startPosition;
+            return retval;
+        }
+        while(codePoint != U'/')
+        {
+            if(codePoint == eofCodePoint
+               || character_properties::javascriptLineTerminator(codePoint))
+            {
+                retval = RuleStatus::makeFailure(currentPosition,
+                                                 u"regular expression literal missing closing slash");
+                currentPosition = startPosition;
+                return retval;
+            }
+            else if(codePoint == U'\\')
+            {
+                bodyValue = appendCodePoint(std::move(bodyValue), codePoint);
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                if(character_properties::javascriptLineTerminator(codePoint))
+                {
+                    retval = RuleStatus::makeFailure(
+                        currentPosition, u"incomplete escape sequence in regular expression literal");
+                    currentPosition = startPosition;
+                    return retval;
+                }
+                bodyValue = appendCodePoint(std::move(bodyValue), codePoint);
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+            }
+            else if(codePoint == U'[')
+            {
+                bodyValue = appendCodePoint(std::move(bodyValue), codePoint);
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                while(codePoint != U']')
+                {
+                    if(codePoint == eofCodePoint
+                       || character_properties::javascriptLineTerminator(codePoint))
+                    {
+                        retval = RuleStatus::makeFailure(currentPosition,
+                                                         u"regular expression literal class missing closing ]");
+                        currentPosition = startPosition;
+                        return retval;
+                    }
+                    else if(codePoint == U'\\')
+                    {
+                        bodyValue = appendCodePoint(std::move(bodyValue), codePoint);
+                        currentPosition = nextPosition;
+                        codePoint = getCodePoint(currentPosition, nextPosition);
+                        if(character_properties::javascriptLineTerminator(codePoint))
+                        {
+                            retval = RuleStatus::makeFailure(
+                                currentPosition, u"incomplete escape sequence in regular expression literal");
+                            currentPosition = startPosition;
+                            return retval;
+                        }
+                        bodyValue = appendCodePoint(std::move(bodyValue), codePoint);
+                        currentPosition = nextPosition;
+                        codePoint = getCodePoint(currentPosition, nextPosition);
+                    }
+                    else
+                    {
+                        bodyValue = appendCodePoint(std::move(bodyValue), codePoint);
+                        currentPosition = nextPosition;
+                        codePoint = getCodePoint(currentPosition, nextPosition);
+                    }
+                }
+            }
+            else
+            {
+                bodyValue = appendCodePoint(std::move(bodyValue), codePoint);
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+            }
+        }
+        currentPosition = nextPosition;
+        codePoint = getCodePoint(currentPosition, nextPosition);
+        statuses.regularExpressionLiteralValue = gc.internString(std::move(bodyValue));
+        String flagsValue;
+        while(character_properties::javascriptIdContinue(codePoint))
+        {
+            flagsValue = appendCodePoint(std::move(flagsValue), codePoint);
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+        }
+        if(codePoint == U'\\')
+        {
+            retval = RuleStatus::makeFailure(currentPosition,
+                                             u"unicode escape not permitted in regular expression flags");
+            currentPosition = startPosition;
+            return retval;
+        }
+        retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+        return retval;
+    }
+    RuleStatus parseTokenTemplateCharacters(GC &gc)
+    {
+        HandleScope handleScope(gc);
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.tokenTemplateCharactersStatus;
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPosition;
+            return retval;
+        }
+        String templateValue;
+        std::size_t startPosition = currentPosition;
+        std::size_t nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        while(codePoint != U'`')
+        {
+            if(codePoint == eofCodePoint)
+            {
+                retval =
+                    RuleStatus::makeFailure(currentPosition, u"template literal missing closing `");
+                currentPosition = startPosition;
+                return retval;
+            }
+            else if(codePoint == U'\\')
+            {
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                if(character_properties::javascriptLineTerminator(codePoint))
+                {
+                    parseTokenLineTerminatorSequence(gc); // never fails
+                    codePoint = getCodePoint(currentPosition, nextPosition);
+                }
+                else
+                {
+                    retval = parseTokenEscapeSequence(gc, codePoint);
+                    if(retval.fail())
+                    {
+                        currentPosition = startPosition;
+                        return retval;
+                    }
+                    templateValue = appendCodePoint(std::move(templateValue), codePoint);
+                    codePoint = getCodePoint(currentPosition, nextPosition);
+                }
+            }
+            else if(codePoint == U'\r')
+            {
+                templateValue = appendCodePoint(std::move(templateValue), U'\n');
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                if(codePoint == U'\n')
+                {
+                    currentPosition = nextPosition;
+                    codePoint = getCodePoint(currentPosition, nextPosition);
+                }
+            }
+            else if(codePoint == U'$')
+            {
+                auto dollarPosition = currentPosition;
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                if(codePoint == U'{')
+                {
+                    currentPosition = dollarPosition;
+                    break;
+                }
+                templateValue = appendCodePoint(std::move(templateValue), U'$');
+            }
+            else
+            {
+                templateValue = appendCodePoint(std::move(templateValue), codePoint);
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+            }
+        }
+        retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+        String templateRawValue;
+        std::size_t pos = startPosition;
+        while(pos < currentPosition)
+        {
+            codePoint = getCodePoint(pos, pos);
+            if(codePoint == U'\r')
+            {
+                templateRawValue = appendCodePoint(std::move(templateRawValue), U'\n');
+                std::size_t nextPos;
+                codePoint = getCodePoint(pos, nextPos);
+                if(codePoint == U'\n')
+                    pos = nextPos;
+            }
+            else
+            {
+                templateRawValue = appendCodePoint(std::move(templateRawValue), codePoint);
+            }
+        }
+        statuses.templateValue = gc.internString(std::move(templateValue)).get();
+        statuses.templateRawValue = gc.internString(std::move(templateRawValue)).get();
+        return retval;
+    }
+    RuleStatus parseTokenNoSubstitutionTemplate(GC &gc)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.tokenNoSubstitutionTemplateStatus;
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPosition;
+            return retval;
+        }
+        std::size_t startPosition = currentPosition;
+        std::size_t nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'`')
+        {
+            retval =
+                RuleStatus::makeFailure(currentPosition, u"missing template literal");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        auto &templateCharactersStatuses = getRuleStatuses(currentPosition);
+        retval = parseTokenTemplateCharacters(gc);
+        if(retval.fail())
+        {
+            currentPosition = startPosition;
+            return retval;
+        }
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'`')
+        {
+            retval =
+                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        statuses.templateValue = templateCharactersStatuses.templateValue;
+        statuses.templateRawValue = templateCharactersStatuses.templateRawValue;
+        retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+        return retval;
+    }
+    RuleStatus parseTokenTemplateHead(GC &gc)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.tokenTemplateHeadStatus;
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPosition;
+            return retval;
+        }
+        std::size_t startPosition = currentPosition;
+        std::size_t nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'`')
+        {
+            retval =
+                RuleStatus::makeFailure(currentPosition, u"missing template literal");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        auto &templateCharactersStatuses = getRuleStatuses(currentPosition);
+        retval = parseTokenTemplateCharacters(gc);
+        if(retval.fail())
+        {
+            currentPosition = startPosition;
+            return retval;
+        }
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'$')
+        {
+            retval =
+                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'{')
+        {
+            retval =
+                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        statuses.templateValue = templateCharactersStatuses.templateValue;
+        statuses.templateRawValue = templateCharactersStatuses.templateRawValue;
+        retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+        return retval;
+    }
+    RuleStatus parseTokenTemplateTail(GC &gc)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.tokenTemplateTailStatus;
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPosition;
+            return retval;
+        }
+        std::size_t startPosition = currentPosition;
+        std::size_t nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'}')
+        {
+            retval =
+                RuleStatus::makeFailure(currentPosition, u"missing template substitution tail");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        auto &templateCharactersStatuses = getRuleStatuses(currentPosition);
+        retval = parseTokenTemplateCharacters(gc);
+        if(retval.fail())
+        {
+            currentPosition = startPosition;
+            return retval;
+        }
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'`')
+        {
+            retval =
+                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        statuses.templateValue = templateCharactersStatuses.templateValue;
+        statuses.templateRawValue = templateCharactersStatuses.templateRawValue;
+        retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+        return retval;
+    }
+    RuleStatus parseTokenTemplateMiddle(GC &gc)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.tokenTemplateMiddleStatus;
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPosition;
+            return retval;
+        }
+        std::size_t startPosition = currentPosition;
+        std::size_t nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'}')
+        {
+            retval =
+                RuleStatus::makeFailure(currentPosition, u"missing template substitution tail");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        auto &templateCharactersStatuses = getRuleStatuses(currentPosition);
+        retval = parseTokenTemplateCharacters(gc);
+        if(retval.fail())
+        {
+            currentPosition = startPosition;
+            return retval;
+        }
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'$')
+        {
+            retval =
+                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'{')
+        {
+            retval =
+                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            currentPosition = startPosition;
+            return retval;
+        }
+        currentPosition = nextPosition;
+        statuses.templateValue = templateCharactersStatuses.templateValue;
+        statuses.templateRawValue = templateCharactersStatuses.templateRawValue;
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         return retval;
     }
