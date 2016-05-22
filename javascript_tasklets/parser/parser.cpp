@@ -250,8 +250,8 @@ public:
         constexpr RuleStatus() noexcept : endPosition(npos), errorMessage(nullptr)
         {
         }
-        constexpr RuleStatus(std::size_t value, const char16_t *errorMessage) noexcept
-            : value(value),
+        constexpr RuleStatus(std::size_t endPosition, const char16_t *errorMessage) noexcept
+            : endPosition(endPosition),
               errorMessage(errorMessage)
         {
         }
@@ -352,10 +352,8 @@ public:
         RuleStatus identifierStatus;
         RuleStatus escapelessIdentifierNameStatus;
         RuleStatus stringLiteralStatus;
-        RuleStatus whitespaceStatus;
-        RuleStatus noNewlineWhitespaceStatus;
-        RuleStatus commentStatus;
-        RuleStatus noNewlineCommentStatus;
+        RuleStatus tokenSeperatorStatus;
+        RuleStatus noNewlineTokenSeperatorStatus;
         void getGCReferences(gc::GCReferencesCallback &callback) const
         {
             callback(stringLiteralValue);
@@ -372,14 +370,14 @@ public:
     static constexpr std::uint32_t eofCodePoint = 0xFFFFFFFFUL;
 
 public:
-    CodeEmitter &codeEmitter;
+    ASTTranslator &astTranslator;
     std::vector<std::unique_ptr<RuleStatuses>> ruleStatusesArray;
     gc::SourceReference source;
     std::size_t currentPosition;
 
 public:
-    explicit Parser(CodeEmitter &codeEmitter, gc::SourceReference source)
-        : codeEmitter(codeEmitter),
+    explicit Parser(ASTTranslator &astTranslator, gc::SourceReference source)
+        : astTranslator(astTranslator),
           ruleStatusesArray(source->contents.size() + 1), // one extra for EndOfFile
           source(source),
           currentPosition(0)
@@ -452,6 +450,116 @@ public:
             }
         }
         nextPosition = position + 1;
+        return retval;
+    }
+    RuleResult parseTokenSeperator(GC &gc)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &status = statuses.tokenSeperatorStatus;
+        if(!status.empty())
+        {
+            constexpr_assert(!statuses.noNewlineTokenSeperatorStatus.empty());
+            return RuleResult(currentPosition, status);
+        }
+        constexpr_assert(statuses.noNewlineTokenSeperatorStatus.empty());
+        std::size_t startPosition = currentPosition;
+        std::size_t nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        bool gotNewLine = false;
+        while(codePoint == U'/' || character_properties::javascriptWhiteSpace(codePoint)
+              || character_properties::javascriptLineTerminator(codePoint))
+        {
+            if(codePoint == U'/')
+            {
+                auto slashStartPosition = currentPosition;
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                if(codePoint == U'/')
+                {
+                    while(codePoint != eofCodePoint
+                          && !character_properties::javascriptLineTerminator(codePoint))
+                    {
+                        currentPosition = nextPosition;
+                        codePoint = getCodePoint(currentPosition, nextPosition);
+                    }
+                }
+                else if(codePoint == U'*')
+                {
+                    currentPosition = nextPosition;
+                    codePoint = getCodePoint(currentPosition, nextPosition);
+                    while(true)
+                    {
+                        if(codePoint == U'*')
+                        {
+                            while(codePoint == U'*')
+                            {
+                                currentPosition = nextPosition;
+                                codePoint = getCodePoint(currentPosition, nextPosition);
+                            }
+                            if(codePoint == U'/')
+                            {
+                                currentPosition = nextPosition;
+                                codePoint = getCodePoint(currentPosition, nextPosition);
+                                break;
+                            }
+                        }
+                        else if(codePoint == eofCodePoint)
+                        {
+                            auto retval = RuleResult::makeFailure(
+                                startPosition, currentPosition, u"comment missing closing */");
+                            status = retval;
+                            statuses.noNewlineTokenSeperatorStatus = retval;
+                            currentPosition = startPosition;
+                            return retval;
+                        }
+                        else if(character_properties::javascriptLineTerminator(codePoint))
+                        {
+                            gotNewLine = true;
+                            currentPosition = nextPosition;
+                            codePoint = getCodePoint(currentPosition, nextPosition);
+                        }
+                        else
+                        {
+                            currentPosition = nextPosition;
+                            codePoint = getCodePoint(currentPosition, nextPosition);
+                        }
+                    }
+                }
+                else
+                {
+                    currentPosition = slashStartPosition;
+                    break;
+                }
+            }
+            else if(character_properties::javascriptLineTerminator(codePoint))
+            {
+                gotNewLine = true;
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+            }
+            else
+            {
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+            }
+        }
+        auto retval = RuleResult::makeSuccess(startPosition, currentPosition);
+        status = retval;
+        if(gotNewLine)
+            statuses.noNewlineTokenSeperatorStatus = retval;
+        else
+            statuses.noNewlineTokenSeperatorStatus =
+                RuleStatus::makeFailed(currentPosition, u"line split not allowed here");
+        return retval;
+    }
+    RuleResult parseNoNewlineTokenSeperator(GC &gc)
+    {
+        std::size_t startPosition = currentPosition;
+        parseTokenSeperator(gc);
+        auto retval =
+            RuleResult(startPosition, getRuleStatuses(startPosition).noNewlineTokenSeperatorStatus);
+        if(retval.fail())
+            currentPosition = startPosition;
         return retval;
     }
     RuleResult parseUnicodeEscapeSequence(GC &gc, std::uint32_t *valuePtr = nullptr)
@@ -644,370 +752,16 @@ public:
     {
         return parseKeyword(gc, u"break", u"missing break keyword");
     }
-    bool isLet(GC &gc)
+    RuleResult parseScript(GC &gc)
     {
-        HandleScope handleScope(gc);
-        if(peek.type == Token::Type::Identifier
-           && gc.readString(Handle<gc::StringReference>(gc, peek.processedValue)) == u"let")
-            return true;
-        return false;
-    }
-    bool isLetLBracket(GC &gc)
-    {
-        if(isLet(gc))
-        {
-            HandleScope handleScope(gc);
-            Token letToken = peek;
-            next(gc);
-            bool isLBracket = peek.type == Token::Type::LBracket;
-            putBack(letToken);
-            return isLBracket;
-        }
-        return false;
-    }
-    bool isLineSplit(GC &gc)
-    {
-        if(peek.precededByLineTerminator)
-            return true;
-        return false;
-    }
-    void getOrInsertSemicolon(GC &gc, bool isAfterWhileInDoWhile)
-    {
-        if(peek.type == Token::Type::Semicolon)
-        {
-            next(gc);
-        }
-        else if(!isAfterWhileInDoWhile && peek.type != Token::Type::RBrace
-                && peek != Token::Type::EndOfFile
-                && !peek.precededByLineTerminator)
-        {
-            throwSyntaxError(u"expected ;", peek.location, gc);
-        }
-    }
-    void parseConditionalExpression(bool inFlag, bool yieldFlag, GC &gc)
-    {
-#warning finish
-    }
-    bool isStartConditionalExpressionToken(bool inFlag, bool yieldFlag, GC &gc)
-    {
-#warning finish
-    }
-    void parseYieldExpression(bool inFlag, GC &gc)
-    {
-#warning finish
-    }
-    bool isStartYieldExpressionToken(bool inFlag, GC &gc)
-    {
-#warning finish
-    }
-    void parseArrowFunction(bool inFlag, bool yieldFlag, GC &gc)
-    {
-#warning finish
-    }
-    bool isStartArrowFunctionToken(bool inFlag, bool yieldFlag, GC &gc)
-    {
-#warning finish
-    }
-    void parseLeftHandSideExpression(bool yieldFlag, GC &gc)
-    {
-#warning finish
-    }
-    bool isStartLeftHandSideExpressionToken(bool yieldFlag, GC &gc)
-    {
-#warning finish
-    }
-    void parseAssignmentExpression(bool inFlag, bool yieldFlag, GC &gc)
-    {
-#warning finish
-    }
-    bool isStartAssignmentExpressionToken(bool inFlag, bool yieldFlag, GC &gc)
-    {
-        if(isStartConditionalExpressionToken(inFlag, yieldFlag, gc))
-            return true;
-        if(yieldFlag && isStartYieldExpressionToken(inFlag, gc))
-            return true;
-        if(isStartArrowFunctionToken(inFlag, yieldFlag, gc))
-            return true;
-        if(isStartLeftHandSideExpressionToken(yieldFlag, gc))
-            return true;
-        return false;
-    }
-    void parseExpression(bool inFlag, bool yieldFlag, GC &gc)
-    {
-        parseAssignmentExpression(inFlag, yieldFlag, gc);
-        while(peek.type == Token::Type::Comma)
-        {
-            codeEmitter.valueStackGetValue();
-            codeEmitter.valueStackPop();
-            next(gc);
-            parseAssignmentExpression(inFlag, yieldFlag, gc);
-            codeEmitter.valueStackGetValue();
-        }
-    }
-    bool isStartExpressionToken(bool inFlag, bool yieldFlag, GC &gc)
-    {
-        return isStartAssignmentExpressionToken(inFlag, yieldFlag, gc);
-    }
-    void parseDeclaration(bool yieldFlag, GC &gc)
-    {
-#warning finish
-    }
-    bool isStartDeclarationToken(bool yieldFlag, GC &gc)
-    {
-        switch(peek.type)
-        {
-        case Token::Type::EndOfFile:
-        case Token::Type::Identifier:
-        case Token::Type::LBrace:
-        case Token::Type::RBrace:
-        case Token::Type::Ellipses:
-        case Token::Type::LParen:
-        case Token::Type::RParen:
-        case Token::Type::LBracket:
-        case Token::Type::RBracket:
-        case Token::Type::Period:
-        case Token::Type::Semicolon:
-        case Token::Type::Comma:
-        case Token::Type::LAngle:
-        case Token::Type::RAngle:
-        case Token::Type::LAngleEqual:
-        case Token::Type::RAngleEqual:
-        case Token::Type::DoubleEqual:
-        case Token::Type::NotEqual:
-        case Token::Type::TripleEqual:
-        case Token::Type::NotDoubleEqual:
-        case Token::Type::Plus:
-        case Token::Type::Minus:
-        case Token::Type::Star:
-        case Token::Type::Percent:
-        case Token::Type::Inc:
-        case Token::Type::Dec:
-        case Token::Type::LShift:
-        case Token::Type::ARShift:
-        case Token::Type::URShift:
-        case Token::Type::Amp:
-        case Token::Type::Pipe:
-        case Token::Type::Caret:
-        case Token::Type::EMark:
-        case Token::Type::Tilde:
-        case Token::Type::LAnd:
-        case Token::Type::LOr:
-        case Token::Type::QMark:
-        case Token::Type::Colon:
-        case Token::Type::SingleEqual:
-        case Token::Type::PlusEqual:
-        case Token::Type::MinusEqual:
-        case Token::Type::StarEqual:
-        case Token::Type::PercentEqual:
-        case Token::Type::LShiftEqual:
-        case Token::Type::ARShiftEqual:
-        case Token::Type::URShiftEqual:
-        case Token::Type::AmpEqual:
-        case Token::Type::PipeEqual:
-        case Token::Type::CaretEqual:
-        case Token::Type::Arrow:
-        case Token::Type::Div:
-        case Token::Type::DivEqual:
-        case Token::Type::NumericLiteral:
-        case Token::Type::StringLiteral:
-        case Token::Type::RegExpLiteral:
-        case Token::Type::NoSubstitutionTemplate:
-        case Token::Type::TemplateHead:
-        case Token::Type::TemplateMiddle:
-        case Token::Type::TemplateTail:
-        case Token::Type::BreakKW:
-        case Token::Type::CaseKW:
-        case Token::Type::CatchKW:
-        case Token::Type::ClassKW:
-        case Token::Type::ConstKW:
-        case Token::Type::ContinueKW:
-        case Token::Type::DebuggerKW:
-        case Token::Type::DefaultKW:
-        case Token::Type::DeleteKW:
-        case Token::Type::DoKW:
-        case Token::Type::ElseKW:
-        case Token::Type::ExportKW:
-        case Token::Type::ExtendsKW:
-        case Token::Type::FinallyKW:
-        case Token::Type::ForKW:
-        case Token::Type::FunctionKW:
-        case Token::Type::IfKW:
-        case Token::Type::ImportKW:
-        case Token::Type::InKW:
-        case Token::Type::InstanceOfKW:
-        case Token::Type::NewKW:
-        case Token::Type::ReturnKW:
-        case Token::Type::SuperKW:
-        case Token::Type::SwitchKW:
-        case Token::Type::ThisKW:
-        case Token::Type::ThrowKW:
-        case Token::Type::TryKW:
-        case Token::Type::TypeOfKW:
-        case Token::Type::VarKW:
-        case Token::Type::VoidKW:
-        case Token::Type::WhileKW:
-        case Token::Type::WithKW:
-        case Token::Type::YieldKW:
-        case Token::Type::EnumKW:
-        case Token::Type::AwaitKW:
-        case Token::Type::NullLiteral:
-        case Token::Type::TrueLiteral:
-        case Token::Type::FalseLiteral:
-#warning finish
-            return false;
-        }
-        constexpr_assert(false);
-        return false;
-    }
-    void parseBlockStatement(bool yieldFlag, bool returnFlag, GC &gc)
-    {
-        if(peek.type != Token::Type::LBrace)
-            throwSyntaxError(u"missing opening {", peek.location, gc);
-        next(gc);
-        if(isStartStatementListToken(yieldFlag, returnFlag, gc))
-        {
-            parseStatementList(yieldFlag, returnFlag, gc);
-        }
-        else
-        {
-            codeEmitter.valueStackPushEmpty();
-        }
-        if(peek.type != Token::Type::RBrace)
-            throwSyntaxError(u"missing closing }", peek.location, gc);
-        next(gc);
-    }
-    bool isStartBlockStatementToken(bool yieldFlag, bool returnFlag, GC &gc)
-    {
-        if(peek.type == Token::Type::LBrace)
-            return true;
-        return false;
-    }
-    void parseVariableStatement(bool yieldFlag, GC &gc)
-    {
-        if(peek.type != Token::Type::VarKW)
-            throwSyntaxError(u"missing var", peek.location, gc);
-        next(gc);
         constexpr_assert(false);
 #warning finish
+        return RuleResult();
     }
-    bool isStartVariableStatementToken(bool yieldFlag, GC &gc)
+    void translateScript(GC &gc)
     {
-        if(peek.type == Token::Type::VarKW)
-            return true;
-        return false;
-    }
-    void parseEmptyStatement(GC &gc)
-    {
-        if(peek.type != Token::Type::Semicolon)
-            throwSyntaxError(u"missing ;", peek.location, gc);
-        next(gc);
-        codeEmitter.valueStackPushEmpty();
-    }
-    bool isStartEmptyStatementToken(GC &gc)
-    {
-        if(peek.type == Token::Type::Semicolon)
-            return true;
-        return false;
-    }
-    void parseExpressionStatement(bool yieldFlag, GC &gc)
-    {
-        parseExpression(true, yieldFlag, gc);
-        codeEmitter.valueStackGetValue();
-        getOrInsertSemicolon(gc, false);
-    }
-    bool isStartExpressionStatementToken(bool yieldFlag, GC &gc)
-    {
-        if(peek.type == Token::Type::LBrace || peek.type == Token::Type::FunctionKW
-           || peek.type == Token::Type::ClassKW
-           || isLetLBracket(gc))
-            return false;
-        return isStartExpressionToken(true, yieldFlag, gc);
-    }
-    void parseStatement(bool yieldFlag, bool returnFlag, GC &gc)
-    {
-        if(isStartBlockStatementToken(yieldFlag, returnFlag, gc))
-        {
-            parseBlockStatement(yieldFlag, returnFlag, gc);
-        }
-        else if(isStartVariableStatementToken(yieldFlag, gc))
-        {
-            parseVariableStatement(yieldFlag, gc);
-        }
-        else if(isStartEmptyStatementToken(gc))
-        {
-            parseEmptyStatement(gc);
-        }
-        else if(isStartExpressionStatementToken(yieldFlag, gc))
-        {
-            parseExpressionStatement(yieldFlag, gc);
-        }
-        else
-        {
-            constexpr_assert(false);
+        constexpr_assert(false);
 #warning finish
-        }
-    }
-    bool isStartStatementToken(bool yieldFlag, bool returnFlag, GC &gc)
-    {
-        return isStartBlockStatementToken(yieldFlag, returnFlag, gc)
-               || isStartVariableStatementToken(yieldFlag, gc) || isStartEmptyStatementToken(gc)
-               || isStartExpressionStatementToken(yieldFlag, gc);
-    }
-    void parseStatementListItem(bool yieldFlag, bool returnFlag, GC &gc)
-    {
-        if(isStartDeclarationToken(yieldFlag, gc))
-            parseDeclaration(yieldFlag, gc);
-        else
-            parseStatement(yieldFlag, returnFlag, gc);
-    }
-    bool isStartStatementListItemToken(bool yieldFlag, bool returnFlag, GC &gc)
-    {
-        return isStartDeclarationToken(yieldFlag, gc)
-               || isStartStatementToken(yieldFlag, returnFlag, gc);
-    }
-    bool isStartStatementListToken(bool yieldFlag, bool returnFlag, GC &gc)
-    {
-        return isStartStatementListItemToken(yieldFlag, returnFlag, gc);
-    }
-    void parseStatementList(bool yieldFlag, bool returnFlag, GC &gc)
-    {
-        parseStatementListItem(yieldFlag, returnFlag, gc);
-        while(isStartStatementListItemToken(yieldFlag, returnFlag, gc))
-        {
-            parseStatementListItem(yieldFlag, returnFlag, gc);
-            codeEmitter.valueStackMerge();
-        }
-#warning finish
-    }
-    bool isStartScriptBodyToken(GC &gc)
-    {
-        return isStartStatementListToken(false, false, gc);
-    }
-    void parseScriptBody(GC &gc)
-    {
-        parseStatementList(false, false, gc);
-#warning check if StatementList Contains super unless the source code containing super is eval code that is being processed by a direct eval that is contained in function code that is not the function code of an ArrowFunction
-#warning check if StatementList Contains NewTarget unless the source code containing NewTarget is eval code that is being processed by a direct eval that is contained in function code that is not the function code of an ArrowFunction
-#warning check if ContainsDuplicateLabels({}) of StatementList is true
-#warning check if ContainsUndefinedBreakTarget({}) of StatementList is true
-#warning check if ContainsUndefinedContinueTarget({}, {}) of StatementList is true
-    }
-    bool parseScript(GC &gc)
-    {
-        if(isStartScriptBodyToken(gc))
-        {
-            parseScriptBody(gc);
-#warning check if the LexicallyDeclaredNames of ScriptBody contains any duplicate entries
-#warning check if any element of the LexicallyDeclaredNames of ScriptBody also occurs in the VarDeclaredNames of ScriptBody
-        }
-        else
-        {
-            codeEmitter.valueStackPushEmpty();
-        }
-        if(peek.type != Token::Type::EndOfFile)
-        {
-            throwSyntaxError(u"unexpected token", peek.location, gc);
-        }
     }
 };
 
@@ -1024,13 +778,14 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
     auto astTranslatorObject =
         value::ObjectHandle::create(std::move(astTranslatorUniquePtr), value::NullHandle(), gc);
     static_cast<void>(astTranslatorObject);
-    auto parserUniquePtr = std::unique_ptr<Parser>(new SourceParser(astTranslator, source, gc));
+    auto parserUniquePtr = std::unique_ptr<Parser>(new Parser(astTranslator, source));
     auto &parser = *parserUniquePtr;
     auto parserObject =
         value::ObjectHandle::create(std::move(parserUniquePtr), value::NullHandle(), gc);
     static_cast<void>(parserObject);
     parser.parseScript(gc);
-    return handleScope.escapeHandle(codeEmitter.finishGlobalCode(parser.peek.location, gc));
+    return handleScope.escapeHandle(
+        codeEmitter.finishGlobalCode(Location(source, source.get()->contents.size()), gc));
 }
 }
 }
