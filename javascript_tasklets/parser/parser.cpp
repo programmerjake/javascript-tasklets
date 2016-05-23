@@ -312,12 +312,12 @@ public:
         gc::StringReference regularExpressionLiteralFlagsValue;
         gc::StringReference templateRawValue;
         gc::StringReference templateValue;
+        bool lineSplit = false;
         RuleStatus tokenIdentifierNameStatus;
         RuleStatus tokenIdentifierStatus;
         RuleStatus tokenEscapelessIdentifierNameStatus;
         RuleStatus tokenStringLiteralStatus;
         RuleStatus tokenSeperatorStatus;
-        RuleStatus tokenNoNewlineSeperatorStatus;
         RuleStatus tokenKeywordStatus;
         RuleStatus tokenFutureReservedWordStatus;
         RuleStatus tokenBooleanLiteralStatus;
@@ -452,10 +452,8 @@ public:
         RuleStatus &retval = statuses.tokenSeperatorStatus;
         if(!retval.empty())
         {
-            constexpr_assert(!statuses.tokenNoNewlineSeperatorStatus.empty());
             return retval;
         }
-        constexpr_assert(statuses.tokenNoNewlineSeperatorStatus.empty());
         std::size_t startPosition = currentPosition;
         std::size_t nextPosition;
         auto codePoint = getCodePoint(currentPosition, nextPosition);
@@ -501,7 +499,6 @@ public:
                         {
                             retval = RuleStatus::makeFailure(startPosition,
                                                              u"comment missing closing */");
-                            statuses.tokenNoNewlineSeperatorStatus = retval;
                             currentPosition = startPosition;
                             return retval;
                         }
@@ -537,20 +534,7 @@ public:
             }
         }
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
-        if(gotNewLine)
-            statuses.tokenNoNewlineSeperatorStatus = retval;
-        else
-            statuses.tokenNoNewlineSeperatorStatus =
-                RuleStatus::makeFailure(startPosition, u"line split not allowed here");
-        return retval;
-    }
-    RuleStatus parseTokenNoNewlineSeperator(GC &gc)
-    {
-        std::size_t startPosition = currentPosition;
-        parseTokenSeperator(gc);
-        auto retval = getRuleStatuses(startPosition).tokenNoNewlineSeperatorStatus;
-        if(retval.fail())
-            currentPosition = startPosition;
+        statuses.lineSplit = gotNewLine;
         return retval;
     }
     RuleStatus parseTokenUnicodeEscapeSequence(GC &gc, std::uint32_t &value)
@@ -1445,7 +1429,7 @@ public:
             }
         }
         currentPosition = nextPosition;
-        statuses.stringLiteralValue = gc.internString(std::move(stringValue));
+        statuses.stringLiteralValue = gc.internString(std::move(stringValue)).get();
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         return retval;
     }
@@ -1483,8 +1467,8 @@ public:
             if(codePoint == eofCodePoint
                || character_properties::javascriptLineTerminator(codePoint))
             {
-                retval = RuleStatus::makeFailure(currentPosition,
-                                                 u"regular expression literal missing closing slash");
+                retval = RuleStatus::makeFailure(
+                    currentPosition, u"regular expression literal missing closing slash");
                 currentPosition = startPosition;
                 return retval;
             }
@@ -1496,7 +1480,8 @@ public:
                 if(character_properties::javascriptLineTerminator(codePoint))
                 {
                     retval = RuleStatus::makeFailure(
-                        currentPosition, u"incomplete escape sequence in regular expression literal");
+                        currentPosition,
+                        u"incomplete escape sequence in regular expression literal");
                     currentPosition = startPosition;
                     return retval;
                 }
@@ -1514,8 +1499,8 @@ public:
                     if(codePoint == eofCodePoint
                        || character_properties::javascriptLineTerminator(codePoint))
                     {
-                        retval = RuleStatus::makeFailure(currentPosition,
-                                                         u"regular expression literal class missing closing ]");
+                        retval = RuleStatus::makeFailure(
+                            currentPosition, u"regular expression literal class missing closing ]");
                         currentPosition = startPosition;
                         return retval;
                     }
@@ -1527,7 +1512,8 @@ public:
                         if(character_properties::javascriptLineTerminator(codePoint))
                         {
                             retval = RuleStatus::makeFailure(
-                                currentPosition, u"incomplete escape sequence in regular expression literal");
+                                currentPosition,
+                                u"incomplete escape sequence in regular expression literal");
                             currentPosition = startPosition;
                             return retval;
                         }
@@ -1552,7 +1538,7 @@ public:
         }
         currentPosition = nextPosition;
         codePoint = getCodePoint(currentPosition, nextPosition);
-        statuses.regularExpressionLiteralValue = gc.internString(std::move(bodyValue));
+        statuses.regularExpressionLiteralValue = gc.internString(std::move(bodyValue)).get();
         String flagsValue;
         while(character_properties::javascriptIdContinue(codePoint))
         {
@@ -1562,8 +1548,8 @@ public:
         }
         if(codePoint == U'\\')
         {
-            retval = RuleStatus::makeFailure(currentPosition,
-                                             u"unicode escape not permitted in regular expression flags");
+            retval = RuleStatus::makeFailure(
+                currentPosition, u"unicode escape not permitted in regular expression flags");
             currentPosition = startPosition;
             return retval;
         }
@@ -1683,8 +1669,7 @@ public:
         auto codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'`')
         {
-            retval =
-                RuleStatus::makeFailure(currentPosition, u"missing template literal");
+            retval = RuleStatus::makeFailure(currentPosition, u"missing template literal");
             currentPosition = startPosition;
             return retval;
         }
@@ -1696,11 +1681,10 @@ public:
             currentPosition = startPosition;
             return retval;
         }
-        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'`')
         {
-            retval =
-                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
@@ -1725,8 +1709,7 @@ public:
         auto codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'`')
         {
-            retval =
-                RuleStatus::makeFailure(currentPosition, u"missing template literal");
+            retval = RuleStatus::makeFailure(currentPosition, u"missing template literal");
             currentPosition = startPosition;
             return retval;
         }
@@ -1738,20 +1721,18 @@ public:
             currentPosition = startPosition;
             return retval;
         }
-        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'$')
         {
-            retval =
-                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
         currentPosition = nextPosition;
-        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'{')
         {
-            retval =
-                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
@@ -1789,11 +1770,10 @@ public:
             currentPosition = startPosition;
             return retval;
         }
-        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'`')
         {
-            retval =
-                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
@@ -1831,20 +1811,18 @@ public:
             currentPosition = startPosition;
             return retval;
         }
-        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'$')
         {
-            retval =
-                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
         currentPosition = nextPosition;
-        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'{')
         {
-            retval =
-                RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
@@ -1853,6 +1831,553 @@ public:
         statuses.templateRawValue = templateCharactersStatuses.templateRawValue;
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         return retval;
+    }
+    enum class Punctuator
+    {
+        LBrace,
+        RBrace,
+        LParen,
+        RParen,
+        LBracket,
+        RBracket,
+        Period,
+        Ellipsis,
+        Semicolon,
+        Comma,
+        LAngle,
+        RAngle,
+        LAngleEqual,
+        RAngleEqual,
+        EqualEqual,
+        EMarkEqual,
+        EqualEqualEqual,
+        EMarkEqualEqual,
+        Plus,
+        Minus,
+        Star,
+        Percent,
+        PlusPlus,
+        MinusMinus,
+        LAngleLAngle,
+        RAngleRAngle,
+        RAngleRAngleRAngle,
+        Amp,
+        Pipe,
+        Caret,
+        EMark,
+        Tilde,
+        AmpAmp,
+        PipePipe,
+        QMark,
+        Colon,
+        Equal,
+        PlusEqual,
+        MinusEqual,
+        StarEqual,
+        PercentEqual,
+        LAngleLAngleEqual,
+        RAngleRAngleEqual,
+        RAngleRAngleRAngleEqual,
+        AmpEqual,
+        PipeEqual,
+        CaretEqual,
+        EqualRAngle,
+        FSlash,
+        FSlashEqual,
+    };
+    RuleStatus parseTokenPunctuator(GC &gc, Punctuator &punctuator)
+    {
+        std::size_t startPosition = currentPosition;
+        if(parseTokenNumericLiteral(gc).success())
+        {
+            currentPosition = startPosition;
+            return RuleStatus::makeFailure(startPosition, u"missing punctuator");
+        }
+        std::size_t nextPosition;
+        auto codePoint = getCodePoint(currentPosition, nextPosition);
+        switch(codePoint)
+        {
+        case U'{':
+            punctuator = Punctuator::LBrace;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'}':
+            punctuator = Punctuator::RBrace;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'(':
+            punctuator = Punctuator::LParen;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U')':
+            punctuator = Punctuator::RParen;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'[':
+            punctuator = Punctuator::LBracket;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U']':
+            punctuator = Punctuator::RBracket;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'.':
+        {
+            punctuator = Punctuator::Period;
+            currentPosition = nextPosition;
+            auto singlePeriodPosition = currentPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'.')
+            {
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                if(codePoint == U'.')
+                {
+                    punctuator = Punctuator::Ellipsis;
+                    currentPosition = nextPosition;
+                }
+                else
+                {
+                    currentPosition = singlePeriodPosition;
+                }
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        }
+        case U';':
+            punctuator = Punctuator::Semicolon;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U',':
+            punctuator = Punctuator::Comma;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'<':
+            punctuator = Punctuator::LAngle;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'<')
+            {
+                punctuator = Punctuator::LAngleLAngle;
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                if(codePoint == U'=')
+                {
+                    punctuator = Punctuator::LAngleLAngleEqual;
+                    currentPosition = nextPosition;
+                }
+            }
+            else if(codePoint == U'=')
+            {
+                punctuator = Punctuator::LAngleEqual;
+                currentPosition = nextPosition;
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'>':
+            punctuator = Punctuator::RAngle;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'>')
+            {
+                punctuator = Punctuator::RAngleRAngle;
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                if(codePoint == U'>')
+                {
+                    punctuator = Punctuator::RAngleRAngleRAngle;
+                    currentPosition = nextPosition;
+                    codePoint = getCodePoint(currentPosition, nextPosition);
+                    if(codePoint == U'=')
+                    {
+                        punctuator = Punctuator::RAngleRAngleRAngleEqual;
+                        currentPosition = nextPosition;
+                    }
+                }
+                else if(codePoint == U'=')
+                {
+                    punctuator = Punctuator::RAngleRAngleEqual;
+                    currentPosition = nextPosition;
+                }
+            }
+            else if(codePoint == U'=')
+            {
+                punctuator = Punctuator::RAngleEqual;
+                currentPosition = nextPosition;
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'=':
+            punctuator = Punctuator::Equal;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'>')
+            {
+                punctuator = Punctuator::EqualRAngle;
+                currentPosition = nextPosition;
+            }
+            else if(codePoint == U'=')
+            {
+                punctuator = Punctuator::EqualEqual;
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                if(codePoint == U'=')
+                {
+                    punctuator = Punctuator::EqualEqualEqual;
+                    currentPosition = nextPosition;
+                }
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'!':
+            punctuator = Punctuator::EMark;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'=')
+            {
+                punctuator = Punctuator::EMarkEqual;
+                currentPosition = nextPosition;
+                codePoint = getCodePoint(currentPosition, nextPosition);
+                if(codePoint == U'=')
+                {
+                    punctuator = Punctuator::EMarkEqualEqual;
+                    currentPosition = nextPosition;
+                }
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'+':
+            punctuator = Punctuator::Plus;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'=')
+            {
+                punctuator = Punctuator::PlusEqual;
+                currentPosition = nextPosition;
+            }
+            else if(codePoint == U'+')
+            {
+                punctuator = Punctuator::PlusPlus;
+                currentPosition = nextPosition;
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'-':
+            punctuator = Punctuator::Minus;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'=')
+            {
+                punctuator = Punctuator::MinusEqual;
+                currentPosition = nextPosition;
+            }
+            else if(codePoint == U'-')
+            {
+                punctuator = Punctuator::MinusMinus;
+                currentPosition = nextPosition;
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'*':
+            punctuator = Punctuator::Star;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'=')
+            {
+                punctuator = Punctuator::StarEqual;
+                currentPosition = nextPosition;
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'%':
+            punctuator = Punctuator::Percent;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'=')
+            {
+                punctuator = Punctuator::PercentEqual;
+                currentPosition = nextPosition;
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'&':
+            punctuator = Punctuator::Amp;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'=')
+            {
+                punctuator = Punctuator::AmpEqual;
+                currentPosition = nextPosition;
+            }
+            else if(codePoint == U'&')
+            {
+                punctuator = Punctuator::AmpAmp;
+                currentPosition = nextPosition;
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'|':
+            punctuator = Punctuator::Pipe;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'=')
+            {
+                punctuator = Punctuator::PipeEqual;
+                currentPosition = nextPosition;
+            }
+            else if(codePoint == U'|')
+            {
+                punctuator = Punctuator::PipePipe;
+                currentPosition = nextPosition;
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'^':
+            punctuator = Punctuator::Caret;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'=')
+            {
+                punctuator = Punctuator::CaretEqual;
+                currentPosition = nextPosition;
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'~':
+            punctuator = Punctuator::Tilde;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'?':
+            punctuator = Punctuator::QMark;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U':':
+            punctuator = Punctuator::Colon;
+            currentPosition = nextPosition;
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        case U'/':
+            punctuator = Punctuator::FSlash;
+            currentPosition = nextPosition;
+            codePoint = getCodePoint(currentPosition, nextPosition);
+            if(codePoint == U'=')
+            {
+                punctuator = Punctuator::FSlashEqual;
+                currentPosition = nextPosition;
+            }
+            else if(codePoint == U'*' || codePoint == U'/')
+            {
+                currentPosition = startPosition;
+                return RuleStatus::makeFailure(startPosition, u"missing punctuator");
+            }
+            return RuleStatus::makeSuccess(startPosition, currentPosition);
+        default:
+            currentPosition = startPosition;
+            return RuleStatus::makeFailure(startPosition, u"missing punctuator");
+        }
+    }
+    RuleStatus parseTokenPunctuator(GC &gc,
+                                    Punctuator correctPunctuator,
+                                    const char16_t *failMessage)
+    {
+        Punctuator punctuator;
+        std::size_t startPosition = currentPosition;
+        if(parseTokenPunctuator(gc, punctuator).success())
+        {
+            if(punctuator == correctPunctuator)
+            {
+                return RuleStatus::makeSuccess(startPosition, currentPosition);
+            }
+        }
+        currentPosition = startPosition;
+        return RuleStatus::makeFailure(startPosition, failMessage);
+    }
+    RuleStatus parseTokenLBrace(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::LBrace, u"missing {");
+    }
+    RuleStatus parseTokenRBrace(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::RBrace, u"missing }");
+    }
+    RuleStatus parseTokenLParen(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::LParen, u"missing (");
+    }
+    RuleStatus parseTokenRParen(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::RParen, u"missing )");
+    }
+    RuleStatus parseTokenLBracket(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::LBracket, u"missing [");
+    }
+    RuleStatus parseTokenRBracket(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::RBracket, u"missing ]");
+    }
+    RuleStatus parseTokenPeriod(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Period, u"missing .");
+    }
+    RuleStatus parseTokenEllipsis(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Ellipsis, u"missing ...");
+    }
+    RuleStatus parseTokenSemicolon(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Semicolon, u"missing ;");
+    }
+    RuleStatus parseTokenComma(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Comma, u"missing ,");
+    }
+    RuleStatus parseTokenLAngle(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::LAngle, u"missing <");
+    }
+    RuleStatus parseTokenRAngle(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::RAngle, u"missing >");
+    }
+    RuleStatus parseTokenLAngleEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::LAngleEqual, u"missing <=");
+    }
+    RuleStatus parseTokenRAngleEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::RAngleEqual, u"missing >=");
+    }
+    RuleStatus parseTokenEqualEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::EqualEqual, u"missing ==");
+    }
+    RuleStatus parseTokenEMarkEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::EMarkEqual, u"missing !=");
+    }
+    RuleStatus parseTokenEqualEqualEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::EqualEqualEqual, u"missing ===");
+    }
+    RuleStatus parseTokenEMarkEqualEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::EMarkEqualEqual, u"missing !==");
+    }
+    RuleStatus parseTokenPlus(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Plus, u"missing +");
+    }
+    RuleStatus parseTokenMinus(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Minus, u"missing -");
+    }
+    RuleStatus parseTokenStar(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Star, u"missing *");
+    }
+    RuleStatus parseTokenPercent(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Percent, u"missing %");
+    }
+    RuleStatus parseTokenPlusPlus(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::PlusPlus, u"missing ++");
+    }
+    RuleStatus parseTokenMinusMinus(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::MinusMinus, u"missing --");
+    }
+    RuleStatus parseTokenLAngleLAngle(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::LAngleLAngle, u"missing <<");
+    }
+    RuleStatus parseTokenRAngleRAngle(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::RAngleRAngle, u"missing >>");
+    }
+    RuleStatus parseTokenRAngleRAngleRAngle(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::RAngleRAngleRAngle, u"missing >>>");
+    }
+    RuleStatus parseTokenAmp(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Amp, u"missing &");
+    }
+    RuleStatus parseTokenPipe(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Pipe, u"missing |");
+    }
+    RuleStatus parseTokenCaret(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Caret, u"missing ^");
+    }
+    RuleStatus parseTokenEMark(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::EMark, u"missing !");
+    }
+    RuleStatus parseTokenTilde(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Tilde, u"missing ~");
+    }
+    RuleStatus parseTokenAmpAmp(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::AmpAmp, u"missing &&");
+    }
+    RuleStatus parseTokenPipePipe(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::PipePipe, u"missing ||");
+    }
+    RuleStatus parseTokenQMark(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::QMark, u"missing ?");
+    }
+    RuleStatus parseTokenColon(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Colon, u"missing :");
+    }
+    RuleStatus parseTokenEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::Equal, u"missing =");
+    }
+    RuleStatus parseTokenPlusEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::PlusEqual, u"missing +=");
+    }
+    RuleStatus parseTokenMinusEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::MinusEqual, u"missing -=");
+    }
+    RuleStatus parseTokenStarEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::StarEqual, u"missing *=");
+    }
+    RuleStatus parseTokenPercentEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::PercentEqual, u"missing %=");
+    }
+    RuleStatus parseTokenLAngleLAngleEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::LAngleLAngleEqual, u"missing <<=");
+    }
+    RuleStatus parseTokenRAngleRAngleEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::RAngleRAngleEqual, u"missing >>=");
+    }
+    RuleStatus parseTokenRAngleRAngleRAngleEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::RAngleRAngleRAngleEqual, u"missing >>>=");
+    }
+    RuleStatus parseTokenAmpEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::AmpEqual, u"missing &=");
+    }
+    RuleStatus parseTokenPipeEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::PipeEqual, u"missing |=");
+    }
+    RuleStatus parseTokenCaretEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::CaretEqual, u"missing ^=");
+    }
+    RuleStatus parseTokenEqualRAngle(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::EqualRAngle, u"missing =>");
+    }
+    RuleStatus parseTokenFSlash(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::FSlash, u"missing /");
+    }
+    RuleStatus parseTokenFSlashEqual(GC &gc)
+    {
+        return parseTokenPunctuator(gc, Punctuator::FSlashEqual, u"missing /=");
     }
     RuleStatus parseScript(GC &gc)
     {
