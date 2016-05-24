@@ -40,7 +40,7 @@ struct BaseIndex
         : index((constexpr_assert(index != noIndex), index))
     {
     }
-    constexpr BaseIndex(std::nullptr_t) noexcept : index(noIndex)
+    constexpr BaseIndex() noexcept : index(noIndex)
     {
     }
     constexpr bool empty() const noexcept

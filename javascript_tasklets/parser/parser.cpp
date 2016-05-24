@@ -24,6 +24,8 @@
 #include "../constexpr_assert.h"
 #include "../character_properties.h"
 #include <deque>
+#include <iostream>
+#include <sstream>
 
 namespace javascript_tasklets
 {
@@ -77,10 +79,7 @@ struct CodeEmitter final : public gc::Object::ExtraData
         RegisterIndex baseOrValue;
         RegisterIndex referencedName;
         RegisterIndex thisValue;
-        constexpr Value() noexcept : type(Type::Empty),
-                                     baseOrValue(nullptr),
-                                     referencedName(nullptr),
-                                     thisValue(nullptr)
+        constexpr Value() noexcept : type(Type::Empty), baseOrValue(), referencedName(), thisValue()
         {
         }
         constexpr Value(Type type,
@@ -94,17 +93,17 @@ struct CodeEmitter final : public gc::Object::ExtraData
         }
         static constexpr Value makeValue(RegisterIndex value)
         {
-            return Value(Type::Value, value, nullptr, nullptr);
+            return Value(Type::Value, value, RegisterIndex(), RegisterIndex());
         }
         static constexpr Value makeNonstrictObjectReference(RegisterIndex object,
                                                             RegisterIndex referencedName)
         {
-            return Value(Type::NonstrictObjectReference, object, referencedName, nullptr);
+            return Value(Type::NonstrictObjectReference, object, referencedName, RegisterIndex());
         }
         static constexpr Value makeStrictObjectReference(RegisterIndex object,
                                                          RegisterIndex referencedName)
         {
-            return Value(Type::StrictObjectReference, object, referencedName, nullptr);
+            return Value(Type::StrictObjectReference, object, referencedName, RegisterIndex());
         }
         static constexpr Value makeObjectReference(RegisterIndex object,
                                                    RegisterIndex referencedName,
@@ -113,17 +112,19 @@ struct CodeEmitter final : public gc::Object::ExtraData
             return Value(strict ? Type::StrictObjectReference : Type::NonstrictObjectReference,
                          object,
                          referencedName,
-                         nullptr);
+                         RegisterIndex());
         }
         static constexpr Value makeNonstrictEnvironmentReference(RegisterIndex environment,
                                                                  RegisterIndex referencedName)
         {
-            return Value(Type::NonstrictEnvironmentReference, environment, referencedName, nullptr);
+            return Value(
+                Type::NonstrictEnvironmentReference, environment, referencedName, RegisterIndex());
         }
         static constexpr Value makeStrictEnvironmentReference(RegisterIndex environment,
                                                               RegisterIndex referencedName)
         {
-            return Value(Type::StrictEnvironmentReference, environment, referencedName, nullptr);
+            return Value(
+                Type::StrictEnvironmentReference, environment, referencedName, RegisterIndex());
         }
         static constexpr Value makeEnvironmentReference(RegisterIndex environment,
                                                         RegisterIndex referencedName,
@@ -133,7 +134,7 @@ struct CodeEmitter final : public gc::Object::ExtraData
                 strict ? Type::StrictEnvironmentReference : Type::NonstrictEnvironmentReference,
                 environment,
                 referencedName,
-                nullptr);
+                RegisterIndex());
         }
         static constexpr Value makeNonstrictSuperReference(RegisterIndex base,
                                                            RegisterIndex referencedName,
@@ -248,16 +249,16 @@ public:
     struct RuleStatus final
     {
         static constexpr std::size_t npos = static_cast<std::size_t>(-1);
-        std::size_t startPosition;
-        std::size_t endPosition;
+        std::size_t startPositionOrErrorPosition;
+        std::size_t endPositionOrErrorPriorityPosition;
         const char16_t *errorMessage;
         constexpr bool success() const noexcept
         {
-            return errorMessage == nullptr && startPosition != npos;
+            return errorMessage == nullptr && startPositionOrErrorPosition != npos;
         }
         constexpr bool empty() const noexcept
         {
-            return errorMessage == nullptr && startPosition == npos;
+            return errorMessage == nullptr && startPositionOrErrorPosition == npos;
         }
         constexpr bool fail() const noexcept
         {
@@ -265,17 +266,18 @@ public:
         }
 
     private:
-        constexpr RuleStatus(std::size_t startPosition,
-                             std::size_t endPosition,
-                             const char16_t *errorMessage) noexcept : startPosition(startPosition),
-                                                                      endPosition(endPosition),
-                                                                      errorMessage(errorMessage)
+        constexpr RuleStatus(std::size_t startPositionOrErrorPosition,
+                             std::size_t endPositionOrErrorPriorityPosition,
+                             const char16_t *errorMessage) noexcept
+            : startPositionOrErrorPosition(startPositionOrErrorPosition),
+              endPositionOrErrorPriorityPosition(endPositionOrErrorPriorityPosition),
+              errorMessage(errorMessage)
         {
         }
 
     public:
-        constexpr RuleStatus() noexcept : startPosition(npos),
-                                          endPosition(npos),
+        constexpr RuleStatus() noexcept : startPositionOrErrorPosition(npos),
+                                          endPositionOrErrorPriorityPosition(npos),
                                           errorMessage(nullptr)
         {
         }
@@ -286,16 +288,21 @@ public:
                                     && endPosition != npos),
                    RuleStatus(startPosition, endPosition, nullptr);
         }
-        static constexpr RuleStatus makeFailure(std::size_t position,
+        static constexpr RuleStatus makeFailure(std::size_t errorPosition,
+                                                std::size_t errorPriorityPosition,
                                                 const char16_t *errorMessage) noexcept
         {
-            return constexpr_assert(errorMessage), RuleStatus(position, position, errorMessage);
+            return constexpr_assert(errorMessage),
+                   RuleStatus(errorPosition, errorPriorityPosition, errorMessage);
         }
         constexpr RuleStatus operator/(RuleStatus rt) noexcept
         {
             return constexpr_assert(fail() || rt.fail()), constexpr_assert(!empty() && !rt.empty()),
-                   !fail() ? *this : !rt.fail() ? rt : startPosition < rt.startPosition ? rt :
-                                                                                          *this;
+                   !fail() ? *this : !rt.fail() ? rt :
+                                                  endPositionOrErrorPriorityPosition
+                                                          < rt.endPositionOrErrorPriorityPosition ?
+                                                  rt :
+                                                  *this;
         }
         RuleStatus &operator/=(RuleStatus rt) noexcept
         {
@@ -313,22 +320,22 @@ public:
         gc::StringReference templateRawValue;
         gc::StringReference templateValue;
         bool lineSplit = false;
-        RuleStatus tokenIdentifierNameStatus;
-        RuleStatus tokenIdentifierStatus;
-        RuleStatus tokenEscapelessIdentifierNameStatus;
-        RuleStatus tokenStringLiteralStatus;
-        RuleStatus tokenSeperatorStatus;
-        RuleStatus tokenKeywordStatus;
-        RuleStatus tokenFutureReservedWordStatus;
-        RuleStatus tokenBooleanLiteralStatus;
-        RuleStatus tokenReservedWordStatus;
-        RuleStatus tokenNumericLiteralStatus;
-        RuleStatus tokenRegularExpressionLiteralStatus;
-        RuleStatus tokenTemplateCharactersStatus;
-        RuleStatus tokenNoSubstitutionTemplateStatus;
-        RuleStatus tokenTemplateHeadStatus;
-        RuleStatus tokenTemplateTailStatus;
-        RuleStatus tokenTemplateMiddleStatus;
+        RuleStatus tokenizationIdentifierNameStatus;
+        RuleStatus tokenizationIdentifierStatus;
+        RuleStatus tokenizationEscapelessIdentifierNameStatus;
+        RuleStatus tokenizationStringLiteralStatus;
+        RuleStatus tokenizationSeperatorStatus;
+        RuleStatus tokenizationKeywordStatus;
+        RuleStatus tokenizationFutureReservedWordStatus;
+        RuleStatus tokenizationBooleanLiteralStatus;
+        RuleStatus tokenizationReservedWordStatus;
+        RuleStatus tokenizationNumericLiteralStatus;
+        RuleStatus tokenizationRegularExpressionLiteralStatus;
+        RuleStatus tokenizationTemplateCharactersStatus;
+        RuleStatus tokenizationNoSubstitutionTemplateStatus;
+        RuleStatus tokenizationTemplateHeadStatus;
+        RuleStatus tokenizationTemplateTailStatus;
+        RuleStatus tokenizationTemplateMiddleStatus;
         void getGCReferences(gc::GCReferencesCallback &callback) const
         {
             callback(identifierNameValue);
@@ -426,7 +433,7 @@ public:
         nextPosition = position + 1;
         return retval;
     }
-    RuleStatus parseTokenLineTerminatorSequence(GC &gc)
+    RuleStatus parseTokenizationLineTerminatorSequence(GC &gc)
     {
         std::size_t startPosition = currentPosition;
         std::size_t nextPosition;
@@ -444,12 +451,13 @@ public:
             currentPosition = nextPosition;
             return RuleStatus::makeSuccess(startPosition, currentPosition);
         }
-        return RuleStatus::makeFailure(startPosition, u"missing line terminator sequence");
+        return RuleStatus::makeFailure(
+            startPosition, startPosition, u"missing line terminator sequence");
     }
-    RuleStatus parseTokenSeperator(GC &gc)
+    RuleStatus parseTokenizationSeperator(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenSeperatorStatus;
+        RuleStatus &retval = statuses.tokenizationSeperatorStatus;
         if(!retval.empty())
         {
             return retval;
@@ -497,8 +505,8 @@ public:
                         }
                         else if(codePoint == eofCodePoint)
                         {
-                            retval = RuleStatus::makeFailure(startPosition,
-                                                             u"comment missing closing */");
+                            retval = RuleStatus::makeFailure(
+                                slashStartPosition, currentPosition, u"comment missing closing */");
                             currentPosition = startPosition;
                             return retval;
                         }
@@ -537,14 +545,14 @@ public:
         statuses.lineSplit = gotNewLine;
         return retval;
     }
-    RuleStatus parseTokenUnicodeEscapeSequence(GC &gc, std::uint32_t &value)
+    RuleStatus parseTokenizationUnicodeEscapeSequence(GC &gc, std::uint32_t &value)
     {
         std::size_t startPosition = currentPosition;
         if(getCodePoint(currentPosition, currentPosition) != U'u')
         {
-            auto errorPosition = startPosition;
             currentPosition = startPosition;
-            return RuleStatus::makeFailure(errorPosition, u"unicode escape sequence is missing u");
+            return RuleStatus::makeFailure(
+                startPosition, startPosition, u"unicode escape sequence is missing u");
         }
         std::size_t nextPosition;
         auto codePoint = getCodePoint(currentPosition, nextPosition);
@@ -556,8 +564,8 @@ public:
             {
                 auto errorPosition = currentPosition;
                 currentPosition = startPosition;
-                return RuleStatus::makeFailure(errorPosition,
-                                               u"unicode escape sequence missing hex digit");
+                return RuleStatus::makeFailure(
+                    errorPosition, errorPosition, u"unicode escape sequence missing hex digit");
             }
             value = 0;
             while(character_properties::javascriptHexDigit(codePoint))
@@ -569,6 +577,7 @@ public:
                     auto errorPosition = currentPosition;
                     currentPosition = startPosition;
                     return RuleStatus::makeFailure(errorPosition,
+                                                   errorPosition,
                                                    u"unicode escape sequence value out of range");
                 }
                 currentPosition = nextPosition;
@@ -578,8 +587,8 @@ public:
             {
                 auto errorPosition = currentPosition;
                 currentPosition = startPosition;
-                return RuleStatus::makeFailure(errorPosition,
-                                               u"unicode escape sequence missing closing }");
+                return RuleStatus::makeFailure(
+                    errorPosition, errorPosition, u"unicode escape sequence missing closing }");
             }
             currentPosition = nextPosition;
             return RuleStatus::makeSuccess(startPosition, currentPosition);
@@ -593,8 +602,8 @@ public:
                 {
                     auto errorPosition = currentPosition;
                     currentPosition = startPosition;
-                    return RuleStatus::makeFailure(errorPosition,
-                                                   u"unicode escape sequence missing hex digit");
+                    return RuleStatus::makeFailure(
+                        errorPosition, errorPosition, u"unicode escape sequence missing hex digit");
                 }
                 value *= 0x10;
                 value += character_properties::javascriptDigitValue(codePoint);
@@ -608,10 +617,11 @@ public:
             auto errorPosition = currentPosition;
             currentPosition = startPosition;
             return RuleStatus::makeFailure(errorPosition,
+                                           errorPosition,
                                            u"unicode escape sequence is missing { or a hex digit");
         }
     }
-    RuleStatus parseTokenHexEscapeSequence(GC &gc, std::uint32_t &value)
+    RuleStatus parseTokenizationHexEscapeSequence(GC &gc, std::uint32_t &value)
     {
         std::size_t startPosition = currentPosition;
         std::size_t nextPosition;
@@ -620,7 +630,8 @@ public:
         {
             auto errorPosition = startPosition;
             currentPosition = startPosition;
-            return RuleStatus::makeFailure(errorPosition, u"hex escape sequence is missing x");
+            return RuleStatus::makeFailure(
+                errorPosition, errorPosition, u"hex escape sequence is missing x");
         }
         currentPosition = nextPosition;
         codePoint = getCodePoint(currentPosition, nextPosition);
@@ -631,8 +642,8 @@ public:
             {
                 auto errorPosition = currentPosition;
                 currentPosition = startPosition;
-                return RuleStatus::makeFailure(errorPosition,
-                                               u"hex escape sequence missing hex digit");
+                return RuleStatus::makeFailure(
+                    errorPosition, errorPosition, u"hex escape sequence missing hex digit");
             }
             value *= 0x10;
             value += character_properties::javascriptDigitValue(codePoint);
@@ -641,7 +652,7 @@ public:
         }
         return RuleStatus::makeSuccess(startPosition, currentPosition);
     }
-    RuleStatus parseTokenEscapeSequence(GC &gc, std::uint32_t &value)
+    RuleStatus parseTokenizationEscapeSequence(GC &gc, std::uint32_t &value)
     {
         std::size_t startPosition = currentPosition;
         std::size_t nextPosition;
@@ -649,9 +660,9 @@ public:
         switch(codePoint)
         {
         case U'u':
-            return parseTokenUnicodeEscapeSequence(gc, value);
+            return parseTokenizationUnicodeEscapeSequence(gc, value);
         case U'x':
-            return parseTokenHexEscapeSequence(gc, value);
+            return parseTokenizationHexEscapeSequence(gc, value);
         case U'b':
             value = U'\b';
             currentPosition = nextPosition;
@@ -682,47 +693,51 @@ public:
             codePoint = getCodePoint(currentPosition, nextPosition);
             if(character_properties::javascriptDecimalDigit(codePoint))
             {
-                auto errorPosition = startPosition;
+                auto errorPriorityPosition = currentPosition;
                 currentPosition = startPosition;
-                return RuleStatus::makeFailure(errorPosition, u"invalid escape sequence");
+                return RuleStatus::makeFailure(
+                    startPosition, errorPriorityPosition, u"invalid escape sequence");
             }
             return RuleStatus::makeSuccess(startPosition, currentPosition);
         default:
             if(character_properties::javascriptLineTerminator(codePoint)
                || character_properties::javascriptDecimalDigit(codePoint))
             {
-                auto errorPosition = startPosition;
+                auto errorPriorityPosition = currentPosition;
                 currentPosition = startPosition;
-                return RuleStatus::makeFailure(errorPosition, u"invalid escape sequence");
+                return RuleStatus::makeFailure(
+                    startPosition, errorPriorityPosition, u"invalid escape sequence");
             }
             value = codePoint;
             currentPosition = nextPosition;
             return RuleStatus::makeSuccess(startPosition, currentPosition);
         }
     }
-    RuleStatus parseTokenIdentifierName(GC &gc)
+    RuleStatus parseTokenizationIdentifierName(GC &gc)
     {
         HandleScope handleScope(gc);
         auto &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenIdentifierNameStatus;
+        RuleStatus &retval = statuses.tokenizationIdentifierNameStatus;
         if(!retval.empty())
         {
-            constexpr_assert(!statuses.tokenEscapelessIdentifierNameStatus.empty());
+            constexpr_assert(!statuses.tokenizationEscapelessIdentifierNameStatus.empty());
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
-        constexpr_assert(statuses.tokenEscapelessIdentifierNameStatus.empty());
+        constexpr_assert(statuses.tokenizationEscapelessIdentifierNameStatus.empty());
         constexpr_assert(statuses.identifierNameValue == nullptr);
         std::size_t startPosition = currentPosition;
         std::size_t nextPosition;
         auto codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint == U'\\')
         {
-            statuses.tokenEscapelessIdentifierNameStatus = RuleStatus::makeFailure(
-                currentPosition, u"unicode escape sequence in identifier not allowed here");
+            statuses.tokenizationEscapelessIdentifierNameStatus =
+                RuleStatus::makeFailure(currentPosition,
+                                        currentPosition,
+                                        u"unicode escape sequence in identifier not allowed here");
             currentPosition = nextPosition;
-            retval = parseTokenUnicodeEscapeSequence(gc, codePoint);
+            retval = parseTokenizationUnicodeEscapeSequence(gc, codePoint);
             if(retval.fail())
             {
                 return retval;
@@ -731,14 +746,16 @@ public:
             {
                 retval = RuleStatus::makeFailure(
                     startPosition,
+                    retval.endPositionOrErrorPriorityPosition,
                     u"invalid identifier start character from unicode escape sequence");
                 return retval;
             }
         }
         else if(!character_properties::javascriptIdStart(codePoint))
         {
-            retval = RuleStatus::makeFailure(startPosition, u"invalid identifier start character");
-            statuses.tokenEscapelessIdentifierNameStatus = static_cast<RuleStatus>(retval);
+            retval = RuleStatus::makeFailure(
+                startPosition, startPosition, u"invalid identifier start character");
+            statuses.tokenizationEscapelessIdentifierNameStatus = static_cast<RuleStatus>(retval);
             return retval;
         }
         currentPosition = nextPosition;
@@ -749,11 +766,13 @@ public:
         {
             if(codePoint == U'\\')
             {
-                if(statuses.tokenEscapelessIdentifierNameStatus.empty())
-                    statuses.tokenEscapelessIdentifierNameStatus = RuleStatus::makeFailure(
-                        currentPosition, u"unicode escape sequence in identifier not allowed here");
+                if(statuses.tokenizationEscapelessIdentifierNameStatus.empty())
+                    statuses.tokenizationEscapelessIdentifierNameStatus = RuleStatus::makeFailure(
+                        currentPosition,
+                        currentPosition,
+                        u"unicode escape sequence in identifier not allowed here");
                 currentPosition = nextPosition;
-                retval = parseTokenUnicodeEscapeSequence(gc, codePoint);
+                retval = parseTokenizationUnicodeEscapeSequence(gc, codePoint);
                 if(retval.fail())
                 {
                     return retval;
@@ -762,6 +781,7 @@ public:
                 {
                     retval = RuleStatus::makeFailure(
                         currentPosition,
+                        retval.endPositionOrErrorPriorityPosition,
                         u"invalid identifier character from unicode escape sequence");
                     return retval;
                 }
@@ -772,463 +792,474 @@ public:
         }
         statuses.identifierNameValue = gc.internString(std::move(identifierValue)).get();
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
-        if(statuses.tokenEscapelessIdentifierNameStatus.empty())
-            statuses.tokenEscapelessIdentifierNameStatus = static_cast<RuleStatus>(retval);
+        if(statuses.tokenizationEscapelessIdentifierNameStatus.empty())
+            statuses.tokenizationEscapelessIdentifierNameStatus = static_cast<RuleStatus>(retval);
         return retval;
     }
-    RuleStatus parseTokenEscapelessIdentifierName(GC &gc)
+    RuleStatus parseTokenizationEscapelessIdentifierName(GC &gc)
     {
         std::size_t startPosition = currentPosition;
-        parseTokenIdentifierName(gc);
-        auto retval = getRuleStatuses(startPosition).tokenEscapelessIdentifierNameStatus;
+        parseTokenizationIdentifierName(gc);
+        auto retval = getRuleStatuses(startPosition).tokenizationEscapelessIdentifierNameStatus;
         if(retval.fail())
             currentPosition = startPosition;
         return retval;
     }
-    RuleStatus parseTokenKeyword(GC &gc, const char16_t *text, const char16_t *errorMessage)
+    RuleStatus parseTokenizationKeyword(GC &gc, const char16_t *text, const char16_t *errorMessage)
     {
         HandleScope handleScope(gc);
         std::size_t startPosition = currentPosition;
-        RuleStatus retval = parseTokenEscapelessIdentifierName(gc);
+        RuleStatus retval = parseTokenizationEscapelessIdentifierName(gc);
         if(retval.fail()
            || gc.readString(Handle<gc::StringReference>(
                   gc, getRuleStatuses(startPosition).identifierNameValue)) != text)
         {
-            retval = RuleStatus::makeFailure(retval.startPosition, errorMessage);
+            retval = RuleStatus::makeFailure(retval.startPositionOrErrorPosition,
+                                             retval.endPositionOrErrorPriorityPosition,
+                                             errorMessage);
             currentPosition = startPosition;
         }
         return retval;
     }
-    RuleStatus parseTokenAwait(GC &gc)
+    RuleStatus parseTokenizationAwait(GC &gc)
     {
-        return parseTokenKeyword(gc, u"await", u"missing await keyword");
+        return parseTokenizationKeyword(gc, u"await", u"missing await keyword");
     }
-    RuleStatus parseTokenBreak(GC &gc)
+    RuleStatus parseTokenizationBreak(GC &gc)
     {
-        return parseTokenKeyword(gc, u"break", u"missing break keyword");
+        return parseTokenizationKeyword(gc, u"break", u"missing break keyword");
     }
-    RuleStatus parseTokenCase(GC &gc)
+    RuleStatus parseTokenizationCase(GC &gc)
     {
-        return parseTokenKeyword(gc, u"case", u"missing case keyword");
+        return parseTokenizationKeyword(gc, u"case", u"missing case keyword");
     }
-    RuleStatus parseTokenCatch(GC &gc)
+    RuleStatus parseTokenizationCatch(GC &gc)
     {
-        return parseTokenKeyword(gc, u"catch", u"missing catch keyword");
+        return parseTokenizationKeyword(gc, u"catch", u"missing catch keyword");
     }
-    RuleStatus parseTokenClass(GC &gc)
+    RuleStatus parseTokenizationClass(GC &gc)
     {
-        return parseTokenKeyword(gc, u"class", u"missing class keyword");
+        return parseTokenizationKeyword(gc, u"class", u"missing class keyword");
     }
-    RuleStatus parseTokenConst(GC &gc)
+    RuleStatus parseTokenizationConst(GC &gc)
     {
-        return parseTokenKeyword(gc, u"const", u"missing const keyword");
+        return parseTokenizationKeyword(gc, u"const", u"missing const keyword");
     }
-    RuleStatus parseTokenContinue(GC &gc)
+    RuleStatus parseTokenizationContinue(GC &gc)
     {
-        return parseTokenKeyword(gc, u"continue", u"missing continue keyword");
+        return parseTokenizationKeyword(gc, u"continue", u"missing continue keyword");
     }
-    RuleStatus parseTokenDebugger(GC &gc)
+    RuleStatus parseTokenizationDebugger(GC &gc)
     {
-        return parseTokenKeyword(gc, u"debugger", u"missing debugger keyword");
+        return parseTokenizationKeyword(gc, u"debugger", u"missing debugger keyword");
     }
-    RuleStatus parseTokenDefault(GC &gc)
+    RuleStatus parseTokenizationDefault(GC &gc)
     {
-        return parseTokenKeyword(gc, u"default", u"missing default keyword");
+        return parseTokenizationKeyword(gc, u"default", u"missing default keyword");
     }
-    RuleStatus parseTokenDelete(GC &gc)
+    RuleStatus parseTokenizationDelete(GC &gc)
     {
-        return parseTokenKeyword(gc, u"delete", u"missing delete keyword");
+        return parseTokenizationKeyword(gc, u"delete", u"missing delete keyword");
     }
-    RuleStatus parseTokenDo(GC &gc)
+    RuleStatus parseTokenizationDo(GC &gc)
     {
-        return parseTokenKeyword(gc, u"do", u"missing do keyword");
+        return parseTokenizationKeyword(gc, u"do", u"missing do keyword");
     }
-    RuleStatus parseTokenElse(GC &gc)
+    RuleStatus parseTokenizationElse(GC &gc)
     {
-        return parseTokenKeyword(gc, u"else", u"missing else keyword");
+        return parseTokenizationKeyword(gc, u"else", u"missing else keyword");
     }
-    RuleStatus parseTokenEnum(GC &gc)
+    RuleStatus parseTokenizationEnum(GC &gc)
     {
-        return parseTokenKeyword(gc, u"enum", u"missing enum keyword");
+        return parseTokenizationKeyword(gc, u"enum", u"missing enum keyword");
     }
-    RuleStatus parseTokenExport(GC &gc)
+    RuleStatus parseTokenizationExport(GC &gc)
     {
-        return parseTokenKeyword(gc, u"export", u"missing export keyword");
+        return parseTokenizationKeyword(gc, u"export", u"missing export keyword");
     }
-    RuleStatus parseTokenExtends(GC &gc)
+    RuleStatus parseTokenizationExtends(GC &gc)
     {
-        return parseTokenKeyword(gc, u"extends", u"missing extends keyword");
+        return parseTokenizationKeyword(gc, u"extends", u"missing extends keyword");
     }
-    RuleStatus parseTokenFalse(GC &gc)
+    RuleStatus parseTokenizationFalse(GC &gc)
     {
-        return parseTokenKeyword(gc, u"false", u"missing false keyword");
+        return parseTokenizationKeyword(gc, u"false", u"missing false keyword");
     }
-    RuleStatus parseTokenFinally(GC &gc)
+    RuleStatus parseTokenizationFinally(GC &gc)
     {
-        return parseTokenKeyword(gc, u"finally", u"missing finally keyword");
+        return parseTokenizationKeyword(gc, u"finally", u"missing finally keyword");
     }
-    RuleStatus parseTokenFor(GC &gc)
+    RuleStatus parseTokenizationFor(GC &gc)
     {
-        return parseTokenKeyword(gc, u"for", u"missing for keyword");
+        return parseTokenizationKeyword(gc, u"for", u"missing for keyword");
     }
-    RuleStatus parseTokenFunction(GC &gc)
+    RuleStatus parseTokenizationFunction(GC &gc)
     {
-        return parseTokenKeyword(gc, u"function", u"missing function keyword");
+        return parseTokenizationKeyword(gc, u"function", u"missing function keyword");
     }
-    RuleStatus parseTokenIf(GC &gc)
+    RuleStatus parseTokenizationIf(GC &gc)
     {
-        return parseTokenKeyword(gc, u"if", u"missing if keyword");
+        return parseTokenizationKeyword(gc, u"if", u"missing if keyword");
     }
-    RuleStatus parseTokenImport(GC &gc)
+    RuleStatus parseTokenizationImport(GC &gc)
     {
-        return parseTokenKeyword(gc, u"import", u"missing import keyword");
+        return parseTokenizationKeyword(gc, u"import", u"missing import keyword");
     }
-    RuleStatus parseTokenIn(GC &gc)
+    RuleStatus parseTokenizationIn(GC &gc)
     {
-        return parseTokenKeyword(gc, u"in", u"missing in keyword");
+        return parseTokenizationKeyword(gc, u"in", u"missing in keyword");
     }
-    RuleStatus parseTokenInstanceOf(GC &gc)
+    RuleStatus parseTokenizationInstanceOf(GC &gc)
     {
-        return parseTokenKeyword(gc, u"instanceof", u"missing instanceof keyword");
+        return parseTokenizationKeyword(gc, u"instanceof", u"missing instanceof keyword");
     }
-    RuleStatus parseTokenNew(GC &gc)
+    RuleStatus parseTokenizationNew(GC &gc)
     {
-        return parseTokenKeyword(gc, u"new", u"missing new keyword");
+        return parseTokenizationKeyword(gc, u"new", u"missing new keyword");
     }
-    RuleStatus parseTokenNull(GC &gc)
+    RuleStatus parseTokenizationNull(GC &gc)
     {
-        return parseTokenKeyword(gc, u"null", u"missing null keyword");
+        return parseTokenizationKeyword(gc, u"null", u"missing null keyword");
     }
-    RuleStatus parseTokenReturn(GC &gc)
+    RuleStatus parseTokenizationReturn(GC &gc)
     {
-        return parseTokenKeyword(gc, u"return", u"missing return keyword");
+        return parseTokenizationKeyword(gc, u"return", u"missing return keyword");
     }
-    RuleStatus parseTokenSuper(GC &gc)
+    RuleStatus parseTokenizationSuper(GC &gc)
     {
-        return parseTokenKeyword(gc, u"super", u"missing super keyword");
+        return parseTokenizationKeyword(gc, u"super", u"missing super keyword");
     }
-    RuleStatus parseTokenSwitch(GC &gc)
+    RuleStatus parseTokenizationSwitch(GC &gc)
     {
-        return parseTokenKeyword(gc, u"switch", u"missing switch keyword");
+        return parseTokenizationKeyword(gc, u"switch", u"missing switch keyword");
     }
-    RuleStatus parseTokenThis(GC &gc)
+    RuleStatus parseTokenizationThis(GC &gc)
     {
-        return parseTokenKeyword(gc, u"this", u"missing this keyword");
+        return parseTokenizationKeyword(gc, u"this", u"missing this keyword");
     }
-    RuleStatus parseTokenThrow(GC &gc)
+    RuleStatus parseTokenizationThrow(GC &gc)
     {
-        return parseTokenKeyword(gc, u"throw", u"missing throw keyword");
+        return parseTokenizationKeyword(gc, u"throw", u"missing throw keyword");
     }
-    RuleStatus parseTokenTrue(GC &gc)
+    RuleStatus parseTokenizationTrue(GC &gc)
     {
-        return parseTokenKeyword(gc, u"true", u"missing true keyword");
+        return parseTokenizationKeyword(gc, u"true", u"missing true keyword");
     }
-    RuleStatus parseTokenTry(GC &gc)
+    RuleStatus parseTokenizationTry(GC &gc)
     {
-        return parseTokenKeyword(gc, u"try", u"missing try keyword");
+        return parseTokenizationKeyword(gc, u"try", u"missing try keyword");
     }
-    RuleStatus parseTokenTypeOf(GC &gc)
+    RuleStatus parseTokenizationTypeOf(GC &gc)
     {
-        return parseTokenKeyword(gc, u"typeof", u"missing typeof keyword");
+        return parseTokenizationKeyword(gc, u"typeof", u"missing typeof keyword");
     }
-    RuleStatus parseTokenVar(GC &gc)
+    RuleStatus parseTokenizationVar(GC &gc)
     {
-        return parseTokenKeyword(gc, u"var", u"missing var keyword");
+        return parseTokenizationKeyword(gc, u"var", u"missing var keyword");
     }
-    RuleStatus parseTokenVoid(GC &gc)
+    RuleStatus parseTokenizationVoid(GC &gc)
     {
-        return parseTokenKeyword(gc, u"void", u"missing void keyword");
+        return parseTokenizationKeyword(gc, u"void", u"missing void keyword");
     }
-    RuleStatus parseTokenWhile(GC &gc)
+    RuleStatus parseTokenizationWhile(GC &gc)
     {
-        return parseTokenKeyword(gc, u"while", u"missing while keyword");
+        return parseTokenizationKeyword(gc, u"while", u"missing while keyword");
     }
-    RuleStatus parseTokenWith(GC &gc)
+    RuleStatus parseTokenizationWith(GC &gc)
     {
-        return parseTokenKeyword(gc, u"with", u"missing with keyword");
+        return parseTokenizationKeyword(gc, u"with", u"missing with keyword");
     }
-    RuleStatus parseTokenYield(GC &gc)
+    RuleStatus parseTokenizationYield(GC &gc)
     {
-        return parseTokenKeyword(gc, u"yield", u"missing yield keyword");
+        return parseTokenizationKeyword(gc, u"yield", u"missing yield keyword");
     }
-    RuleStatus parseTokenKeyword(GC &gc)
+    RuleStatus parseTokenizationKeyword(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenKeywordStatus;
+        RuleStatus &retval = statuses.tokenizationKeywordStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
-        retval = parseTokenBreak(gc);
+        retval = parseTokenizationBreak(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenCase(gc);
+        retval /= parseTokenizationCase(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenCatch(gc);
+        retval /= parseTokenizationCatch(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenClass(gc);
+        retval /= parseTokenizationClass(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenConst(gc);
+        retval /= parseTokenizationConst(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenContinue(gc);
+        retval /= parseTokenizationContinue(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenDebugger(gc);
+        retval /= parseTokenizationDebugger(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenDefault(gc);
+        retval /= parseTokenizationDefault(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenDelete(gc);
+        retval /= parseTokenizationDelete(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenDo(gc);
+        retval /= parseTokenizationDo(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenElse(gc);
+        retval /= parseTokenizationElse(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenExport(gc);
+        retval /= parseTokenizationExport(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenExtends(gc);
+        retval /= parseTokenizationExtends(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenFinally(gc);
+        retval /= parseTokenizationFinally(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenFor(gc);
+        retval /= parseTokenizationFor(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenFunction(gc);
+        retval /= parseTokenizationFunction(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenIf(gc);
+        retval /= parseTokenizationIf(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenImport(gc);
+        retval /= parseTokenizationImport(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenIn(gc);
+        retval /= parseTokenizationIn(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenInstanceOf(gc);
+        retval /= parseTokenizationInstanceOf(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenNew(gc);
+        retval /= parseTokenizationNew(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenReturn(gc);
+        retval /= parseTokenizationReturn(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenSuper(gc);
+        retval /= parseTokenizationSuper(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenSwitch(gc);
+        retval /= parseTokenizationSwitch(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenThis(gc);
+        retval /= parseTokenizationThis(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenThrow(gc);
+        retval /= parseTokenizationThrow(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenTry(gc);
+        retval /= parseTokenizationTry(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenTypeOf(gc);
+        retval /= parseTokenizationTypeOf(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenVar(gc);
+        retval /= parseTokenizationVar(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenVoid(gc);
+        retval /= parseTokenizationVoid(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenWhile(gc);
+        retval /= parseTokenizationWhile(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenWith(gc);
+        retval /= parseTokenizationWith(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenYield(gc);
+        retval /= parseTokenizationYield(gc);
         return retval;
     }
-    RuleStatus parseTokenFutureReservedWord(GC &gc)
+    RuleStatus parseTokenizationFutureReservedWord(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenFutureReservedWordStatus;
+        RuleStatus &retval = statuses.tokenizationFutureReservedWordStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
-        retval = parseTokenAwait(gc);
+        retval = parseTokenizationAwait(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenEnum(gc);
+        retval /= parseTokenizationEnum(gc);
         return retval;
     }
-    RuleStatus parseTokenBooleanLiteral(GC &gc)
+    RuleStatus parseTokenizationBooleanLiteral(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenBooleanLiteralStatus;
+        RuleStatus &retval = statuses.tokenizationBooleanLiteralStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
-        retval = parseTokenFalse(gc);
+        retval = parseTokenizationFalse(gc);
         if(retval.success())
         {
             statuses.booleanLiteralValue = false;
             return retval;
         }
-        retval /= parseTokenTrue(gc);
+        retval /= parseTokenizationTrue(gc);
         if(retval.success())
         {
             statuses.booleanLiteralValue = true;
         }
         return retval;
     }
-    RuleStatus parseTokenReservedWord(GC &gc)
+    RuleStatus parseTokenizationReservedWord(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenReservedWordStatus;
+        RuleStatus &retval = statuses.tokenizationReservedWordStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
-        retval = parseTokenKeyword(gc);
+        retval = parseTokenizationKeyword(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenFutureReservedWord(gc);
+        retval /= parseTokenizationFutureReservedWord(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenNull(gc);
+        retval /= parseTokenizationNull(gc);
         if(retval.success())
         {
             return retval;
         }
-        retval /= parseTokenBooleanLiteral(gc);
+        retval /= parseTokenizationBooleanLiteral(gc);
         return retval;
     }
-    RuleStatus parseTokenIdentifier(GC &gc)
+    RuleStatus parseTokenizationIdentifier(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenIdentifierStatus;
+        RuleStatus &retval = statuses.tokenizationIdentifierStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
-        auto reservedWordResult = parseTokenReservedWord(gc);
+        auto reservedWordResult = parseTokenizationReservedWord(gc);
         if(reservedWordResult.success())
         {
             currentPosition = startPosition;
-            retval = RuleStatus::makeFailure(reservedWordResult.startPosition,
+            retval = RuleStatus::makeFailure(reservedWordResult.startPositionOrErrorPosition,
+                                             reservedWordResult.endPositionOrErrorPriorityPosition,
                                              u"expected a valid identifier");
             return retval;
         }
-        retval = parseTokenIdentifierName(gc);
+        retval = parseTokenizationIdentifierName(gc);
         return retval;
     }
-    RuleStatus parseTokenNumericLiteral(GC &gc)
+    RuleStatus parseTokenizationNumericLiteral(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenNumericLiteralStatus;
+        RuleStatus &retval = statuses.tokenizationNumericLiteralStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
         std::size_t nextPosition;
         auto codePoint = getCodePoint(currentPosition, nextPosition);
+        if(codePoint != U'.' && !character_properties::javascriptDecimalDigit(codePoint))
+        {
+            retval =
+                RuleStatus::makeFailure(startPosition, startPosition, u"missing numeric literal");
+            currentPosition = startPosition;
+            return retval;
+        }
         String stringValue;
+        bool gotDigit = false;
         if(codePoint == U'0')
         {
             stringValue = appendCodePoint(std::move(stringValue), codePoint);
@@ -1238,6 +1269,7 @@ public:
             {
                 retval = RuleStatus::makeFailure(
                     startPosition,
+                    currentPosition,
                     u"legacy octal numeric literals not supported (use 0o1234 syntax instead)");
                 currentPosition = startPosition;
                 return retval;
@@ -1249,8 +1281,10 @@ public:
                 codePoint = getCodePoint(currentPosition, nextPosition);
                 if(!character_properties::javascriptBinaryDigit(codePoint))
                 {
-                    retval = RuleStatus::makeFailure(
-                        currentPosition, u"binary numeric literal missing binary digit");
+                    retval =
+                        RuleStatus::makeFailure(currentPosition,
+                                                currentPosition,
+                                                u"binary numeric literal missing binary digit");
                     currentPosition = startPosition;
                     return retval;
                 }
@@ -1272,6 +1306,7 @@ public:
                 if(!character_properties::javascriptOctalDigit(codePoint))
                 {
                     retval = RuleStatus::makeFailure(currentPosition,
+                                                     currentPosition,
                                                      u"octal numeric literal missing octal digit");
                     currentPosition = startPosition;
                     return retval;
@@ -1293,8 +1328,8 @@ public:
                 codePoint = getCodePoint(currentPosition, nextPosition);
                 if(!character_properties::javascriptHexDigit(codePoint))
                 {
-                    retval = RuleStatus::makeFailure(currentPosition,
-                                                     u"hex numeric literal missing hex digit");
+                    retval = RuleStatus::makeFailure(
+                        currentPosition, currentPosition, u"hex numeric literal missing hex digit");
                     currentPosition = startPosition;
                     return retval;
                 }
@@ -1316,6 +1351,7 @@ public:
         }
         while(character_properties::javascriptDecimalDigit(codePoint))
         {
+            gotDigit = true;
             stringValue = appendCodePoint(std::move(stringValue), codePoint);
             currentPosition = nextPosition;
             codePoint = getCodePoint(currentPosition, nextPosition);
@@ -1327,10 +1363,18 @@ public:
             codePoint = getCodePoint(currentPosition, nextPosition);
             while(character_properties::javascriptDecimalDigit(codePoint))
             {
+                gotDigit = true;
                 stringValue = appendCodePoint(std::move(stringValue), codePoint);
                 currentPosition = nextPosition;
                 codePoint = getCodePoint(currentPosition, nextPosition);
             }
+        }
+        if(!gotDigit)
+        {
+            retval =
+                RuleStatus::makeFailure(startPosition, currentPosition, u"missing numeric literal");
+            currentPosition = startPosition;
+            return retval;
         }
         if(codePoint == U'e' || codePoint == U'E')
         {
@@ -1345,8 +1389,8 @@ public:
             }
             if(!character_properties::javascriptDecimalDigit(codePoint))
             {
-                retval = RuleStatus::makeFailure(currentPosition,
-                                                 u"numeric literal missing digit in exponent");
+                retval = RuleStatus::makeFailure(
+                    currentPosition, currentPosition, u"numeric literal missing digit in exponent");
                 currentPosition = startPosition;
                 return retval;
             }
@@ -1357,25 +1401,19 @@ public:
                 codePoint = getCodePoint(currentPosition, nextPosition);
             }
         }
-        if(stringValue == u".")
-        {
-            retval = RuleStatus::makeFailure(startPosition, u"missing numeric literal");
-            currentPosition = startPosition;
-            return retval;
-        }
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         statuses.numericLiteralValue = value::StringHandle::toNumberValue(stringValue);
         return retval;
     }
-    RuleStatus parseTokenStringLiteral(GC &gc)
+    RuleStatus parseTokenizationStringLiteral(GC &gc)
     {
         HandleScope handleScope(gc);
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenStringLiteralStatus;
+        RuleStatus &retval = statuses.tokenizationStringLiteralStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
@@ -1384,7 +1422,8 @@ public:
         String stringValue;
         if(codePoint != U'\"' && codePoint != U'\'')
         {
-            retval = RuleStatus::makeFailure(startPosition, u"missing string literal");
+            retval =
+                RuleStatus::makeFailure(startPosition, currentPosition, u"missing string literal");
             currentPosition = startPosition;
             return retval;
         }
@@ -1396,8 +1435,8 @@ public:
             if(codePoint == eofCodePoint
                || character_properties::javascriptLineTerminator(codePoint))
             {
-                retval =
-                    RuleStatus::makeFailure(startPosition, u"string literal missing closing quote");
+                retval = RuleStatus::makeFailure(
+                    startPosition, currentPosition, u"string literal missing closing quote");
                 currentPosition = startPosition;
                 return retval;
             }
@@ -1407,11 +1446,11 @@ public:
                 codePoint = getCodePoint(currentPosition, nextPosition);
                 if(character_properties::javascriptLineTerminator(codePoint))
                 {
-                    parseTokenLineTerminatorSequence(gc); // never fails
+                    parseTokenizationLineTerminatorSequence(gc); // never fails
                     codePoint = getCodePoint(currentPosition, nextPosition);
                     continue;
                 }
-                auto escapeSequenceResult = parseTokenEscapeSequence(gc, codePoint);
+                auto escapeSequenceResult = parseTokenizationEscapeSequence(gc, codePoint);
                 if(escapeSequenceResult.fail())
                 {
                     retval = escapeSequenceResult;
@@ -1433,15 +1472,15 @@ public:
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         return retval;
     }
-    RuleStatus parseTokenRegularExpressionLiteral(GC &gc)
+    RuleStatus parseTokenizationRegularExpressionLiteral(GC &gc)
     {
         HandleScope handleScope(gc);
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenRegularExpressionLiteralStatus;
+        RuleStatus &retval = statuses.tokenizationRegularExpressionLiteralStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
@@ -1450,7 +1489,8 @@ public:
         String bodyValue;
         if(codePoint != U'/')
         {
-            retval = RuleStatus::makeFailure(startPosition, u"missing regular expression literal");
+            retval = RuleStatus::makeFailure(
+                startPosition, currentPosition, u"missing regular expression literal");
             currentPosition = startPosition;
             return retval;
         }
@@ -1458,7 +1498,8 @@ public:
         codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint == U'/' || codePoint == U'*')
         {
-            retval = RuleStatus::makeFailure(startPosition, u"missing regular expression literal");
+            retval = RuleStatus::makeFailure(
+                startPosition, currentPosition, u"missing regular expression literal");
             currentPosition = startPosition;
             return retval;
         }
@@ -1467,8 +1508,10 @@ public:
             if(codePoint == eofCodePoint
                || character_properties::javascriptLineTerminator(codePoint))
             {
-                retval = RuleStatus::makeFailure(
-                    currentPosition, u"regular expression literal missing closing slash");
+                retval =
+                    RuleStatus::makeFailure(currentPosition,
+                                            currentPosition,
+                                            u"regular expression literal missing closing slash");
                 currentPosition = startPosition;
                 return retval;
             }
@@ -1480,6 +1523,7 @@ public:
                 if(character_properties::javascriptLineTerminator(codePoint))
                 {
                     retval = RuleStatus::makeFailure(
+                        currentPosition,
                         currentPosition,
                         u"incomplete escape sequence in regular expression literal");
                     currentPosition = startPosition;
@@ -1500,7 +1544,9 @@ public:
                        || character_properties::javascriptLineTerminator(codePoint))
                     {
                         retval = RuleStatus::makeFailure(
-                            currentPosition, u"regular expression literal class missing closing ]");
+                            currentPosition,
+                            currentPosition,
+                            u"regular expression literal class missing closing ]");
                         currentPosition = startPosition;
                         return retval;
                     }
@@ -1512,6 +1558,7 @@ public:
                         if(character_properties::javascriptLineTerminator(codePoint))
                         {
                             retval = RuleStatus::makeFailure(
+                                currentPosition,
                                 currentPosition,
                                 u"incomplete escape sequence in regular expression literal");
                             currentPosition = startPosition;
@@ -1549,22 +1596,24 @@ public:
         if(codePoint == U'\\')
         {
             retval = RuleStatus::makeFailure(
-                currentPosition, u"unicode escape not permitted in regular expression flags");
+                currentPosition,
+                currentPosition,
+                u"unicode escape not permitted in regular expression flags");
             currentPosition = startPosition;
             return retval;
         }
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         return retval;
     }
-    RuleStatus parseTokenTemplateCharacters(GC &gc)
+    RuleStatus parseTokenizationTemplateCharacters(GC &gc)
     {
         HandleScope handleScope(gc);
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenTemplateCharactersStatus;
+        RuleStatus &retval = statuses.tokenizationTemplateCharactersStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
         String templateValue;
@@ -1575,8 +1624,8 @@ public:
         {
             if(codePoint == eofCodePoint)
             {
-                retval =
-                    RuleStatus::makeFailure(currentPosition, u"template literal missing closing `");
+                retval = RuleStatus::makeFailure(
+                    startPosition, currentPosition, u"template literal missing closing `");
                 currentPosition = startPosition;
                 return retval;
             }
@@ -1586,12 +1635,12 @@ public:
                 codePoint = getCodePoint(currentPosition, nextPosition);
                 if(character_properties::javascriptLineTerminator(codePoint))
                 {
-                    parseTokenLineTerminatorSequence(gc); // never fails
+                    parseTokenizationLineTerminatorSequence(gc); // never fails
                     codePoint = getCodePoint(currentPosition, nextPosition);
                 }
                 else
                 {
-                    retval = parseTokenEscapeSequence(gc, codePoint);
+                    retval = parseTokenizationEscapeSequence(gc, codePoint);
                     if(retval.fail())
                     {
                         currentPosition = startPosition;
@@ -1654,14 +1703,14 @@ public:
         statuses.templateRawValue = gc.internString(std::move(templateRawValue)).get();
         return retval;
     }
-    RuleStatus parseTokenNoSubstitutionTemplate(GC &gc)
+    RuleStatus parseTokenizationNoSubstitutionTemplate(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenNoSubstitutionTemplateStatus;
+        RuleStatus &retval = statuses.tokenizationNoSubstitutionTemplateStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
@@ -1669,13 +1718,14 @@ public:
         auto codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'`')
         {
-            retval = RuleStatus::makeFailure(currentPosition, u"missing template literal");
+            retval = RuleStatus::makeFailure(
+                currentPosition, currentPosition, u"missing template literal");
             currentPosition = startPosition;
             return retval;
         }
         currentPosition = nextPosition;
         auto &templateCharactersStatuses = getRuleStatuses(currentPosition);
-        retval = parseTokenTemplateCharacters(gc);
+        retval = parseTokenizationTemplateCharacters(gc);
         if(retval.fail())
         {
             currentPosition = startPosition;
@@ -1684,7 +1734,8 @@ public:
         codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'`')
         {
-            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval =
+                RuleStatus::makeFailure(currentPosition, currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
@@ -1694,14 +1745,14 @@ public:
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         return retval;
     }
-    RuleStatus parseTokenTemplateHead(GC &gc)
+    RuleStatus parseTokenizationTemplateHead(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenTemplateHeadStatus;
+        RuleStatus &retval = statuses.tokenizationTemplateHeadStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
@@ -1709,13 +1760,14 @@ public:
         auto codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'`')
         {
-            retval = RuleStatus::makeFailure(currentPosition, u"missing template literal");
+            retval = RuleStatus::makeFailure(
+                currentPosition, currentPosition, u"missing template literal");
             currentPosition = startPosition;
             return retval;
         }
         currentPosition = nextPosition;
         auto &templateCharactersStatuses = getRuleStatuses(currentPosition);
-        retval = parseTokenTemplateCharacters(gc);
+        retval = parseTokenizationTemplateCharacters(gc);
         if(retval.fail())
         {
             currentPosition = startPosition;
@@ -1724,7 +1776,8 @@ public:
         codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'$')
         {
-            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval =
+                RuleStatus::makeFailure(currentPosition, currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
@@ -1732,7 +1785,8 @@ public:
         codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'{')
         {
-            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval =
+                RuleStatus::makeFailure(currentPosition, currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
@@ -1742,14 +1796,14 @@ public:
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         return retval;
     }
-    RuleStatus parseTokenTemplateTail(GC &gc)
+    RuleStatus parseTokenizationTemplateTail(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenTemplateTailStatus;
+        RuleStatus &retval = statuses.tokenizationTemplateTailStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
@@ -1757,14 +1811,14 @@ public:
         auto codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'}')
         {
-            retval =
-                RuleStatus::makeFailure(currentPosition, u"missing template substitution tail");
+            retval = RuleStatus::makeFailure(
+                currentPosition, currentPosition, u"missing template substitution tail");
             currentPosition = startPosition;
             return retval;
         }
         currentPosition = nextPosition;
         auto &templateCharactersStatuses = getRuleStatuses(currentPosition);
-        retval = parseTokenTemplateCharacters(gc);
+        retval = parseTokenizationTemplateCharacters(gc);
         if(retval.fail())
         {
             currentPosition = startPosition;
@@ -1773,7 +1827,8 @@ public:
         codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'`')
         {
-            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval =
+                RuleStatus::makeFailure(currentPosition, currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
@@ -1783,14 +1838,14 @@ public:
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         return retval;
     }
-    RuleStatus parseTokenTemplateMiddle(GC &gc)
+    RuleStatus parseTokenizationTemplateMiddle(GC &gc)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenTemplateMiddleStatus;
+        RuleStatus &retval = statuses.tokenizationTemplateMiddleStatus;
         if(!retval.empty())
         {
             if(retval.success())
-                currentPosition = retval.endPosition;
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
@@ -1798,14 +1853,14 @@ public:
         auto codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'}')
         {
-            retval =
-                RuleStatus::makeFailure(currentPosition, u"missing template substitution tail");
+            retval = RuleStatus::makeFailure(
+                currentPosition, currentPosition, u"missing template substitution tail");
             currentPosition = startPosition;
             return retval;
         }
         currentPosition = nextPosition;
         auto &templateCharactersStatuses = getRuleStatuses(currentPosition);
-        retval = parseTokenTemplateCharacters(gc);
+        retval = parseTokenizationTemplateCharacters(gc);
         if(retval.fail())
         {
             currentPosition = startPosition;
@@ -1814,7 +1869,8 @@ public:
         codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'$')
         {
-            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval =
+                RuleStatus::makeFailure(currentPosition, currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
@@ -1822,7 +1878,8 @@ public:
         codePoint = getCodePoint(currentPosition, nextPosition);
         if(codePoint != U'{')
         {
-            retval = RuleStatus::makeFailure(currentPosition, u"missing closing `");
+            retval =
+                RuleStatus::makeFailure(currentPosition, currentPosition, u"missing closing `");
             currentPosition = startPosition;
             return retval;
         }
@@ -1885,13 +1942,15 @@ public:
         FSlash,
         FSlashEqual,
     };
-    RuleStatus parseTokenPunctuator(GC &gc, Punctuator &punctuator)
+    RuleStatus parseTokenizationPunctuator(GC &gc, Punctuator &punctuator)
     {
         std::size_t startPosition = currentPosition;
-        if(parseTokenNumericLiteral(gc).success())
+        if(parseTokenizationNumericLiteral(gc).success())
         {
+            auto errorPriorityPosition = currentPosition;
             currentPosition = startPosition;
-            return RuleStatus::makeFailure(startPosition, u"missing punctuator");
+            return RuleStatus::makeFailure(
+                startPosition, errorPriorityPosition, u"missing punctuator");
         }
         std::size_t nextPosition;
         auto codePoint = getCodePoint(currentPosition, nextPosition);
@@ -2154,230 +2213,959 @@ public:
             }
             else if(codePoint == U'*' || codePoint == U'/')
             {
+                auto errorPriorityPosition = currentPosition;
                 currentPosition = startPosition;
-                return RuleStatus::makeFailure(startPosition, u"missing punctuator");
+                return RuleStatus::makeFailure(
+                    startPosition, errorPriorityPosition, u"missing punctuator");
             }
             return RuleStatus::makeSuccess(startPosition, currentPosition);
         default:
             currentPosition = startPosition;
-            return RuleStatus::makeFailure(startPosition, u"missing punctuator");
+            return RuleStatus::makeFailure(startPosition, startPosition, u"missing punctuator");
         }
     }
-    RuleStatus parseTokenPunctuator(GC &gc,
-                                    Punctuator correctPunctuator,
-                                    const char16_t *failMessage)
+    RuleStatus parseTokenizationPunctuator(GC &gc,
+                                           Punctuator correctPunctuator,
+                                           const char16_t *failMessage)
     {
         Punctuator punctuator;
         std::size_t startPosition = currentPosition;
-        if(parseTokenPunctuator(gc, punctuator).success())
+        if(parseTokenizationPunctuator(gc, punctuator).success())
         {
             if(punctuator == correctPunctuator)
             {
                 return RuleStatus::makeSuccess(startPosition, currentPosition);
             }
         }
+        auto errorPriorityPosition = currentPosition;
         currentPosition = startPosition;
-        return RuleStatus::makeFailure(startPosition, failMessage);
+        return RuleStatus::makeFailure(startPosition, errorPriorityPosition, failMessage);
     }
-    RuleStatus parseTokenLBrace(GC &gc)
+    RuleStatus parseTokenizationLBrace(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::LBrace, u"missing {");
+        return parseTokenizationPunctuator(gc, Punctuator::LBrace, u"missing {");
     }
-    RuleStatus parseTokenRBrace(GC &gc)
+    RuleStatus parseTokenizationRBrace(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::RBrace, u"missing }");
+        return parseTokenizationPunctuator(gc, Punctuator::RBrace, u"missing }");
     }
-    RuleStatus parseTokenLParen(GC &gc)
+    RuleStatus parseTokenizationLParen(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::LParen, u"missing (");
+        return parseTokenizationPunctuator(gc, Punctuator::LParen, u"missing (");
     }
-    RuleStatus parseTokenRParen(GC &gc)
+    RuleStatus parseTokenizationRParen(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::RParen, u"missing )");
+        return parseTokenizationPunctuator(gc, Punctuator::RParen, u"missing )");
     }
-    RuleStatus parseTokenLBracket(GC &gc)
+    RuleStatus parseTokenizationLBracket(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::LBracket, u"missing [");
+        return parseTokenizationPunctuator(gc, Punctuator::LBracket, u"missing [");
     }
-    RuleStatus parseTokenRBracket(GC &gc)
+    RuleStatus parseTokenizationRBracket(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::RBracket, u"missing ]");
+        return parseTokenizationPunctuator(gc, Punctuator::RBracket, u"missing ]");
     }
-    RuleStatus parseTokenPeriod(GC &gc)
+    RuleStatus parseTokenizationPeriod(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Period, u"missing .");
+        return parseTokenizationPunctuator(gc, Punctuator::Period, u"missing .");
     }
-    RuleStatus parseTokenEllipsis(GC &gc)
+    RuleStatus parseTokenizationEllipsis(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Ellipsis, u"missing ...");
+        return parseTokenizationPunctuator(gc, Punctuator::Ellipsis, u"missing ...");
     }
-    RuleStatus parseTokenSemicolon(GC &gc)
+    RuleStatus parseTokenizationSemicolon(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Semicolon, u"missing ;");
+        return parseTokenizationPunctuator(gc, Punctuator::Semicolon, u"missing ;");
     }
-    RuleStatus parseTokenComma(GC &gc)
+    RuleStatus parseTokenizationComma(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Comma, u"missing ,");
+        return parseTokenizationPunctuator(gc, Punctuator::Comma, u"missing ,");
     }
-    RuleStatus parseTokenLAngle(GC &gc)
+    RuleStatus parseTokenizationLAngle(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::LAngle, u"missing <");
+        return parseTokenizationPunctuator(gc, Punctuator::LAngle, u"missing <");
     }
-    RuleStatus parseTokenRAngle(GC &gc)
+    RuleStatus parseTokenizationRAngle(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::RAngle, u"missing >");
+        return parseTokenizationPunctuator(gc, Punctuator::RAngle, u"missing >");
     }
-    RuleStatus parseTokenLAngleEqual(GC &gc)
+    RuleStatus parseTokenizationLAngleEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::LAngleEqual, u"missing <=");
+        return parseTokenizationPunctuator(gc, Punctuator::LAngleEqual, u"missing <=");
     }
-    RuleStatus parseTokenRAngleEqual(GC &gc)
+    RuleStatus parseTokenizationRAngleEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::RAngleEqual, u"missing >=");
+        return parseTokenizationPunctuator(gc, Punctuator::RAngleEqual, u"missing >=");
     }
-    RuleStatus parseTokenEqualEqual(GC &gc)
+    RuleStatus parseTokenizationEqualEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::EqualEqual, u"missing ==");
+        return parseTokenizationPunctuator(gc, Punctuator::EqualEqual, u"missing ==");
     }
-    RuleStatus parseTokenEMarkEqual(GC &gc)
+    RuleStatus parseTokenizationEMarkEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::EMarkEqual, u"missing !=");
+        return parseTokenizationPunctuator(gc, Punctuator::EMarkEqual, u"missing !=");
     }
-    RuleStatus parseTokenEqualEqualEqual(GC &gc)
+    RuleStatus parseTokenizationEqualEqualEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::EqualEqualEqual, u"missing ===");
+        return parseTokenizationPunctuator(gc, Punctuator::EqualEqualEqual, u"missing ===");
     }
-    RuleStatus parseTokenEMarkEqualEqual(GC &gc)
+    RuleStatus parseTokenizationEMarkEqualEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::EMarkEqualEqual, u"missing !==");
+        return parseTokenizationPunctuator(gc, Punctuator::EMarkEqualEqual, u"missing !==");
     }
-    RuleStatus parseTokenPlus(GC &gc)
+    RuleStatus parseTokenizationPlus(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Plus, u"missing +");
+        return parseTokenizationPunctuator(gc, Punctuator::Plus, u"missing +");
     }
-    RuleStatus parseTokenMinus(GC &gc)
+    RuleStatus parseTokenizationMinus(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Minus, u"missing -");
+        return parseTokenizationPunctuator(gc, Punctuator::Minus, u"missing -");
     }
-    RuleStatus parseTokenStar(GC &gc)
+    RuleStatus parseTokenizationStar(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Star, u"missing *");
+        return parseTokenizationPunctuator(gc, Punctuator::Star, u"missing *");
     }
-    RuleStatus parseTokenPercent(GC &gc)
+    RuleStatus parseTokenizationPercent(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Percent, u"missing %");
+        return parseTokenizationPunctuator(gc, Punctuator::Percent, u"missing %");
     }
-    RuleStatus parseTokenPlusPlus(GC &gc)
+    RuleStatus parseTokenizationPlusPlus(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::PlusPlus, u"missing ++");
+        return parseTokenizationPunctuator(gc, Punctuator::PlusPlus, u"missing ++");
     }
-    RuleStatus parseTokenMinusMinus(GC &gc)
+    RuleStatus parseTokenizationMinusMinus(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::MinusMinus, u"missing --");
+        return parseTokenizationPunctuator(gc, Punctuator::MinusMinus, u"missing --");
     }
-    RuleStatus parseTokenLAngleLAngle(GC &gc)
+    RuleStatus parseTokenizationLAngleLAngle(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::LAngleLAngle, u"missing <<");
+        return parseTokenizationPunctuator(gc, Punctuator::LAngleLAngle, u"missing <<");
     }
-    RuleStatus parseTokenRAngleRAngle(GC &gc)
+    RuleStatus parseTokenizationRAngleRAngle(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::RAngleRAngle, u"missing >>");
+        return parseTokenizationPunctuator(gc, Punctuator::RAngleRAngle, u"missing >>");
     }
-    RuleStatus parseTokenRAngleRAngleRAngle(GC &gc)
+    RuleStatus parseTokenizationRAngleRAngleRAngle(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::RAngleRAngleRAngle, u"missing >>>");
+        return parseTokenizationPunctuator(gc, Punctuator::RAngleRAngleRAngle, u"missing >>>");
     }
-    RuleStatus parseTokenAmp(GC &gc)
+    RuleStatus parseTokenizationAmp(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Amp, u"missing &");
+        return parseTokenizationPunctuator(gc, Punctuator::Amp, u"missing &");
     }
-    RuleStatus parseTokenPipe(GC &gc)
+    RuleStatus parseTokenizationPipe(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Pipe, u"missing |");
+        return parseTokenizationPunctuator(gc, Punctuator::Pipe, u"missing |");
     }
-    RuleStatus parseTokenCaret(GC &gc)
+    RuleStatus parseTokenizationCaret(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Caret, u"missing ^");
+        return parseTokenizationPunctuator(gc, Punctuator::Caret, u"missing ^");
     }
-    RuleStatus parseTokenEMark(GC &gc)
+    RuleStatus parseTokenizationEMark(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::EMark, u"missing !");
+        return parseTokenizationPunctuator(gc, Punctuator::EMark, u"missing !");
     }
-    RuleStatus parseTokenTilde(GC &gc)
+    RuleStatus parseTokenizationTilde(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Tilde, u"missing ~");
+        return parseTokenizationPunctuator(gc, Punctuator::Tilde, u"missing ~");
     }
-    RuleStatus parseTokenAmpAmp(GC &gc)
+    RuleStatus parseTokenizationAmpAmp(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::AmpAmp, u"missing &&");
+        return parseTokenizationPunctuator(gc, Punctuator::AmpAmp, u"missing &&");
     }
-    RuleStatus parseTokenPipePipe(GC &gc)
+    RuleStatus parseTokenizationPipePipe(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::PipePipe, u"missing ||");
+        return parseTokenizationPunctuator(gc, Punctuator::PipePipe, u"missing ||");
     }
-    RuleStatus parseTokenQMark(GC &gc)
+    RuleStatus parseTokenizationQMark(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::QMark, u"missing ?");
+        return parseTokenizationPunctuator(gc, Punctuator::QMark, u"missing ?");
     }
-    RuleStatus parseTokenColon(GC &gc)
+    RuleStatus parseTokenizationColon(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Colon, u"missing :");
+        return parseTokenizationPunctuator(gc, Punctuator::Colon, u"missing :");
     }
-    RuleStatus parseTokenEqual(GC &gc)
+    RuleStatus parseTokenizationEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::Equal, u"missing =");
+        return parseTokenizationPunctuator(gc, Punctuator::Equal, u"missing =");
     }
-    RuleStatus parseTokenPlusEqual(GC &gc)
+    RuleStatus parseTokenizationPlusEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::PlusEqual, u"missing +=");
+        return parseTokenizationPunctuator(gc, Punctuator::PlusEqual, u"missing +=");
     }
-    RuleStatus parseTokenMinusEqual(GC &gc)
+    RuleStatus parseTokenizationMinusEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::MinusEqual, u"missing -=");
+        return parseTokenizationPunctuator(gc, Punctuator::MinusEqual, u"missing -=");
     }
-    RuleStatus parseTokenStarEqual(GC &gc)
+    RuleStatus parseTokenizationStarEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::StarEqual, u"missing *=");
+        return parseTokenizationPunctuator(gc, Punctuator::StarEqual, u"missing *=");
     }
-    RuleStatus parseTokenPercentEqual(GC &gc)
+    RuleStatus parseTokenizationPercentEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::PercentEqual, u"missing %=");
+        return parseTokenizationPunctuator(gc, Punctuator::PercentEqual, u"missing %=");
     }
-    RuleStatus parseTokenLAngleLAngleEqual(GC &gc)
+    RuleStatus parseTokenizationLAngleLAngleEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::LAngleLAngleEqual, u"missing <<=");
+        return parseTokenizationPunctuator(gc, Punctuator::LAngleLAngleEqual, u"missing <<=");
     }
-    RuleStatus parseTokenRAngleRAngleEqual(GC &gc)
+    RuleStatus parseTokenizationRAngleRAngleEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::RAngleRAngleEqual, u"missing >>=");
+        return parseTokenizationPunctuator(gc, Punctuator::RAngleRAngleEqual, u"missing >>=");
     }
-    RuleStatus parseTokenRAngleRAngleRAngleEqual(GC &gc)
+    RuleStatus parseTokenizationRAngleRAngleRAngleEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::RAngleRAngleRAngleEqual, u"missing >>>=");
+        return parseTokenizationPunctuator(
+            gc, Punctuator::RAngleRAngleRAngleEqual, u"missing >>>=");
     }
-    RuleStatus parseTokenAmpEqual(GC &gc)
+    RuleStatus parseTokenizationAmpEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::AmpEqual, u"missing &=");
+        return parseTokenizationPunctuator(gc, Punctuator::AmpEqual, u"missing &=");
     }
-    RuleStatus parseTokenPipeEqual(GC &gc)
+    RuleStatus parseTokenizationPipeEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::PipeEqual, u"missing |=");
+        return parseTokenizationPunctuator(gc, Punctuator::PipeEqual, u"missing |=");
     }
-    RuleStatus parseTokenCaretEqual(GC &gc)
+    RuleStatus parseTokenizationCaretEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::CaretEqual, u"missing ^=");
+        return parseTokenizationPunctuator(gc, Punctuator::CaretEqual, u"missing ^=");
     }
-    RuleStatus parseTokenEqualRAngle(GC &gc)
+    RuleStatus parseTokenizationEqualRAngle(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::EqualRAngle, u"missing =>");
+        return parseTokenizationPunctuator(gc, Punctuator::EqualRAngle, u"missing =>");
     }
-    RuleStatus parseTokenFSlash(GC &gc)
+    RuleStatus parseTokenizationFSlash(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::FSlash, u"missing /");
+        return parseTokenizationPunctuator(gc, Punctuator::FSlash, u"missing /");
     }
-    RuleStatus parseTokenFSlashEqual(GC &gc)
+    RuleStatus parseTokenizationFSlashEqual(GC &gc)
     {
-        return parseTokenPunctuator(gc, Punctuator::FSlashEqual, u"missing /=");
+        return parseTokenizationPunctuator(gc, Punctuator::FSlashEqual, u"missing /=");
+    }
+    bool testParseToken(bool parseTemplateContinuation, bool parseRegularExpression, GC &gc)
+    {
+        HandleScope handleScope(gc);
+        Location location(SourceHandle(gc, source), currentPosition);
+        std::ostringstream ss;
+        writeString(ss, location.toString());
+        ss << ": ";
+        ss << std::boolalpha;
+        if(getCodePoint(currentPosition) == eofCodePoint)
+        {
+            ss << "EndOfFile";
+            std::cout << ss.str() << std::endl;
+            return false;
+        }
+        do
+        {
+            std::size_t startPosition = currentPosition;
+            auto result = parseTokenizationSeperator(gc);
+            if(result.success()
+               && result.endPositionOrErrorPriorityPosition != result.startPositionOrErrorPosition)
+            {
+                ss << "Seperator: lineSplit = " << getRuleStatuses(startPosition).lineSplit;
+                break;
+            }
+            else if(result.success())
+            {
+                result = parseTokenizationAwait(gc);
+            }
+            else
+            {
+                result /= parseTokenizationAwait(gc);
+            }
+            if(result.success())
+            {
+                ss << "Await";
+                break;
+            }
+            result /= parseTokenizationBreak(gc);
+            if(result.success())
+            {
+                ss << "Break";
+                break;
+            }
+            result /= parseTokenizationCase(gc);
+            if(result.success())
+            {
+                ss << "Case";
+                break;
+            }
+            result /= parseTokenizationCatch(gc);
+            if(result.success())
+            {
+                ss << "Catch";
+                break;
+            }
+            result /= parseTokenizationClass(gc);
+            if(result.success())
+            {
+                ss << "Class";
+                break;
+            }
+            result /= parseTokenizationConst(gc);
+            if(result.success())
+            {
+                ss << "Const";
+                break;
+            }
+            result /= parseTokenizationContinue(gc);
+            if(result.success())
+            {
+                ss << "Continue";
+                break;
+            }
+            result /= parseTokenizationDebugger(gc);
+            if(result.success())
+            {
+                ss << "Debugger";
+                break;
+            }
+            result /= parseTokenizationDefault(gc);
+            if(result.success())
+            {
+                ss << "Default";
+                break;
+            }
+            result /= parseTokenizationDelete(gc);
+            if(result.success())
+            {
+                ss << "Delete";
+                break;
+            }
+            result /= parseTokenizationDo(gc);
+            if(result.success())
+            {
+                ss << "Do";
+                break;
+            }
+            result /= parseTokenizationElse(gc);
+            if(result.success())
+            {
+                ss << "Else";
+                break;
+            }
+            result /= parseTokenizationEnum(gc);
+            if(result.success())
+            {
+                ss << "Enum";
+                break;
+            }
+            result /= parseTokenizationExport(gc);
+            if(result.success())
+            {
+                ss << "Export";
+                break;
+            }
+            result /= parseTokenizationExtends(gc);
+            if(result.success())
+            {
+                ss << "Extends";
+                break;
+            }
+            result /= parseTokenizationFinally(gc);
+            if(result.success())
+            {
+                ss << "Finally";
+                break;
+            }
+            result /= parseTokenizationFor(gc);
+            if(result.success())
+            {
+                ss << "For";
+                break;
+            }
+            result /= parseTokenizationFunction(gc);
+            if(result.success())
+            {
+                ss << "Function";
+                break;
+            }
+            result /= parseTokenizationIf(gc);
+            if(result.success())
+            {
+                ss << "If";
+                break;
+            }
+            result /= parseTokenizationImport(gc);
+            if(result.success())
+            {
+                ss << "Import";
+                break;
+            }
+            result /= parseTokenizationIn(gc);
+            if(result.success())
+            {
+                ss << "In";
+                break;
+            }
+            result /= parseTokenizationInstanceOf(gc);
+            if(result.success())
+            {
+                ss << "InstanceOf";
+                break;
+            }
+            result /= parseTokenizationNew(gc);
+            if(result.success())
+            {
+                ss << "New";
+                break;
+            }
+            result /= parseTokenizationNull(gc);
+            if(result.success())
+            {
+                ss << "Null";
+                break;
+            }
+            result /= parseTokenizationReturn(gc);
+            if(result.success())
+            {
+                ss << "Return";
+                break;
+            }
+            result /= parseTokenizationSuper(gc);
+            if(result.success())
+            {
+                ss << "Super";
+                break;
+            }
+            result /= parseTokenizationSwitch(gc);
+            if(result.success())
+            {
+                ss << "Switch";
+                break;
+            }
+            result /= parseTokenizationThis(gc);
+            if(result.success())
+            {
+                ss << "This";
+                break;
+            }
+            result /= parseTokenizationThrow(gc);
+            if(result.success())
+            {
+                ss << "Throw";
+                break;
+            }
+            result /= parseTokenizationTry(gc);
+            if(result.success())
+            {
+                ss << "Try";
+                break;
+            }
+            result /= parseTokenizationTypeOf(gc);
+            if(result.success())
+            {
+                ss << "TypeOf";
+                break;
+            }
+            result /= parseTokenizationVar(gc);
+            if(result.success())
+            {
+                ss << "Var";
+                break;
+            }
+            result /= parseTokenizationVoid(gc);
+            if(result.success())
+            {
+                ss << "Void";
+                break;
+            }
+            result /= parseTokenizationWhile(gc);
+            if(result.success())
+            {
+                ss << "While";
+                break;
+            }
+            result /= parseTokenizationWith(gc);
+            if(result.success())
+            {
+                ss << "With";
+                break;
+            }
+            result /= parseTokenizationYield(gc);
+            if(result.success())
+            {
+                ss << "Yield";
+                break;
+            }
+            result /= parseTokenizationBooleanLiteral(gc);
+            if(result.success())
+            {
+                ss << "BooleanLiteral: booleanLiteralValue = "
+                   << getRuleStatuses(startPosition).booleanLiteralValue;
+                break;
+            }
+            result /= parseTokenizationIdentifier(gc);
+            if(result.success())
+            {
+                ss << "Identifier: identifierNameValue = ";
+                writeString(ss,
+                            gc.readString(Handle<gc::StringReference>(
+                                gc, getRuleStatuses(startPosition).identifierNameValue)));
+                break;
+            }
+            result /= parseTokenizationNumericLiteral(gc);
+            if(result.success())
+            {
+                ss << "NumericLiteral: numericLiteralValue = ";
+                writeString(ss,
+                            value::DoubleHandle::toStringValue(
+                                getRuleStatuses(startPosition).numericLiteralValue));
+                break;
+            }
+            result /= parseTokenizationStringLiteral(gc);
+            if(result.success())
+            {
+                ss << "StringLiteral: stringLiteralValue = ";
+                writeString(ss,
+                            gc.readString(Handle<gc::StringReference>(
+                                gc, getRuleStatuses(startPosition).stringLiteralValue)));
+                break;
+            }
+            if(parseRegularExpression)
+            {
+                result /= parseTokenizationRegularExpressionLiteral(gc);
+                if(result.success())
+                {
+                    ss << "RegularExpressionLiteral: regularExpressionLiteralValue = ";
+                    writeString(
+                        ss,
+                        gc.readString(Handle<gc::StringReference>(
+                            gc, getRuleStatuses(startPosition).regularExpressionLiteralValue)));
+                    ss << " regularExpressionLiteralFlagsValue = ";
+                    writeString(
+                        ss,
+                        gc.readString(Handle<gc::StringReference>(
+                            gc,
+                            getRuleStatuses(startPosition).regularExpressionLiteralFlagsValue)));
+                    break;
+                }
+            }
+            result /= parseTokenizationTemplateHead(gc);
+            if(result.success())
+            {
+                ss << "TemplateHead: templateValue = ";
+                writeString(ss,
+                            gc.readString(Handle<gc::StringReference>(
+                                gc, getRuleStatuses(startPosition).templateValue)));
+                ss << " templateRawValue = ";
+                writeString(ss,
+                            gc.readString(Handle<gc::StringReference>(
+                                gc, getRuleStatuses(startPosition).templateRawValue)));
+                break;
+            }
+            result /= parseTokenizationNoSubstitutionTemplate(gc);
+            if(result.success())
+            {
+                ss << "NoSubstitutionTemplate: templateValue = ";
+                writeString(ss,
+                            gc.readString(Handle<gc::StringReference>(
+                                gc, getRuleStatuses(startPosition).templateValue)));
+                ss << " templateRawValue = ";
+                writeString(ss,
+                            gc.readString(Handle<gc::StringReference>(
+                                gc, getRuleStatuses(startPosition).templateRawValue)));
+                break;
+            }
+            if(parseTemplateContinuation)
+            {
+                result /= parseTokenizationTemplateMiddle(gc);
+                if(result.success())
+                {
+                    ss << "TemplateMiddle: templateValue = ";
+                    writeString(ss,
+                                gc.readString(Handle<gc::StringReference>(
+                                    gc, getRuleStatuses(startPosition).templateValue)));
+                    ss << " templateRawValue = ";
+                    writeString(ss,
+                                gc.readString(Handle<gc::StringReference>(
+                                    gc, getRuleStatuses(startPosition).templateRawValue)));
+                    break;
+                }
+                result /= parseTokenizationTemplateTail(gc);
+                if(result.success())
+                {
+                    ss << "TemplateMiddle: templateValue = ";
+                    writeString(ss,
+                                gc.readString(Handle<gc::StringReference>(
+                                    gc, getRuleStatuses(startPosition).templateValue)));
+                    ss << " templateRawValue = ";
+                    writeString(ss,
+                                gc.readString(Handle<gc::StringReference>(
+                                    gc, getRuleStatuses(startPosition).templateRawValue)));
+                    break;
+                }
+            }
+            result /= parseTokenizationLBrace(gc);
+            if(result.success())
+            {
+                ss << "LBrace";
+                break;
+            }
+            if(!parseTemplateContinuation)
+            {
+                result /= parseTokenizationRBrace(gc);
+                if(result.success())
+                {
+                    ss << "RBrace";
+                    break;
+                }
+            }
+            result /= parseTokenizationLParen(gc);
+            if(result.success())
+            {
+                ss << "LParen";
+                break;
+            }
+            result /= parseTokenizationRParen(gc);
+            if(result.success())
+            {
+                ss << "RParen";
+                break;
+            }
+            result /= parseTokenizationLBracket(gc);
+            if(result.success())
+            {
+                ss << "LBracket";
+                break;
+            }
+            result /= parseTokenizationRBracket(gc);
+            if(result.success())
+            {
+                ss << "RBracket";
+                break;
+            }
+            result /= parseTokenizationPeriod(gc);
+            if(result.success())
+            {
+                ss << "Period";
+                break;
+            }
+            result /= parseTokenizationEllipsis(gc);
+            if(result.success())
+            {
+                ss << "Ellipsis";
+                break;
+            }
+            result /= parseTokenizationSemicolon(gc);
+            if(result.success())
+            {
+                ss << "Semicolon";
+                break;
+            }
+            result /= parseTokenizationComma(gc);
+            if(result.success())
+            {
+                ss << "Comma";
+                break;
+            }
+            result /= parseTokenizationLAngle(gc);
+            if(result.success())
+            {
+                ss << "LAngle";
+                break;
+            }
+            result /= parseTokenizationRAngle(gc);
+            if(result.success())
+            {
+                ss << "RAngle";
+                break;
+            }
+            result /= parseTokenizationLAngleEqual(gc);
+            if(result.success())
+            {
+                ss << "LAngleEqual";
+                break;
+            }
+            result /= parseTokenizationRAngleEqual(gc);
+            if(result.success())
+            {
+                ss << "RAngleEqual";
+                break;
+            }
+            result /= parseTokenizationEqualEqual(gc);
+            if(result.success())
+            {
+                ss << "EqualEqual";
+                break;
+            }
+            result /= parseTokenizationEMarkEqual(gc);
+            if(result.success())
+            {
+                ss << "EMarkEqual";
+                break;
+            }
+            result /= parseTokenizationEqualEqualEqual(gc);
+            if(result.success())
+            {
+                ss << "EqualEqualEqual";
+                break;
+            }
+            result /= parseTokenizationEMarkEqualEqual(gc);
+            if(result.success())
+            {
+                ss << "EMarkEqualEqual";
+                break;
+            }
+            result /= parseTokenizationPlus(gc);
+            if(result.success())
+            {
+                ss << "Plus";
+                break;
+            }
+            result /= parseTokenizationMinus(gc);
+            if(result.success())
+            {
+                ss << "Minus";
+                break;
+            }
+            result /= parseTokenizationStar(gc);
+            if(result.success())
+            {
+                ss << "Star";
+                break;
+            }
+            result /= parseTokenizationPercent(gc);
+            if(result.success())
+            {
+                ss << "Percent";
+                break;
+            }
+            result /= parseTokenizationPlusPlus(gc);
+            if(result.success())
+            {
+                ss << "PlusPlus";
+                break;
+            }
+            result /= parseTokenizationMinusMinus(gc);
+            if(result.success())
+            {
+                ss << "MinusMinus";
+                break;
+            }
+            result /= parseTokenizationLAngleLAngle(gc);
+            if(result.success())
+            {
+                ss << "LAngleLAngle";
+                break;
+            }
+            result /= parseTokenizationRAngleRAngle(gc);
+            if(result.success())
+            {
+                ss << "RAngleRAngle";
+                break;
+            }
+            result /= parseTokenizationRAngleRAngleRAngle(gc);
+            if(result.success())
+            {
+                ss << "RAngleRAngleRAngle";
+                break;
+            }
+            result /= parseTokenizationAmp(gc);
+            if(result.success())
+            {
+                ss << "Amp";
+                break;
+            }
+            result /= parseTokenizationPipe(gc);
+            if(result.success())
+            {
+                ss << "Pipe";
+                break;
+            }
+            result /= parseTokenizationCaret(gc);
+            if(result.success())
+            {
+                ss << "Caret";
+                break;
+            }
+            result /= parseTokenizationEMark(gc);
+            if(result.success())
+            {
+                ss << "EMark";
+                break;
+            }
+            result /= parseTokenizationTilde(gc);
+            if(result.success())
+            {
+                ss << "Tilde";
+                break;
+            }
+            result /= parseTokenizationAmpAmp(gc);
+            if(result.success())
+            {
+                ss << "AmpAmp";
+                break;
+            }
+            result /= parseTokenizationPipePipe(gc);
+            if(result.success())
+            {
+                ss << "PipePipe";
+                break;
+            }
+            result /= parseTokenizationQMark(gc);
+            if(result.success())
+            {
+                ss << "QMark";
+                break;
+            }
+            result /= parseTokenizationColon(gc);
+            if(result.success())
+            {
+                ss << "Colon";
+                break;
+            }
+            result /= parseTokenizationEqual(gc);
+            if(result.success())
+            {
+                ss << "Equal";
+                break;
+            }
+            result /= parseTokenizationPlusEqual(gc);
+            if(result.success())
+            {
+                ss << "PlusEqual";
+                break;
+            }
+            result /= parseTokenizationMinusEqual(gc);
+            if(result.success())
+            {
+                ss << "MinusEqual";
+                break;
+            }
+            result /= parseTokenizationStarEqual(gc);
+            if(result.success())
+            {
+                ss << "StarEqual";
+                break;
+            }
+            result /= parseTokenizationPercentEqual(gc);
+            if(result.success())
+            {
+                ss << "PercentEqual";
+                break;
+            }
+            result /= parseTokenizationLAngleLAngleEqual(gc);
+            if(result.success())
+            {
+                ss << "LAngleLAngleEqual";
+                break;
+            }
+            result /= parseTokenizationRAngleRAngleEqual(gc);
+            if(result.success())
+            {
+                ss << "RAngleRAngleEqual";
+                break;
+            }
+            result /= parseTokenizationRAngleRAngleRAngleEqual(gc);
+            if(result.success())
+            {
+                ss << "RAngleRAngleRAngleEqual";
+                break;
+            }
+            result /= parseTokenizationAmpEqual(gc);
+            if(result.success())
+            {
+                ss << "AmpEqual";
+                break;
+            }
+            result /= parseTokenizationPipeEqual(gc);
+            if(result.success())
+            {
+                ss << "PipeEqual";
+                break;
+            }
+            result /= parseTokenizationCaretEqual(gc);
+            if(result.success())
+            {
+                ss << "CaretEqual";
+                break;
+            }
+            result /= parseTokenizationEqualRAngle(gc);
+            if(result.success())
+            {
+                ss << "EqualRAngle";
+                break;
+            }
+            if(!parseRegularExpression)
+            {
+                result /= parseTokenizationFSlash(gc);
+                if(result.success())
+                {
+                    ss << "FSlash";
+                    break;
+                }
+                result /= parseTokenizationFSlashEqual(gc);
+                if(result.success())
+                {
+                    ss << "FSlashEqual";
+                    break;
+                }
+            }
+            if(!result.success())
+            {
+                writeString(ss,
+                            Location(SourceHandle(gc, source), result.startPositionOrErrorPosition)
+                                .toString());
+                ss << ": ";
+                ss << "Error: ";
+                writeString(ss, result.errorMessage);
+                std::cout << ss.str() << std::endl;
+                return false;
+            }
+        } while(false);
+        std::cout << ss.str() << std::endl;
+        return true;
+    }
+    template <RuleStatus (Parser::*parseTokenization)(GC &gc)>
+    RuleStatus parseSeperatorAndToken(GC &gc,
+                                      void (*finalCopy)(RuleStatuses &dest,
+                                                        RuleStatuses &src) = nullptr)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.tokenizationTemplateMiddleStatus;
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
+            return retval;
+        }
+        std::size_t startPosition = currentPosition;
+        retval = parseTokenizationSeperator(gc);
+        if(retval.fail())
+        {
+            currentPosition = startPosition;
+            return retval;
+        }
+        std::size_t afterSeperatorPosition = currentPosition;
+        retval = (this->*parseTokenization)(gc);
+        if(retval.fail())
+        {
+            currentPosition = startPosition;
+            return retval;
+        }
+        if(finalCopy)
+            finalCopy(statuses, getRuleStatuses(afterSeperatorPosition));
+        return retval;
+    }
+    RuleStatus parseIdentifierName(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationIdentifierName>(
+            gc,
+            [](RuleStatuses &dest, RuleStatuses &src)
+            {
+                dest.identifierNameValue = src.identifierNameValue;
+            });
+    }
+    RuleStatus parseIdentifier(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationIdentifier>(
+            gc,
+            [](RuleStatuses &dest, RuleStatuses &src)
+            {
+                dest.identifierNameValue = src.identifierNameValue;
+            });
     }
     RuleStatus parseScript(GC &gc)
     {
@@ -2389,6 +3177,12 @@ public:
     {
         constexpr_assert(false);
 #warning finish
+    }
+    void test(GC &gc)
+    {
+        while(testParseToken(false, false, gc))
+        {
+        }
     }
 };
 
@@ -2413,6 +3207,27 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
     parser.parseScript(gc);
     return handleScope.escapeHandle(
         codeEmitter.finishGlobalCode(Location(source, source.get()->contents.size()), gc));
+}
+
+void testParse(SourceHandle source, GC &gc)
+{
+    HandleScope handleScope(gc);
+    auto codeEmitterUniquePtr = std::unique_ptr<CodeEmitter>(new CodeEmitter());
+    auto &codeEmitter = *codeEmitterUniquePtr;
+    auto codeEmitterObject =
+        value::ObjectHandle::create(std::move(codeEmitterUniquePtr), value::NullHandle(), gc);
+    static_cast<void>(codeEmitterObject);
+    auto astTranslatorUniquePtr = std::unique_ptr<ASTTranslator>(new ASTTranslator(codeEmitter));
+    auto &astTranslator = *astTranslatorUniquePtr;
+    auto astTranslatorObject =
+        value::ObjectHandle::create(std::move(astTranslatorUniquePtr), value::NullHandle(), gc);
+    static_cast<void>(astTranslatorObject);
+    auto parserUniquePtr = std::unique_ptr<Parser>(new Parser(astTranslator, source));
+    auto &parser = *parserUniquePtr;
+    auto parserObject =
+        value::ObjectHandle::create(std::move(parserUniquePtr), value::NullHandle(), gc);
+    static_cast<void>(parserObject);
+    parser.test(gc);
 }
 }
 }

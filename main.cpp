@@ -31,7 +31,9 @@ namespace test
 {
 const auto testSource =
     uR"(// test
-123;
+a.true+1 ;
+String.raw`abc\u{11000}d$a`;
+ /*/
 )";
 void main()
 {
@@ -45,12 +47,18 @@ void main()
     {
         try
         {
+            auto source = gc.createSource(u"builtin:testSource.js", testSource);
+#if 0
             auto value =
-                parser::parseScript(gc.createSource(u"builtin:testSource.js", testSource), gc)
+                parser::parseScript(source, gc)
                     .call(ObjectHandle::getGlobalObject(gc), {}, gc)
                     .toString(gc);
             writeString(std::cout, value.getValue(gc));
             std::cout << std::endl;
+#else
+#warning testing parser
+            parser::testParse(source, gc);
+#endif
         }
         catch(gc::ScriptException &e)
         {
