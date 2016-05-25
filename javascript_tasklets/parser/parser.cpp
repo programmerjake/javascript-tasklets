@@ -3149,7 +3149,7 @@ public:
             finalCopy(statuses, getRuleStatuses(afterSeperatorPosition));
         return retval;
     }
-    RuleStatus parseIdentifierName(GC &gc)
+    RuleStatus parseTokenIdentifierName(GC &gc)
     {
         return parseSeperatorAndToken<&Parser::parseTokenizationIdentifierName>(
             gc,
@@ -3158,7 +3158,7 @@ public:
                 dest.identifierNameValue = src.identifierNameValue;
             });
     }
-    RuleStatus parseIdentifier(GC &gc)
+    RuleStatus parseTokenIdentifier(GC &gc)
     {
         return parseSeperatorAndToken<&Parser::parseTokenizationIdentifier>(
             gc,
@@ -3166,6 +3166,473 @@ public:
             {
                 dest.identifierNameValue = src.identifierNameValue;
             });
+    }
+    RuleStatus parseTokenLBrace(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationLBrace>(gc);
+    }
+    RuleStatus parseTokenRBrace(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationRBrace>(gc);
+    }
+    RuleStatus parseTokenLParen(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationLParen>(gc);
+    }
+    RuleStatus parseTokenRParen(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationRParen>(gc);
+    }
+    RuleStatus parseTokenLBracket(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationLBracket>(gc);
+    }
+    RuleStatus parseTokenRBracket(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationRBracket>(gc);
+    }
+    RuleStatus parseTokenPeriod(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationPeriod>(gc);
+    }
+    RuleStatus parseTokenEllipsis(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationEllipsis>(gc);
+    }
+    RuleStatus parseTokenSemicolon(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationSemicolon>(gc);
+    }
+    RuleStatus parseTokenComma(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationComma>(gc);
+    }
+    RuleStatus parseTokenLAngle(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationLAngle>(gc);
+    }
+    RuleStatus parseTokenRAngle(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationRAngle>(gc);
+    }
+    RuleStatus parseTokenLAngleEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationLAngleEqual>(gc);
+    }
+    RuleStatus parseTokenRAngleEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationRAngleEqual>(gc);
+    }
+    RuleStatus parseTokenEqualEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationEqualEqual>(gc);
+    }
+    RuleStatus parseTokenEMarkEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationEMarkEqual>(gc);
+    }
+    RuleStatus parseTokenEqualEqualEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationEqualEqualEqual>(gc);
+    }
+    RuleStatus parseTokenEMarkEqualEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationEMarkEqualEqual>(gc);
+    }
+    RuleStatus parseTokenPlus(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationPlus>(gc);
+    }
+    RuleStatus parseTokenMinus(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationMinus>(gc);
+    }
+    RuleStatus parseTokenStar(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationStar>(gc);
+    }
+    RuleStatus parseTokenPercent(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationPercent>(gc);
+    }
+    RuleStatus parseTokenPlusPlus(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationPlusPlus>(gc);
+    }
+    RuleStatus parseTokenMinusMinus(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationMinusMinus>(gc);
+    }
+    RuleStatus parseTokenLAngleLAngle(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationLAngleLAngle>(gc);
+    }
+    RuleStatus parseTokenRAngleRAngle(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationRAngleRAngle>(gc);
+    }
+    RuleStatus parseTokenRAngleRAngleRAngle(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationRAngleRAngleRAngle>(gc);
+    }
+    RuleStatus parseTokenAmp(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationAmp>(gc);
+    }
+    RuleStatus parseTokenPipe(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationPipe>(gc);
+    }
+    RuleStatus parseTokenCaret(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationCaret>(gc);
+    }
+    RuleStatus parseTokenEMark(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationEMark>(gc);
+    }
+    RuleStatus parseTokenTilde(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationTilde>(gc);
+    }
+    RuleStatus parseTokenAmpAmp(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationAmpAmp>(gc);
+    }
+    RuleStatus parseTokenPipePipe(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationPipePipe>(gc);
+    }
+    RuleStatus parseTokenQMark(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationQMark>(gc);
+    }
+    RuleStatus parseTokenColon(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationColon>(gc);
+    }
+    RuleStatus parseTokenEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationEqual>(gc);
+    }
+    RuleStatus parseTokenPlusEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationPlusEqual>(gc);
+    }
+    RuleStatus parseTokenMinusEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationMinusEqual>(gc);
+    }
+    RuleStatus parseTokenStarEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationStarEqual>(gc);
+    }
+    RuleStatus parseTokenPercentEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationPercentEqual>(gc);
+    }
+    RuleStatus parseTokenLAngleLAngleEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationLAngleLAngleEqual>(gc);
+    }
+    RuleStatus parseTokenRAngleRAngleEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationRAngleRAngleEqual>(gc);
+    }
+    RuleStatus parseTokenRAngleRAngleRAngleEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationRAngleRAngleRAngleEqual>(gc);
+    }
+    RuleStatus parseTokenAmpEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationAmpEqual>(gc);
+    }
+    RuleStatus parseTokenPipeEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationPipeEqual>(gc);
+    }
+    RuleStatus parseTokenCaretEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationCaretEqual>(gc);
+    }
+    RuleStatus parseTokenEqualRAngle(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationEqualRAngle>(gc);
+    }
+    RuleStatus parseTokenFSlash(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationFSlash>(gc);
+    }
+    RuleStatus parseTokenFSlashEqual(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationFSlashEqual>(gc);
+    }
+    RuleStatus parseTokenAwait(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationAwait>(gc);
+    }
+    RuleStatus parseTokenBreak(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationBreak>(gc);
+    }
+    RuleStatus parseTokenCase(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationCase>(gc);
+    }
+    RuleStatus parseTokenCatch(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationCatch>(gc);
+    }
+    RuleStatus parseTokenClass(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationClass>(gc);
+    }
+    RuleStatus parseTokenConst(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationConst>(gc);
+    }
+    RuleStatus parseTokenContinue(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationContinue>(gc);
+    }
+    RuleStatus parseTokenDebugger(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationDebugger>(gc);
+    }
+    RuleStatus parseTokenDefault(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationDefault>(gc);
+    }
+    RuleStatus parseTokenDelete(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationDelete>(gc);
+    }
+    RuleStatus parseTokenDo(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationDo>(gc);
+    }
+    RuleStatus parseTokenElse(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationElse>(gc);
+    }
+    RuleStatus parseTokenEnum(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationEnum>(gc);
+    }
+    RuleStatus parseTokenExport(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationExport>(gc);
+    }
+    RuleStatus parseTokenExtends(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationExtends>(gc);
+    }
+    RuleStatus parseTokenFalse(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationFalse>(gc);
+    }
+    RuleStatus parseTokenFinally(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationFinally>(gc);
+    }
+    RuleStatus parseTokenFor(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationFor>(gc);
+    }
+    RuleStatus parseTokenFunction(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationFunction>(gc);
+    }
+    RuleStatus parseTokenIf(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationIf>(gc);
+    }
+    RuleStatus parseTokenImport(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationImport>(gc);
+    }
+    RuleStatus parseTokenIn(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationIn>(gc);
+    }
+    RuleStatus parseTokenInstanceOf(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationInstanceOf>(gc);
+    }
+    RuleStatus parseTokenNew(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationNew>(gc);
+    }
+    RuleStatus parseTokenNull(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationNull>(gc);
+    }
+    RuleStatus parseTokenReturn(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationReturn>(gc);
+    }
+    RuleStatus parseTokenSuper(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationSuper>(gc);
+    }
+    RuleStatus parseTokenSwitch(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationSwitch>(gc);
+    }
+    RuleStatus parseTokenThis(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationThis>(gc);
+    }
+    RuleStatus parseTokenThrow(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationThrow>(gc);
+    }
+    RuleStatus parseTokenTrue(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationTrue>(gc);
+    }
+    RuleStatus parseTokenTry(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationTry>(gc);
+    }
+    RuleStatus parseTokenTypeOf(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationTypeOf>(gc);
+    }
+    RuleStatus parseTokenVar(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationVar>(gc);
+    }
+    RuleStatus parseTokenVoid(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationVoid>(gc);
+    }
+    RuleStatus parseTokenWhile(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationWhile>(gc);
+    }
+    RuleStatus parseTokenWith(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationWith>(gc);
+    }
+    RuleStatus parseTokenYield(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationYield>(gc);
+    }
+    RuleStatus parseTokenBooleanLiteral(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationBooleanLiteral>(
+            gc,
+            [](RuleStatuses &dest, RuleStatuses &src)
+            {
+                dest.booleanLiteralValue = src.booleanLiteralValue;
+            });
+    }
+    RuleStatus parseTokenNumericLiteral(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationNumericLiteral>(
+            gc,
+            [](RuleStatuses &dest, RuleStatuses &src)
+            {
+                dest.numericLiteralValue = src.numericLiteralValue;
+            });
+    }
+    RuleStatus parseTokenStringLiteral(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationStringLiteral>(
+            gc,
+            [](RuleStatuses &dest, RuleStatuses &src)
+            {
+                dest.stringLiteralValue = src.stringLiteralValue;
+            });
+    }
+    RuleStatus parseTokenRegularExpressionLiteral(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationRegularExpressionLiteral>(
+            gc,
+            [](RuleStatuses &dest, RuleStatuses &src)
+            {
+                dest.regularExpressionLiteralValue = src.regularExpressionLiteralValue;
+                dest.regularExpressionLiteralFlagsValue = src.regularExpressionLiteralFlagsValue;
+            });
+    }
+    RuleStatus parseTokenNoSubstitutionTemplate(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationNoSubstitutionTemplate>(
+            gc,
+            [](RuleStatuses &dest, RuleStatuses &src)
+            {
+                dest.templateValue = src.templateValue;
+                dest.templateRawValue = src.templateRawValue;
+            });
+    }
+    RuleStatus parseTokenTemplateHead(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationTemplateHead>(
+            gc,
+            [](RuleStatuses &dest, RuleStatuses &src)
+            {
+                dest.templateValue = src.templateValue;
+                dest.templateRawValue = src.templateRawValue;
+            });
+    }
+    RuleStatus parseTokenTemplateMiddle(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationTemplateMiddle>(
+            gc,
+            [](RuleStatuses &dest, RuleStatuses &src)
+            {
+                dest.templateValue = src.templateValue;
+                dest.templateRawValue = src.templateRawValue;
+            });
+    }
+    RuleStatus parseTokenTemplateTail(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationTemplateTail>(
+            gc,
+            [](RuleStatuses &dest, RuleStatuses &src)
+            {
+                dest.templateValue = src.templateValue;
+                dest.templateRawValue = src.templateRawValue;
+            });
+    }
+    RuleStatus parseOrInsertSemicolon(GC &gc, bool lineTerminatorAllowed, bool isTerminatingSemicolonInDoWhile)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        auto startPosition = currentPosition;
+        auto retval = parseTokenizationSeperator(gc);
+        if(retval.fail())
+            return retval;
+        if(statuses.lineSplit && !lineTerminatorAllowed)
+        {
+            currentPosition = startPosition;
+            return RuleStatus::makeSuccess(startPosition, startPosition);
+        }
+        retval = parseTokenSemicolon(gc);
+        if(retval.success())
+            return retval;
+        if(statuses.lineSplit)
+        {
+            currentPosition = startPosition;
+            return RuleStatus::makeSuccess(startPosition, startPosition);
+        }
+        if(getCodePoint(currentPosition) == eofCodePoint)
+        {
+            currentPosition = startPosition;
+            return RuleStatus::makeSuccess(startPosition, startPosition);
+        }
+        if(getCodePoint(currentPosition) == U'}')
+        {
+            currentPosition = startPosition;
+            return RuleStatus::makeSuccess(startPosition, startPosition);
+        }
+        if(isTerminatingSemicolonInDoWhile)
+        {
+            currentPosition = startPosition;
+            return RuleStatus::makeSuccess(startPosition, startPosition);
+        }
+        currentPosition = startPosition;
+        return retval;
     }
     RuleStatus parseScript(GC &gc)
     {
