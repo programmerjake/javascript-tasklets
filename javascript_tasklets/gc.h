@@ -1210,6 +1210,15 @@ private:
     struct ValueMarker;
     struct ObjectMemberDescriptorMarker;
 
+public:
+    struct WarningWriter
+    {
+        virtual ~WarningWriter() = default;
+        virtual void writeWarning(const parser::Location &location, const String &message) = 0;
+        virtual void writeWarning(const parser::Location &location, String &&message) = 0;
+        virtual void writeWarning(const parser::Location &location, const char16_t *message) = 0;
+    };
+
 private:
     std::vector<Object *> objects, oldObjects;
     std::vector<std::size_t> freeObjectIndexesList;
@@ -1237,6 +1246,7 @@ private:
     ExceptionBase *exceptionListHead;
     ExceptionBase *exceptionListTail;
     const LocationGetter *locationGetterStack;
+    std::unique_ptr<WarningWriter> warningWriter;
 
 private:
     ObjectReference allocateObjectIndex();
@@ -1448,6 +1458,25 @@ public:
     Locations getLocations() noexcept
     {
         return Locations(this);
+    }
+    void setWarningWriter(std::unique_ptr<WarningWriter> warningWriter)
+    {
+        this->warningWriter = std::move(warningWriter);
+    }
+    void writeWarning(const parser::Location &location, const String &message)
+    {
+        if(warningWriter)
+            warningWriter->writeWarning(location, message);
+    }
+    void writeWarning(const parser::Location &location, String &&message)
+    {
+        if(warningWriter)
+            warningWriter->writeWarning(location, std::move(message));
+    }
+    void writeWarning(const parser::Location &location, const char16_t *message)
+    {
+        if(warningWriter)
+            warningWriter->writeWarning(location, message);
     }
 };
 

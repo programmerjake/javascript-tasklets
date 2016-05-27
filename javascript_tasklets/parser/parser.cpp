@@ -309,12 +309,31 @@ public:
             return operator=(operator/(rt));
         }
     };
+    template <typename T>
+    struct ArrayWithBoolIndex final
+    {
+        T falseValue;
+        T trueValue;
+        T &operator[](bool index)
+        {
+            return index ? trueValue : falseValue;
+        }
+        const T &operator[](bool index) const
+        {
+            return index ? trueValue : falseValue;
+        }
+    };
+    template <typename T>
+    using YieldOption = ArrayWithBoolIndex<T>;
+    template <typename T>
+    using ReturnOption = ArrayWithBoolIndex<T>;
     struct RuleStatuses final
     {
         gc::StringReference identifierNameValue;
         double numericLiteralValue = 0;
         bool booleanLiteralValue = false;
         gc::StringReference stringLiteralValue;
+        bool escapeInString = false;
         gc::StringReference regularExpressionLiteralValue;
         gc::StringReference regularExpressionLiteralFlagsValue;
         gc::StringReference templateRawValue;
@@ -336,6 +355,12 @@ public:
         RuleStatus tokenizationTemplateHeadStatus;
         RuleStatus tokenizationTemplateTailStatus;
         RuleStatus tokenizationTemplateMiddleStatus;
+        RuleStatus directivePrologueStatus;
+        bool directivePrologueHasUseStrict = false;
+        YieldOption<ReturnOption<RuleStatus>> statementStatus;
+        YieldOption<ReturnOption<RuleStatus>> statementListItemStatus;
+        YieldOption<ReturnOption<RuleStatus>> statementListStatus;
+        RuleStatus scriptStatus;
         void getGCReferences(gc::GCReferencesCallback &callback) const
         {
             callback(identifierNameValue);
@@ -460,6 +485,8 @@ public:
         RuleStatus &retval = statuses.tokenizationSeperatorStatus;
         if(!retval.empty())
         {
+            if(retval.success())
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
             return retval;
         }
         std::size_t startPosition = currentPosition;
@@ -1427,6 +1454,7 @@ public:
             currentPosition = startPosition;
             return retval;
         }
+        bool escapeInString = false;
         const auto enclosingQuoteCodePoint = codePoint;
         currentPosition = nextPosition;
         codePoint = getCodePoint(currentPosition, nextPosition);
@@ -1442,6 +1470,7 @@ public:
             }
             else if(codePoint == U'\\')
             {
+                escapeInString = true;
                 currentPosition = nextPosition;
                 codePoint = getCodePoint(currentPosition, nextPosition);
                 if(character_properties::javascriptLineTerminator(codePoint))
@@ -1469,6 +1498,7 @@ public:
         }
         currentPosition = nextPosition;
         statuses.stringLiteralValue = gc.internString(std::move(stringValue)).get();
+        statuses.escapeInString = escapeInString;
         retval = RuleStatus::makeSuccess(startPosition, currentPosition);
         return retval;
     }
@@ -2442,6 +2472,12 @@ public:
     {
         return parseTokenizationPunctuator(gc, Punctuator::FSlashEqual, u"missing /=");
     }
+    RuleStatus parseTokenizationEndOfFile(GC &gc)
+    {
+        if(getCodePoint(currentPosition) == eofCodePoint)
+            return RuleStatus::makeSuccess(currentPosition, currentPosition);
+        return RuleStatus::makeFailure(currentPosition, currentPosition, u"unexpected token");
+    }
     bool testParseToken(bool parseTemplateContinuation, bool parseRegularExpression, GC &gc)
     {
         HandleScope handleScope(gc);
@@ -2717,7 +2753,8 @@ public:
             result /= parseTokenizationStringLiteral(gc);
             if(result.success())
             {
-                ss << "StringLiteral: stringLiteralValue = ";
+                ss << "StringLiteral: escapeInString = "
+                   << getRuleStatuses(startPosition).escapeInString << " stringLiteralValue = ";
                 writeString(ss,
                             gc.readString(Handle<gc::StringReference>(
                                 gc, getRuleStatuses(startPosition).stringLiteralValue)));
@@ -3124,15 +3161,8 @@ public:
                                                         RuleStatuses &src) = nullptr)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
-        RuleStatus &retval = statuses.tokenizationTemplateMiddleStatus;
-        if(!retval.empty())
-        {
-            if(retval.success())
-                currentPosition = retval.endPositionOrErrorPriorityPosition;
-            return retval;
-        }
         std::size_t startPosition = currentPosition;
-        retval = parseTokenizationSeperator(gc);
+        RuleStatus retval = parseTokenizationSeperator(gc);
         if(retval.fail())
         {
             currentPosition = startPosition;
@@ -3544,6 +3574,7 @@ public:
             [](RuleStatuses &dest, RuleStatuses &src)
             {
                 dest.stringLiteralValue = src.stringLiteralValue;
+                dest.escapeInString = src.escapeInString;
             });
     }
     RuleStatus parseTokenRegularExpressionLiteral(GC &gc)
@@ -3596,7 +3627,13 @@ public:
                 dest.templateRawValue = src.templateRawValue;
             });
     }
-    RuleStatus parseOrInsertSemicolon(GC &gc, bool lineTerminatorAllowed, bool isTerminatingSemicolonInDoWhile)
+    RuleStatus parseTokenEndOfFile(GC &gc)
+    {
+        return parseSeperatorAndToken<&Parser::parseTokenizationEndOfFile>(gc);
+    }
+    RuleStatus parseOrInsertSemicolon(GC &gc,
+                                      bool lineTerminatorAllowed,
+                                      bool isTerminatingSemicolonInDoWhile)
     {
         RuleStatuses &statuses = getRuleStatuses(currentPosition);
         auto startPosition = currentPosition;
@@ -3634,11 +3671,175 @@ public:
         currentPosition = startPosition;
         return retval;
     }
+    RuleStatus parseDirectivePrologue(GC &gc)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.directivePrologueStatus;
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
+            return retval;
+        }
+        std::size_t startPosition = currentPosition;
+        std::size_t endPosition = startPosition;
+        bool hasUseStrict = false;
+        for(;;)
+        {
+            std::size_t stringLiteralPosition = currentPosition;
+            retval = parseTokenStringLiteral(gc);
+            if(retval.fail())
+                break;
+            auto &stringLiteralStatuses = getRuleStatuses(stringLiteralPosition);
+            if(stringLiteralStatuses.escapeInString)
+                break;
+            retval = parseOrInsertSemicolon(gc, true, false);
+            if(retval.fail())
+                break;
+            endPosition = currentPosition;
+            HandleScope handleScope(gc);
+            Handle<gc::StringReference> stringHandle(gc, stringLiteralStatuses.stringLiteralValue);
+            if(gc.readString(stringHandle) == u"use strict")
+            {
+                if(hasUseStrict)
+                {
+                    gc.writeWarning(Location(SourceHandle(gc, source), stringLiteralPosition),
+                                    u"multiple 'use strict' directives");
+                }
+                hasUseStrict = true;
+            }
+            else
+            {
+                gc.writeWarning(Location(SourceHandle(gc, source), stringLiteralPosition),
+                                u"unrecognized directive");
+            }
+        }
+        currentPosition = endPosition;
+        retval = RuleStatus::makeSuccess(startPosition, endPosition);
+        statuses.directivePrologueHasUseStrict = hasUseStrict;
+        return retval;
+    }
+    template <bool hasYield>
+    RuleStatus parseDeclaration(GC &gc)
+    {
+        std::size_t startPosition = currentPosition;
+        parseTokenIdentifierName(gc);
+        std::size_t errorPriorityPosition = currentPosition;
+        currentPosition = startPosition;
+        return RuleStatus::makeFailure(
+            startPosition, errorPriorityPosition, u"implement parseDeclaration");
+#warning finish
+    }
+    RuleStatus parseEmptyStatement(GC &gc)
+    {
+        return parseTokenSemicolon(gc);
+    }
+    RuleStatus parseDebuggerStatement(GC &gc)
+    {
+        std::size_t startPosition = currentPosition;
+        RuleStatus retval = parseTokenDebugger(gc);
+        if(retval.fail())
+            return retval;
+        retval = parseOrInsertSemicolon(gc, true, false);
+        if(retval.fail())
+        {
+            currentPosition = startPosition;
+            return retval;
+        }
+        return RuleStatus::makeSuccess(startPosition, currentPosition);
+    }
+    template <bool hasYield, bool hasReturn>
+    RuleStatus parseStatement(GC &gc)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.statementStatus[hasYield][hasReturn];
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
+            return retval;
+        }
+        retval = parseEmptyStatement(gc);
+        if(retval.success())
+            return retval;
+        retval /= parseDebuggerStatement(gc);
+        if(retval.success())
+            return retval;
+#warning finish
+        return retval;
+    }
+    template <bool hasYield, bool hasReturn>
+    RuleStatus parseStatementListItem(GC &gc)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.statementListItemStatus[hasYield][hasReturn];
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
+            return retval;
+        }
+        retval = parseDeclaration<hasYield>(gc);
+        if(retval.success())
+            return retval;
+        retval /= parseStatement<hasYield, hasReturn>(gc);
+        return retval;
+    }
+    template <bool hasYield, bool hasReturn>
+    RuleStatus parseStatementList(GC &gc)
+    {
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.statementListStatus[hasYield][hasReturn];
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
+            return retval;
+        }
+        std::size_t startPosition = currentPosition;
+        retval = parseStatementListItem<hasYield, hasReturn>(gc);
+        if(retval.fail())
+            return retval;
+        std::size_t endPosition = currentPosition;
+        while(true)
+        {
+            retval = parseStatementListItem<hasYield, hasReturn>(gc);
+            if(retval.fail())
+                break;
+            endPosition = currentPosition;
+        }
+        retval = RuleStatus::makeSuccess(startPosition, endPosition);
+        return retval;
+    }
+    RuleStatus parseScriptBody(GC &gc)
+    {
+        return parseStatementList<false, false>(gc);
+    }
     RuleStatus parseScript(GC &gc)
     {
-        constexpr_assert(false);
+        RuleStatuses &statuses = getRuleStatuses(currentPosition);
+        RuleStatus &retval = statuses.scriptStatus;
+        if(!retval.empty())
+        {
+            if(retval.success())
+                currentPosition = retval.endPositionOrErrorPriorityPosition;
+            return retval;
+        }
+        std::size_t startPosition = currentPosition;
+        retval = parseTokenEndOfFile(gc);
+        if(retval.success())
+            return retval;
+        retval /= parseScriptBody(gc);
+        if(retval.fail())
+            return retval;
+        retval = parseTokenEndOfFile(gc);
+        if(retval.fail())
+        {
+            currentPosition = startPosition;
+            return retval;
+        }
+        return retval;
 #warning finish
-        return RuleStatus();
     }
     void translateScript(GC &gc)
     {
@@ -3671,7 +3872,12 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
     auto parserObject =
         value::ObjectHandle::create(std::move(parserUniquePtr), value::NullHandle(), gc);
     static_cast<void>(parserObject);
-    parser.parseScript(gc);
+    auto status = parser.parseScript(gc);
+    if(status.fail())
+        value::ObjectHandle::throwSyntaxError(
+            status.errorMessage,
+            LocationHandle(gc, Location(source, status.startPositionOrErrorPosition)),
+            gc);
     return handleScope.escapeHandle(
         codeEmitter.finishGlobalCode(Location(source, source.get()->contents.size()), gc));
 }

@@ -30,10 +30,9 @@ using namespace javascript_tasklets;
 namespace test
 {
 const auto testSource =
-    uR"(// test
-a.true+1 ;
-String.raw`abc\u{11000}d$a`;
- /*/
+    uR"(
+debugger}
+debugger;;
 )";
 void main()
 {
@@ -48,7 +47,7 @@ void main()
         try
         {
             auto source = gc.createSource(u"builtin:testSource.js", testSource);
-#if 0
+#if 1
             auto value =
                 parser::parseScript(source, gc)
                     .call(ObjectHandle::getGlobalObject(gc), {}, gc)
