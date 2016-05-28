@@ -31,7 +31,7 @@ namespace test
 {
 const auto testSource =
     uR"(
-debugger}
+{{}debugger}
 debugger;;
 )";
 void main()
@@ -48,10 +48,9 @@ void main()
         {
             auto source = gc.createSource(u"builtin:testSource.js", testSource);
 #if 1
-            auto value =
-                parser::parseScript(source, gc)
-                    .call(ObjectHandle::getGlobalObject(gc), {}, gc)
-                    .toString(gc);
+            auto value = parser::parseScript(source, gc)
+                             .call(ObjectHandle::getGlobalObject(gc), {}, gc)
+                             .toString(gc);
             writeString(std::cout, value.getValue(gc));
             std::cout << std::endl;
 #else

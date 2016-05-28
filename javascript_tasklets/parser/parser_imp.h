@@ -147,6 +147,7 @@ public:
         RuleStatus tokenizationTemplateMiddleStatus;
         RuleStatus directivePrologueStatus;
         bool directivePrologueHasUseStrict = false;
+        YieldOption<ReturnOption<RuleStatus>> blockStatus;
         YieldOption<ReturnOption<RuleStatus>> statementStatus;
         YieldOption<ReturnOption<RuleStatus>> statementListItemStatus;
         YieldOption<ReturnOption<RuleStatus>> statementListStatus;
@@ -453,19 +454,23 @@ public:
                                       bool lineTerminatorAllowed,
                                       bool isTerminatingSemicolonInDoWhile);
     RuleStatus parseDirectivePrologue(GC &gc);
-    template <bool hasYield>
-    RuleStatus parseDeclaration(GC &gc);
-    RuleStatus parseEmptyStatement(GC &gc);
-    RuleStatus parseDebuggerStatement(GC &gc);
     template <bool hasYield, bool hasReturn>
     RuleStatus parseStatement(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseDeclaration(GC &gc);
     template <bool hasYield, bool hasReturn>
-    RuleStatus parseStatementListItem(GC &gc);
+    RuleStatus parseBlockStatement(GC &gc);
+    template <bool hasYield, bool hasReturn>
+    RuleStatus parseBlock(GC &gc);
     template <bool hasYield, bool hasReturn>
     RuleStatus parseStatementList(GC &gc);
-    RuleStatus parseScriptBody(GC &gc);
+    template <bool hasYield, bool hasReturn>
+    RuleStatus parseStatementListItem(GC &gc);
+    RuleStatus parseEmptyStatement(GC &gc);
+    RuleStatus parseDebuggerStatement(GC &gc);
     RuleStatus parseScript(GC &gc);
     void translateScript(GC &gc);
+    RuleStatus parseScriptBody(GC &gc);
     void test(GC &gc);
     static value::ObjectHandle mainParseScript(SourceHandle source, GC &gc);
     static void mainTestParse(SourceHandle source, GC &gc);

@@ -3728,6 +3728,31 @@ Parser::RuleStatus Parser::parseDirectivePrologue(GC &gc)
     return retval;
 }
 
+template <bool hasYield, bool hasReturn>
+Parser::RuleStatus Parser::parseStatement(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.statementStatus[hasYield][hasReturn];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    retval = parseBlockStatement<hasYield, hasReturn>(gc);
+    if(retval.success())
+        return retval;
+#warning finish
+    retval /= parseEmptyStatement(gc);
+    if(retval.success())
+        return retval;
+#warning finish
+    retval /= parseDebuggerStatement(gc);
+    if(retval.success())
+        return retval;
+    return retval;
+}
+
 template <bool hasYield>
 Parser::RuleStatus Parser::parseDeclaration(GC &gc)
 {
@@ -3740,62 +3765,42 @@ Parser::RuleStatus Parser::parseDeclaration(GC &gc)
 #warning finish
 }
 
-Parser::RuleStatus Parser::parseEmptyStatement(GC &gc)
+template <bool hasYield, bool hasReturn>
+Parser::RuleStatus Parser::parseBlockStatement(GC &gc)
 {
-    return parseTokenSemicolon(gc);
+    return parseBlock<hasYield, hasReturn>(gc);
 }
 
-Parser::RuleStatus Parser::parseDebuggerStatement(GC &gc)
+template <bool hasYield, bool hasReturn>
+Parser::RuleStatus Parser::parseBlock(GC &gc)
 {
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.blockStatus[hasYield][hasReturn];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
     std::size_t startPosition = currentPosition;
-    RuleStatus retval = parseTokenDebugger(gc);
+    retval = parseTokenLBrace(gc);
     if(retval.fail())
         return retval;
-    retval = parseOrInsertSemicolon(gc, true, false);
+    retval = parseTokenRBrace(gc);
+    if(retval.success())
+        return retval;
+    retval /= parseStatementList<hasYield, hasReturn>(gc);
     if(retval.fail())
     {
         currentPosition = startPosition;
         return retval;
     }
-    return RuleStatus::makeSuccess(startPosition, currentPosition);
-}
-
-template <bool hasYield, bool hasReturn>
-Parser::RuleStatus Parser::parseStatement(GC &gc)
-{
-    RuleStatuses &statuses = getRuleStatuses(currentPosition);
-    RuleStatus &retval = statuses.statementStatus[hasYield][hasReturn];
-    if(!retval.empty())
+    retval = parseTokenRBrace(gc);
+    if(retval.fail())
     {
-        if(retval.success())
-            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        currentPosition = startPosition;
         return retval;
     }
-    retval = parseEmptyStatement(gc);
-    if(retval.success())
-        return retval;
-    retval /= parseDebuggerStatement(gc);
-    if(retval.success())
-        return retval;
-#warning finish
-    return retval;
-}
-
-template <bool hasYield, bool hasReturn>
-Parser::RuleStatus Parser::parseStatementListItem(GC &gc)
-{
-    RuleStatuses &statuses = getRuleStatuses(currentPosition);
-    RuleStatus &retval = statuses.statementListItemStatus[hasYield][hasReturn];
-    if(!retval.empty())
-    {
-        if(retval.success())
-            currentPosition = retval.endPositionOrErrorPriorityPosition;
-        return retval;
-    }
-    retval = parseDeclaration<hasYield>(gc);
-    if(retval.success())
-        return retval;
-    retval /= parseStatement<hasYield, hasReturn>(gc);
     return retval;
 }
 
@@ -3826,9 +3831,42 @@ Parser::RuleStatus Parser::parseStatementList(GC &gc)
     return retval;
 }
 
-Parser::RuleStatus Parser::parseScriptBody(GC &gc)
+template <bool hasYield, bool hasReturn>
+Parser::RuleStatus Parser::parseStatementListItem(GC &gc)
 {
-    return parseStatementList<false, false>(gc);
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.statementListItemStatus[hasYield][hasReturn];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    retval = parseDeclaration<hasYield>(gc);
+    if(retval.success())
+        return retval;
+    retval /= parseStatement<hasYield, hasReturn>(gc);
+    return retval;
+}
+
+Parser::RuleStatus Parser::parseEmptyStatement(GC &gc)
+{
+    return parseTokenSemicolon(gc);
+}
+
+Parser::RuleStatus Parser::parseDebuggerStatement(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    RuleStatus retval = parseTokenDebugger(gc);
+    if(retval.fail())
+        return retval;
+    retval = parseOrInsertSemicolon(gc, true, false);
+    if(retval.fail())
+    {
+        currentPosition = startPosition;
+        return retval;
+    }
+    return RuleStatus::makeSuccess(startPosition, currentPosition);
 }
 
 Parser::RuleStatus Parser::parseScript(GC &gc)
@@ -3862,6 +3900,11 @@ void Parser::translateScript(GC &gc)
 {
     constexpr_assert(false);
 #warning finish
+}
+
+Parser::RuleStatus Parser::parseScriptBody(GC &gc)
+{
+    return parseStatementList<false, false>(gc);
 }
 
 void Parser::test(GC &gc)
