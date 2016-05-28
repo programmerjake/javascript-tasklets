@@ -117,6 +117,8 @@ public:
     using YieldOption = ArrayWithBoolIndex<T>;
     template <typename T>
     using ReturnOption = ArrayWithBoolIndex<T>;
+    template <typename T>
+    using InOption = ArrayWithBoolIndex<T>;
     struct RuleStatuses final
     {
         gc::StringReference identifierNameValue;
@@ -147,10 +149,14 @@ public:
         RuleStatus tokenizationTemplateMiddleStatus;
         RuleStatus directivePrologueStatus;
         bool directivePrologueHasUseStrict = false;
-        YieldOption<ReturnOption<RuleStatus>> blockStatus;
+        InOption<YieldOption<RuleStatus>> expressionStatus;
         YieldOption<ReturnOption<RuleStatus>> statementStatus;
-        YieldOption<ReturnOption<RuleStatus>> statementListItemStatus;
+        YieldOption<ReturnOption<RuleStatus>> blockStatus;
         YieldOption<ReturnOption<RuleStatus>> statementListStatus;
+        YieldOption<ReturnOption<RuleStatus>> statementListItemStatus;
+        YieldOption<RuleStatus> variableStatementStatus;
+        InOption<YieldOption<RuleStatus>> variableDeclarationListStatus;
+        YieldOption<RuleStatus> expressionStatementStatus;
         RuleStatus scriptStatus;
         void getGCReferences(gc::GCReferencesCallback &callback) const
         {
@@ -210,6 +216,7 @@ public:
     RuleStatus parseTokenizationImport(GC &gc);
     RuleStatus parseTokenizationIn(GC &gc);
     RuleStatus parseTokenizationInstanceOf(GC &gc);
+    RuleStatus parseTokenizationLet(GC &gc);
     RuleStatus parseTokenizationNew(GC &gc);
     RuleStatus parseTokenizationNull(GC &gc);
     RuleStatus parseTokenizationReturn(GC &gc);
@@ -426,6 +433,7 @@ public:
     RuleStatus parseTokenImport(GC &gc);
     RuleStatus parseTokenIn(GC &gc);
     RuleStatus parseTokenInstanceOf(GC &gc);
+    RuleStatus parseTokenLet(GC &gc);
     RuleStatus parseTokenNew(GC &gc);
     RuleStatus parseTokenNull(GC &gc);
     RuleStatus parseTokenReturn(GC &gc);
@@ -454,6 +462,10 @@ public:
                                       bool lineTerminatorAllowed,
                                       bool isTerminatingSemicolonInDoWhile);
     RuleStatus parseDirectivePrologue(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseAssignmentExpression(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseExpression(GC &gc);
     template <bool hasYield, bool hasReturn>
     RuleStatus parseStatement(GC &gc);
     template <bool hasYield>
@@ -466,7 +478,15 @@ public:
     RuleStatus parseStatementList(GC &gc);
     template <bool hasYield, bool hasReturn>
     RuleStatus parseStatementListItem(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseVariableStatement(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseVariableDeclarationList(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseVariableDeclaration(GC &gc);
     RuleStatus parseEmptyStatement(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseExpressionStatement(GC &gc);
     RuleStatus parseDebuggerStatement(GC &gc);
     RuleStatus parseScript(GC &gc);
     void translateScript(GC &gc);

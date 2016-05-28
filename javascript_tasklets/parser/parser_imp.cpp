@@ -435,6 +435,7 @@ Parser::RuleStatus Parser::parseTokenizationSeperator(GC &gc)
     }
     retval = RuleStatus::makeSuccess(startPosition, currentPosition);
     statuses.lineSplit = gotNewLine;
+    getRuleStatuses(currentPosition).lineSplit = gotNewLine;
     return retval;
 }
 
@@ -833,6 +834,11 @@ Parser::RuleStatus Parser::parseTokenizationIn(GC &gc)
 Parser::RuleStatus Parser::parseTokenizationInstanceOf(GC &gc)
 {
     return parseTokenizationKeyword(gc, u"instanceof", u"missing instanceof keyword");
+}
+
+Parser::RuleStatus Parser::parseTokenizationLet(GC &gc)
+{
+    return parseTokenizationKeyword(gc, u"let", u"missing let");
 }
 
 Parser::RuleStatus Parser::parseTokenizationNew(GC &gc)
@@ -3472,6 +3478,11 @@ Parser::RuleStatus Parser::parseTokenInstanceOf(GC &gc)
     return parseSeperatorAndToken<&Parser::parseTokenizationInstanceOf>(gc);
 }
 
+Parser::RuleStatus Parser::parseTokenLet(GC &gc)
+{
+    return parseSeperatorAndToken<&Parser::parseTokenizationLet>(gc);
+}
+
 Parser::RuleStatus Parser::parseTokenNew(GC &gc)
 {
     return parseSeperatorAndToken<&Parser::parseTokenizationNew>(gc);
@@ -3728,6 +3739,52 @@ Parser::RuleStatus Parser::parseDirectivePrologue(GC &gc)
     return retval;
 }
 
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseAssignmentExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseAssignmentExpression");
+#warning finish
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseExpression(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.expressionStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseAssignmentExpression<hasIn, hasYield>(gc);
+    if(retval.fail())
+    {
+        currentPosition = startPosition;
+        return retval;
+    }
+    while(true)
+    {
+        retval = parseTokenComma(gc);
+        if(retval.fail())
+            break;
+        retval = parseAssignmentExpression<hasIn, hasYield>(gc);
+        if(retval.fail())
+        {
+            currentPosition = startPosition;
+            return retval;
+        }
+    }
+    retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+    return retval;
+}
+
 template <bool hasYield, bool hasReturn>
 Parser::RuleStatus Parser::parseStatement(GC &gc)
 {
@@ -3742,8 +3799,13 @@ Parser::RuleStatus Parser::parseStatement(GC &gc)
     retval = parseBlockStatement<hasYield, hasReturn>(gc);
     if(retval.success())
         return retval;
-#warning finish
+    retval /= parseVariableStatement<hasYield>(gc);
+    if(retval.success())
+        return retval;
     retval /= parseEmptyStatement(gc);
+    if(retval.success())
+        return retval;
+    retval /= parseExpressionStatement<hasYield>(gc);
     if(retval.success())
         return retval;
 #warning finish
@@ -3824,9 +3886,18 @@ Parser::RuleStatus Parser::parseStatementList(GC &gc)
     {
         retval = parseStatementListItem<hasYield, hasReturn>(gc);
         if(retval.fail())
-            break;
+        {
+            if(parseTokenEndOfFile(gc).success() || parseTokenRBrace(gc).success()
+               || parseTokenCase(gc).success() || parseTokenDefault(gc).success())
+            {
+                break;
+            }
+            currentPosition = startPosition;
+            return retval;
+        }
         endPosition = currentPosition;
     }
+    currentPosition = endPosition;
     retval = RuleStatus::makeSuccess(startPosition, endPosition);
     return retval;
 }
@@ -3849,9 +3920,138 @@ Parser::RuleStatus Parser::parseStatementListItem(GC &gc)
     return retval;
 }
 
+template <bool hasYield>
+Parser::RuleStatus Parser::parseVariableStatement(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.variableStatementStatus[hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseTokenVar(gc);
+    if(retval.fail())
+        return retval;
+    retval = parseVariableDeclarationList<true, hasYield>(gc);
+    if(retval.fail())
+    {
+        currentPosition = startPosition;
+        return retval;
+    }
+    retval = parseOrInsertSemicolon(gc, true, false);
+    if(retval.fail())
+    {
+        currentPosition = startPosition;
+        return retval;
+    }
+    return retval;
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseVariableDeclarationList(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.variableDeclarationListStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseVariableDeclaration<hasIn, hasYield>(gc);
+    if(retval.fail())
+        return retval;
+    while(true)
+    {
+        retval = parseTokenComma(gc);
+        if(retval.fail())
+            break;
+        retval = parseVariableDeclaration<hasIn, hasYield>(gc);
+        if(retval.fail())
+        {
+            currentPosition = startPosition;
+            return retval;
+        }
+    }
+    retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+    return retval;
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseVariableDeclaration(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    parseTokenLBrace(gc);
+    if(currentPosition > errorPriorityPosition)
+        errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    parseTokenLBracket(gc);
+    if(currentPosition > errorPriorityPosition)
+        errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseVariableDeclaration");
+#warning finish
+}
+
 Parser::RuleStatus Parser::parseEmptyStatement(GC &gc)
 {
     return parseTokenSemicolon(gc);
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseExpressionStatement(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.expressionStatementStatus[hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    if(parseTokenLBrace(gc).success() || parseTokenFunction(gc).success()
+       || parseTokenClass(gc).success())
+    {
+        std::size_t errorPriorityPosition = currentPosition;
+        currentPosition = startPosition;
+        retval = RuleStatus::makeFailure(
+            startPosition, errorPriorityPosition, u"missing expression statement");
+        return retval;
+    }
+    if(parseTokenLet(gc).success())
+    {
+        if(parseTokenLBracket(gc).success())
+        {
+            std::size_t errorPriorityPosition = currentPosition;
+            currentPosition = startPosition;
+            retval = RuleStatus::makeFailure(
+                startPosition, errorPriorityPosition, u"missing expression statement");
+            return retval;
+        }
+        currentPosition = startPosition;
+    }
+    retval = parseExpression<true, hasYield>(gc);
+    if(retval.fail())
+    {
+        currentPosition = startPosition;
+        return retval;
+    }
+    retval = parseOrInsertSemicolon(gc, true, false);
+    if(retval.fail())
+    {
+        currentPosition = startPosition;
+        return retval;
+    }
+    return retval;
 }
 
 Parser::RuleStatus Parser::parseDebuggerStatement(GC &gc)
@@ -3883,7 +4083,7 @@ Parser::RuleStatus Parser::parseScript(GC &gc)
     retval = parseTokenEndOfFile(gc);
     if(retval.success())
         return retval;
-    retval /= parseScriptBody(gc);
+    retval = parseScriptBody(gc);
     if(retval.fail())
         return retval;
     retval = parseTokenEndOfFile(gc);

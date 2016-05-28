@@ -31,6 +31,7 @@ namespace test
 {
 const auto testSource =
     uR"(
+
 {{}debugger}
 debugger;;
 )";
