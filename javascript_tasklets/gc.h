@@ -1209,6 +1209,9 @@ private:
     struct CheckTransition;
     struct ValueMarker;
     struct ObjectMemberDescriptorMarker;
+    struct PrivateAccessTag final
+    {
+    };
 
 public:
     struct WarningWriter
@@ -1290,8 +1293,12 @@ private:
                                           ObjectMemberDescriptor memberDescriptor);
 
 public:
-    explicit GC(std::shared_ptr<const GC> parent = nullptr);
+    GC(PrivateAccessTag, std::shared_ptr<const GC> parent);
     ~GC();
+    static std::shared_ptr<GC> make(std::shared_ptr<const GC> parent = nullptr)
+    {
+        return std::make_shared<GC>(PrivateAccessTag{}, parent);
+    }
     void collect() noexcept;
     bool isImmutable() const
     {

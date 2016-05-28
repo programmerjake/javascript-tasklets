@@ -58,7 +58,7 @@ Object *GC::objectCopyOnWrite(ObjectReference objectReference)
     return newObject;
 }
 
-GC::GC(std::shared_ptr<const GC> parent)
+GC::GC(PrivateAccessTag, std::shared_ptr<const GC> parent)
     : objects(),
       oldObjects(),
       freeObjectIndexesList(),

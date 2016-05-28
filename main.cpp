@@ -38,7 +38,7 @@ void main()
 {
     using namespace value;
     using namespace parser;
-    const std::shared_ptr<GC> gcPointer = std::make_shared<GC>();
+    const std::shared_ptr<GC> gcPointer = GC::make();
     GC &gc = *gcPointer;
     HandleScope handleScope(gc);
     gc::LocalLocationGetter locationGetter(gc, u"main");

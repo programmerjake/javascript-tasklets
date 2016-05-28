@@ -29,13 +29,6 @@ struct constexpr_assert_return_type final
     static constexpr_assert_return_type assert_failed(const char *location,
                                                       const char *func,
                                                       const char *message) noexcept;
-    static constexpr constexpr_assert_return_type assert_helper(bool condition,
-                                                                const char *location,
-                                                                const char *func,
-                                                                const char *message) noexcept
-    {
-        return condition ? constexpr_assert_return_type() : assert_failed(location, func, message);
-    }
 };
 }
 
@@ -54,12 +47,12 @@ struct constexpr_assert_return_type final
 #else
 #define constexpr_assert_func_name __func__
 #endif
-#define constexpr_assert(v)                                              \
-    (::javascript_tasklets::constexpr_assert_return_type::assert_helper( \
-        (v) ? true : false,                                              \
-        __FILE__ ":" constexpr_assert_stringify2(__LINE__),              \
-        constexpr_assert_func_name,                                      \
-        "assertion '" #v "' failed."))
+#define constexpr_assert(v)                                                    \
+    ((v) ? ::javascript_tasklets::constexpr_assert_return_type() :             \
+           ::javascript_tasklets::constexpr_assert_return_type::assert_failed( \
+               __FILE__ ":" constexpr_assert_stringify2(__LINE__),             \
+               constexpr_assert_func_name,                                     \
+               "assertion '" #v "' failed."))
 #endif
 
 #endif /* JAVASCRIPT_TASKLETS_CONSTEXPR_ASSERT_H_ */
