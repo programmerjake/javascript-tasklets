@@ -149,6 +149,7 @@ public:
         RuleStatus tokenizationTemplateMiddleStatus;
         RuleStatus directivePrologueStatus;
         bool directivePrologueHasUseStrict = false;
+        InOption<YieldOption<RuleStatus>> assignmentExpressionStatus;
         InOption<YieldOption<RuleStatus>> expressionStatus;
         YieldOption<ReturnOption<RuleStatus>> statementStatus;
         YieldOption<ReturnOption<RuleStatus>> blockStatus;
@@ -462,6 +463,10 @@ public:
                                       bool lineTerminatorAllowed,
                                       bool isTerminatingSemicolonInDoWhile);
     RuleStatus parseDirectivePrologue(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseLeftHandSideExpression(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseConditionalExpression(GC &gc);
     template <bool hasIn, bool hasYield>
     RuleStatus parseAssignmentExpression(GC &gc);
     template <bool hasIn, bool hasYield>
@@ -488,6 +493,10 @@ public:
     template <bool hasYield>
     RuleStatus parseExpressionStatement(GC &gc);
     RuleStatus parseDebuggerStatement(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseArrowFunction(GC &gc);
+    template <bool hasIn>
+    RuleStatus parseYieldExpression(GC &gc);
     RuleStatus parseScript(GC &gc);
     void translateScript(GC &gc);
     RuleStatus parseScriptBody(GC &gc);

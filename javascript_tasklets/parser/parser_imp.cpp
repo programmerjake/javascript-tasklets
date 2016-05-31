@@ -3739,16 +3739,107 @@ Parser::RuleStatus Parser::parseDirectivePrologue(GC &gc)
     return retval;
 }
 
-template <bool hasIn, bool hasYield>
-Parser::RuleStatus Parser::parseAssignmentExpression(GC &gc)
+template <bool hasYield>
+Parser::RuleStatus Parser::parseLeftHandSideExpression(GC &gc)
 {
     std::size_t startPosition = currentPosition;
     parseTokenIdentifierName(gc);
     std::size_t errorPriorityPosition = currentPosition;
     currentPosition = startPosition;
     return RuleStatus::makeFailure(
-        startPosition, errorPriorityPosition, u"implement parseAssignmentExpression");
+        startPosition, errorPriorityPosition, u"implement parseLeftHandSideExpression");
 #warning finish
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseConditionalExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseConditionalExpression");
+#warning finish
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseAssignmentExpression(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.assignmentExpressionStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    if(hasYield)
+    {
+        retval = parseYieldExpression<hasIn>(gc);
+        if(retval.success())
+            return retval;
+        retval /= parseArrowFunction<hasIn, hasYield>(gc);
+        if(retval.success())
+            return retval;
+    }
+    else
+    {
+        retval = parseArrowFunction<hasIn, hasYield>(gc);
+        if(retval.success())
+            return retval;
+    }
+    retval /= parseLeftHandSideExpression<hasYield>(gc);
+    if(retval.success())
+    {
+        do
+        {
+            retval = parseTokenEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenStarEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenFSlashEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenPercentEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenPlusEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenMinusEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenLAngleLAngleEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenRAngleRAngleEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenRAngleRAngleRAngleEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenAmpEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenCaretEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenPipeEqual(gc);
+        } while(false);
+        if(retval.success())
+        {
+            retval = parseAssignmentExpression<hasIn, hasYield>(gc);
+            if(retval.success())
+                return retval;
+        }
+    }
+    currentPosition = startPosition;
+    retval /= parseConditionalExpression<hasIn, hasYield>(gc);
+    return retval;
 }
 
 template <bool hasIn, bool hasYield>
@@ -4093,6 +4184,34 @@ Parser::RuleStatus Parser::parseScript(GC &gc)
         return retval;
     }
     return retval;
+#warning finish
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseArrowFunction(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseArrowFunction");
+#warning finish
+}
+
+template <bool hasIn>
+Parser::RuleStatus Parser::parseYieldExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    auto retval = parseTokenYield(gc);
+    if(retval.fail())
+    {
+        return retval;
+    }
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseYieldExpression");
 #warning finish
 }
 
