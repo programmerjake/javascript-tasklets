@@ -149,6 +149,8 @@ public:
         RuleStatus tokenizationTemplateMiddleStatus;
         RuleStatus directivePrologueStatus;
         bool directivePrologueHasUseStrict = false;
+        InOption<YieldOption<RuleStatus>> logicalOrExpressionStatus;
+        InOption<YieldOption<RuleStatus>> conditionalExpressionStatus;
         InOption<YieldOption<RuleStatus>> assignmentExpressionStatus;
         InOption<YieldOption<RuleStatus>> expressionStatus;
         YieldOption<ReturnOption<RuleStatus>> statementStatus;
@@ -465,6 +467,10 @@ public:
     RuleStatus parseDirectivePrologue(GC &gc);
     template <bool hasYield>
     RuleStatus parseLeftHandSideExpression(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseLogicalAndExpression(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseLogicalOrExpression(GC &gc);
     template <bool hasIn, bool hasYield>
     RuleStatus parseConditionalExpression(GC &gc);
     template <bool hasIn, bool hasYield>

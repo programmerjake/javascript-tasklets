@@ -3752,15 +3752,93 @@ Parser::RuleStatus Parser::parseLeftHandSideExpression(GC &gc)
 }
 
 template <bool hasIn, bool hasYield>
-Parser::RuleStatus Parser::parseConditionalExpression(GC &gc)
+Parser::RuleStatus Parser::parseLogicalAndExpression(GC &gc)
 {
     std::size_t startPosition = currentPosition;
     parseTokenIdentifierName(gc);
     std::size_t errorPriorityPosition = currentPosition;
     currentPosition = startPosition;
     return RuleStatus::makeFailure(
-        startPosition, errorPriorityPosition, u"implement parseConditionalExpression");
+        startPosition, errorPriorityPosition, u"implement parseLogicalAndExpression");
 #warning finish
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseLogicalOrExpression(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.logicalOrExpressionStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseLogicalAndExpression<hasIn, hasYield>(gc);
+    if(retval.fail())
+        return retval;
+    while(true)
+    {
+        retval = parseTokenPipePipe(gc);
+        if(retval.success())
+        {
+            retval = parseLogicalAndExpression<hasIn, hasYield>(gc);
+            if(retval.fail())
+            {
+                currentPosition = startPosition;
+                break;
+            }
+        }
+        else
+        {
+            retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+            break;
+        }
+    }
+    return retval;
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseConditionalExpression(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.conditionalExpressionStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseLogicalOrExpression<hasIn, hasYield>(gc);
+    if(retval.fail())
+        return retval;
+    retval = parseTokenQMark(gc);
+    if(retval.success())
+    {
+        retval = parseAssignmentExpression<hasIn, hasYield>(gc);
+        if(retval.success())
+        {
+            retval = parseTokenColon(gc);
+            if(retval.success())
+            {
+                retval = parseAssignmentExpression<hasIn, hasYield>(gc);
+                if(retval.success())
+                {
+                    retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+                    return retval;
+                }
+            }
+        }
+        currentPosition = startPosition;
+        return retval;
+    }
+    else
+    {
+        retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+        return retval;
+    }
 }
 
 template <bool hasIn, bool hasYield>
@@ -3834,7 +3912,12 @@ Parser::RuleStatus Parser::parseAssignmentExpression(GC &gc)
         {
             retval = parseAssignmentExpression<hasIn, hasYield>(gc);
             if(retval.success())
+            {
+                retval = RuleStatus::makeSuccess(startPosition, currentPosition);
                 return retval;
+            }
+            currentPosition = startPosition;
+            return retval;
         }
     }
     currentPosition = startPosition;
