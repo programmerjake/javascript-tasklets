@@ -3751,16 +3751,265 @@ Parser::RuleStatus Parser::parseLeftHandSideExpression(GC &gc)
 #warning finish
 }
 
-template <bool hasIn, bool hasYield>
-Parser::RuleStatus Parser::parseLogicalAndExpression(GC &gc)
+template <bool hasYield>
+Parser::RuleStatus Parser::parseShiftExpression(GC &gc)
 {
     std::size_t startPosition = currentPosition;
     parseTokenIdentifierName(gc);
     std::size_t errorPriorityPosition = currentPosition;
     currentPosition = startPosition;
     return RuleStatus::makeFailure(
-        startPosition, errorPriorityPosition, u"implement parseLogicalAndExpression");
+        startPosition, errorPriorityPosition, u"implement parseShiftExpression");
 #warning finish
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseRelationalExpression(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.relationalExpressionStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseShiftExpression<hasYield>(gc);
+    if(retval.fail())
+        return retval;
+    while(true)
+    {
+        do
+        {
+            retval = parseTokenLAngleEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenRAngleEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenLAngle(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenRAngle(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenInstanceOf(gc);
+            if(hasIn)
+            {
+                if(retval.success())
+                    break;
+                retval /= parseTokenIn(gc);
+            }
+        } while(false);
+        if(retval.success())
+        {
+            retval = parseShiftExpression<hasYield>(gc);
+            if(retval.fail())
+            {
+                currentPosition = startPosition;
+                break;
+            }
+        }
+        else
+        {
+            retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+            break;
+        }
+    }
+    return retval;
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseEqualityExpression(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.equalityExpressionStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseRelationalExpression<hasIn, hasYield>(gc);
+    if(retval.fail())
+        return retval;
+    while(true)
+    {
+        do
+        {
+            retval = parseTokenEqualEqualEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenEMarkEqualEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenEqualEqual(gc);
+            if(retval.success())
+                break;
+            retval /= parseTokenEMarkEqual(gc);
+        } while(false);
+        if(retval.success())
+        {
+            retval = parseRelationalExpression<hasIn, hasYield>(gc);
+            if(retval.fail())
+            {
+                currentPosition = startPosition;
+                break;
+            }
+        }
+        else
+        {
+            retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+            break;
+        }
+    }
+    return retval;
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseBitwiseAndExpression(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.bitwiseAndExpressionStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseEqualityExpression<hasIn, hasYield>(gc);
+    if(retval.fail())
+        return retval;
+    while(true)
+    {
+        retval = parseTokenAmp(gc);
+        if(retval.success())
+        {
+            retval = parseEqualityExpression<hasIn, hasYield>(gc);
+            if(retval.fail())
+            {
+                currentPosition = startPosition;
+                break;
+            }
+        }
+        else
+        {
+            retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+            break;
+        }
+    }
+    return retval;
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseBitwiseXorExpression(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.bitwiseXorExpressionStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseBitwiseAndExpression<hasIn, hasYield>(gc);
+    if(retval.fail())
+        return retval;
+    while(true)
+    {
+        retval = parseTokenCaret(gc);
+        if(retval.success())
+        {
+            retval = parseBitwiseAndExpression<hasIn, hasYield>(gc);
+            if(retval.fail())
+            {
+                currentPosition = startPosition;
+                break;
+            }
+        }
+        else
+        {
+            retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+            break;
+        }
+    }
+    return retval;
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseBitwiseOrExpression(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.bitwiseOrExpressionStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseBitwiseXorExpression<hasIn, hasYield>(gc);
+    if(retval.fail())
+        return retval;
+    while(true)
+    {
+        retval = parseTokenPipe(gc);
+        if(retval.success())
+        {
+            retval = parseBitwiseXorExpression<hasIn, hasYield>(gc);
+            if(retval.fail())
+            {
+                currentPosition = startPosition;
+                break;
+            }
+        }
+        else
+        {
+            retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+            break;
+        }
+    }
+    return retval;
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseLogicalAndExpression(GC &gc)
+{
+    RuleStatuses &statuses = getRuleStatuses(currentPosition);
+    RuleStatus &retval = statuses.logicalAndExpressionStatus[hasIn][hasYield];
+    if(!retval.empty())
+    {
+        if(retval.success())
+            currentPosition = retval.endPositionOrErrorPriorityPosition;
+        return retval;
+    }
+    std::size_t startPosition = currentPosition;
+    retval = parseBitwiseOrExpression<hasIn, hasYield>(gc);
+    if(retval.fail())
+        return retval;
+    while(true)
+    {
+        retval = parseTokenAmpAmp(gc);
+        if(retval.success())
+        {
+            retval = parseBitwiseOrExpression<hasIn, hasYield>(gc);
+            if(retval.fail())
+            {
+                currentPosition = startPosition;
+                break;
+            }
+        }
+        else
+        {
+            retval = RuleStatus::makeSuccess(startPosition, currentPosition);
+            break;
+        }
+    }
+    return retval;
 }
 
 template <bool hasIn, bool hasYield>

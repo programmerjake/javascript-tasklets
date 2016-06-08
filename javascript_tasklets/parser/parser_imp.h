@@ -149,6 +149,12 @@ public:
         RuleStatus tokenizationTemplateMiddleStatus;
         RuleStatus directivePrologueStatus;
         bool directivePrologueHasUseStrict = false;
+        InOption<YieldOption<RuleStatus>> relationalExpressionStatus;
+        InOption<YieldOption<RuleStatus>> equalityExpressionStatus;
+        InOption<YieldOption<RuleStatus>> bitwiseAndExpressionStatus;
+        InOption<YieldOption<RuleStatus>> bitwiseXorExpressionStatus;
+        InOption<YieldOption<RuleStatus>> bitwiseOrExpressionStatus;
+        InOption<YieldOption<RuleStatus>> logicalAndExpressionStatus;
         InOption<YieldOption<RuleStatus>> logicalOrExpressionStatus;
         InOption<YieldOption<RuleStatus>> conditionalExpressionStatus;
         InOption<YieldOption<RuleStatus>> assignmentExpressionStatus;
@@ -467,6 +473,18 @@ public:
     RuleStatus parseDirectivePrologue(GC &gc);
     template <bool hasYield>
     RuleStatus parseLeftHandSideExpression(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseShiftExpression(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseRelationalExpression(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseEqualityExpression(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseBitwiseAndExpression(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseBitwiseXorExpression(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseBitwiseOrExpression(GC &gc);
     template <bool hasIn, bool hasYield>
     RuleStatus parseLogicalAndExpression(GC &gc);
     template <bool hasIn, bool hasYield>
