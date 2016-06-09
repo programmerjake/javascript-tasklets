@@ -3752,6 +3752,419 @@ Parser::RuleStatus Parser::parseLeftHandSideExpression(GC &gc)
 }
 
 template <bool hasYield>
+Parser::RuleStatus Parser::parseIdentifierReference(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseIdentifierReference");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseBindingIdentifier(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseBindingIdentifier");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseLabelIdentifier(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseLabelIdentifier");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parsePrimaryExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parsePrimaryExpression");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseParenthesizedExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseParenthesizedExpression");
+#warning finish
+}
+
+Parser::RuleStatus Parser::parseLiteral(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(startPosition, errorPriorityPosition, u"implement parseLiteral");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseArrayLiteral(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseArrayLiteral");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseElementList(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseElementList");
+#warning finish
+}
+
+Parser::RuleStatus Parser::parseElision(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(startPosition, errorPriorityPosition, u"implement parseElision");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseSpreadElement(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseSpreadElement");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseObjectLiteral(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseObjectLiteral");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parsePropertyDefinitionList(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parsePropertyDefinitionList");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parsePropertyDefinition(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parsePropertyDefinition");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parsePropertyName(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parsePropertyName");
+#warning finish
+}
+
+Parser::RuleStatus Parser::parseLiteralPropertyName(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseLiteralPropertyName");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseComputedPropertyName(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseComputedPropertyName");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseCoverInitializedName(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseCoverInitializedName");
+#warning finish
+}
+
+template <bool hasIn, bool hasYield>
+Parser::RuleStatus Parser::parseInitializer(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseInitializer");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseTemplateLiteral(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseTemplateLiteral");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseTemplateSpans(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseTemplateSpans");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseTemplateMiddleList(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseTemplateMiddleList");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseMemberExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseMemberExpression");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseSuperProperty(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseSuperProperty");
+#warning finish
+}
+
+Parser::RuleStatus Parser::parseMetaProperty(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseMetaProperty");
+#warning finish
+}
+
+Parser::RuleStatus Parser::parseNewTarget(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseNewTarget");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseNewExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseNewExpression");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseCallExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseCallExpression");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseSuperCall(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseSuperCall");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseArguments(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseArguments");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseArgumentList(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseArgumentList");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseLeftHandSideExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseLeftHandSideExpression");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parsePostfixExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parsePostfixExpression");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseUnaryExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseUnaryExpression");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseMultiplicativeExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseMultiplicativeExpression");
+#warning finish
+}
+
+template <bool hasYield>
+Parser::RuleStatus Parser::parseAdditiveExpression(GC &gc)
+{
+    std::size_t startPosition = currentPosition;
+    parseTokenIdentifierName(gc);
+    std::size_t errorPriorityPosition = currentPosition;
+    currentPosition = startPosition;
+    return RuleStatus::makeFailure(
+        startPosition, errorPriorityPosition, u"implement parseAdditiveExpression");
+#warning finish
+}
+
+template <bool hasYield>
 Parser::RuleStatus Parser::parseShiftExpression(GC &gc)
 {
     std::size_t startPosition = currentPosition;

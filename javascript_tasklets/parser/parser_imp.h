@@ -472,7 +472,70 @@ public:
                                       bool isTerminatingSemicolonInDoWhile);
     RuleStatus parseDirectivePrologue(GC &gc);
     template <bool hasYield>
+    RuleStatus parseIdentifierReference(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseBindingIdentifier(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseLabelIdentifier(GC &gc);
+    template <bool hasYield>
+    RuleStatus parsePrimaryExpression(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseParenthesizedExpression(GC &gc);
+    RuleStatus parseLiteral(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseArrayLiteral(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseElementList(GC &gc);
+    RuleStatus parseElision(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseSpreadElement(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseObjectLiteral(GC &gc);
+    template <bool hasYield>
+    RuleStatus parsePropertyDefinitionList(GC &gc);
+    template <bool hasYield>
+    RuleStatus parsePropertyDefinition(GC &gc);
+    template <bool hasYield>
+    RuleStatus parsePropertyName(GC &gc);
+    RuleStatus parseLiteralPropertyName(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseComputedPropertyName(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseCoverInitializedName(GC &gc);
+    template <bool hasIn, bool hasYield>
+    RuleStatus parseInitializer(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseTemplateLiteral(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseTemplateSpans(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseTemplateMiddleList(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseMemberExpression(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseSuperProperty(GC &gc);
+    RuleStatus parseMetaProperty(GC &gc);
+    RuleStatus parseNewTarget(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseNewExpression(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseCallExpression(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseSuperCall(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseArguments(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseArgumentList(GC &gc);
+    template <bool hasYield>
     RuleStatus parseLeftHandSideExpression(GC &gc);
+    template <bool hasYield>
+    RuleStatus parsePostfixExpression(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseUnaryExpression(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseMultiplicativeExpression(GC &gc);
+    template <bool hasYield>
+    RuleStatus parseAdditiveExpression(GC &gc);
     template <bool hasYield>
     RuleStatus parseShiftExpression(GC &gc);
     template <bool hasIn, bool hasYield>
