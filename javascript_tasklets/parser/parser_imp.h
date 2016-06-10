@@ -149,6 +149,19 @@ public:
         RuleStatus tokenizationTemplateMiddleStatus;
         RuleStatus directivePrologueStatus;
         bool directivePrologueHasUseStrict = false;
+        YieldOption<RuleStatus> superPropertyStatus;
+        RuleStatus newTargetStatus;
+        YieldOption<RuleStatus> newExpressionStatus;
+        YieldOption<RuleStatus> callExpressionStatus;
+        YieldOption<RuleStatus> superCallStatus;
+        YieldOption<RuleStatus> argumentsStatus;
+        YieldOption<RuleStatus> argumentListStatus;
+        YieldOption<RuleStatus> leftHandSideExpressionStatus;
+        YieldOption<RuleStatus> postfixExpressionStatus;
+        YieldOption<RuleStatus> unaryExpressionStatus;
+        YieldOption<RuleStatus> multiplicativeExpressionStatus;
+        YieldOption<RuleStatus> additiveExpressionStatus;
+        YieldOption<RuleStatus> shiftExpressionStatus;
         InOption<YieldOption<RuleStatus>> relationalExpressionStatus;
         InOption<YieldOption<RuleStatus>> equalityExpressionStatus;
         InOption<YieldOption<RuleStatus>> bitwiseAndExpressionStatus;
@@ -231,6 +244,7 @@ public:
     RuleStatus parseTokenizationReturn(GC &gc);
     RuleStatus parseTokenizationSuper(GC &gc);
     RuleStatus parseTokenizationSwitch(GC &gc);
+    RuleStatus parseTokenizationTarget(GC &gc);
     RuleStatus parseTokenizationThis(GC &gc);
     RuleStatus parseTokenizationThrow(GC &gc);
     RuleStatus parseTokenizationTrue(GC &gc);
@@ -448,6 +462,7 @@ public:
     RuleStatus parseTokenReturn(GC &gc);
     RuleStatus parseTokenSuper(GC &gc);
     RuleStatus parseTokenSwitch(GC &gc);
+    RuleStatus parseTokenTarget(GC &gc);
     RuleStatus parseTokenThis(GC &gc);
     RuleStatus parseTokenThrow(GC &gc);
     RuleStatus parseTokenTrue(GC &gc);
