@@ -22,7 +22,10 @@
  *
  */
 
-#line 26 "parser_imp.h"
+// to regenerate this file, use https://github.com/programmerjake/peg_parser_generator
+// command: peg_parser_generator parser_imp.grammar
+
+#line 29 "parser_imp.h"
 #ifndef PARSER_IMP_H_
 #define PARSER_IMP_H_
 

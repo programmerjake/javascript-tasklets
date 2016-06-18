@@ -19,6 +19,9 @@ code license {
  * MA 02110-1301, USA.
  *
  */
+
+// to regenerate this file, use https://github.com/programmerjake/peg_parser_generator
+// command: peg_parser_generator parser_imp.grammar
 }
 
 typedef unsigned unsigned;
