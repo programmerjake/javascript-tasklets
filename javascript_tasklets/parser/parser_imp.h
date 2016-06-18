@@ -1,5 +1,5 @@
-// automatically generated from parser_imp.grammar
-#line 1 "parser_imp.grammar"
+// automatically generated from javascript_tasklets/parser/parser_imp.grammar
+#line 1 "javascript_tasklets/parser/parser_imp.grammar"
               
 /*
  * Copyright (C) 2012-2016 Jacob R. Lifshay
@@ -25,9 +25,9 @@
 // to regenerate this file, use https://github.com/programmerjake/peg_parser_generator
 // command: peg_parser_generator parser_imp.grammar
 
-#line 29 "parser_imp.h"
-#ifndef PARSER_IMP_H_
-#define PARSER_IMP_H_
+#line 29 "javascript_tasklets/parser/parser_imp.h"
+#ifndef JAVASCRIPT_TASKLETS_PARSER_PARSER_IMP_H_
+#define JAVASCRIPT_TASKLETS_PARSER_PARSER_IMP_H_
 
 #include <utility>
 #include <cstddef>
@@ -38,7 +38,14 @@
 #include <vector>
 #include <list>
 #include <cassert>
+#line 29 "javascript_tasklets/parser/parser_imp.grammar"
+             
+#include "../string.h"
 
+#line 46 "javascript_tasklets/parser/parser_imp.h"
+
+namespace javascript_tasklets
+{
 namespace parser
 {
 class Parser final
@@ -78,37 +85,60 @@ private:
     };
     struct Results final
     {
-        RuleResult resultUnicodeCategoryLu;
-        RuleResult resultUnicodeCategoryLl;
-        RuleResult resultUnicodeCategoryLt;
-        RuleResult resultUnicodeCategoryLm;
-        RuleResult resultUnicodeCategoryLo;
-        RuleResult resultUnicodeCategoryNl;
-        RuleResult resultUnicodeCategoryMn;
-        RuleResult resultUnicodePropertyPattern_Syntax;
-        RuleResult resultUnicodeCategoryMc;
-        RuleResult resultUnicodeCategoryNd;
-        RuleResult resultUnicodeCategoryPc;
-        RuleResult resultUnicodeCategoryZs;
-        RuleResult resultUnicodePropertyPattern_White_Space;
-        RuleResult resultUnicodePropertyOther_ID_Start;
-        RuleResult resultUnicodePropertyOther_ID_Continue;
-        RuleResult resultUnicodePropertyIdStart;
-        RuleResult resultUnicodePropertyIdContinue;
-        RuleResult resultECMAScriptIdStart;
-        RuleResult resultECMAScriptIdContinue;
-        RuleResult resultECMAScriptWhiteSpace;
-        RuleResult resultECMAScriptLineTerminator;
-        RuleResult resultECMAScriptHexDigit;
-        RuleResult resultECMAScriptDecimalDigit;
-        RuleResult resultECMAScriptBinaryDigit;
-        RuleResult resultECMAScriptOctalDigit;
-        RuleResult resultECMAScriptNonZeroDigit;
-        RuleResult resultECMAScriptExponentIndicator;
-        RuleResult resultECMAScriptDigitValue;
-        RuleResult resultECMAScriptSingleEscapeCharacter;
-        RuleResult resultECMAScriptEscapeCharacter;
-        RuleResult resultECMAScriptNonEscapeCharacter;
+        RuleResult resultTokenizerHexDigitValue;
+        RuleResult resultTokenizerLineTerminatorSequence;
+        RuleResult resultTokenizerMultiLineComment;
+        RuleResult resultTokenizerMultiLineCommentNoLineTerminator;
+        RuleResult resultTokenizerSingleLineComment;
+        RuleResult resultTokenizerUnicodeEscapeSequence;
+        RuleResult resultTokenizerUnicodeEscapeOrChar;
+        RuleResult resultTokenizerIdentifierName;
+        RuleResult resultTokenizerEscapelessIdentifierName;
+        RuleResult resultTokenizerAwait;
+        RuleResult resultTokenizerBreak;
+        RuleResult resultTokenizerCase;
+        RuleResult resultTokenizerCatch;
+        RuleResult resultTokenizerClass;
+        RuleResult resultTokenizerConst;
+        RuleResult resultTokenizerContinue;
+        RuleResult resultTokenizerDebugger;
+        RuleResult resultTokenizerDefault;
+        RuleResult resultTokenizerDelete;
+        RuleResult resultTokenizerDo;
+        RuleResult resultTokenizerElse;
+        RuleResult resultTokenizerEnum;
+        RuleResult resultTokenizerExport;
+        RuleResult resultTokenizerExtends;
+        RuleResult resultTokenizerFalse;
+        RuleResult resultTokenizerFinally;
+        RuleResult resultTokenizerFor;
+        RuleResult resultTokenizerFunction;
+        RuleResult resultTokenizerIf;
+        RuleResult resultTokenizerImplements;
+        RuleResult resultTokenizerImport;
+        RuleResult resultTokenizerIn;
+        RuleResult resultTokenizerInstanceOf;
+        RuleResult resultTokenizerInterface;
+        RuleResult resultTokenizerNew;
+        RuleResult resultTokenizerNull;
+        RuleResult resultTokenizerPackage;
+        RuleResult resultTokenizerPrivate;
+        RuleResult resultTokenizerProtected;
+        RuleResult resultTokenizerPublic;
+        RuleResult resultTokenizerReturn;
+        RuleResult resultTokenizerSuper;
+        RuleResult resultTokenizerSwitch;
+        RuleResult resultTokenizerThis;
+        RuleResult resultTokenizerThrow;
+        RuleResult resultTokenizerTrue;
+        RuleResult resultTokenizerTry;
+        RuleResult resultTokenizerTypeOf;
+        RuleResult resultTokenizerVar;
+        RuleResult resultTokenizerVoid;
+        RuleResult resultTokenizerWhile;
+        RuleResult resultTokenizerWith;
+        RuleResult resultTokenizerYield;
+        RuleResult resultTokenizerBooleanLiteral;
     };
     struct ResultsChunk final
     {
@@ -208,102 +238,128 @@ public:
     }
 
 public:
-    char32_t parseUnicodeCategoryLu();
-    char32_t parseUnicodeCategoryLl();
-    char32_t parseUnicodeCategoryLt();
-    char32_t parseUnicodeCategoryLm();
-    char32_t parseUnicodeCategoryLo();
-    char32_t parseUnicodeCategoryNl();
-    char32_t parseUnicodeCategoryMn();
-    char32_t parseUnicodePropertyPattern_Syntax();
-    char32_t parseUnicodeCategoryMc();
-    char32_t parseUnicodeCategoryNd();
-    char32_t parseUnicodeCategoryPc();
-    char32_t parseUnicodeCategoryZs();
-    char32_t parseUnicodePropertyPattern_White_Space();
-    char32_t parseUnicodePropertyOther_ID_Start();
-    char32_t parseUnicodePropertyOther_ID_Continue();
-    char32_t parseUnicodePropertyIdStart();
-    char32_t parseUnicodePropertyIdContinue();
-    char32_t parseECMAScriptIdStart();
-    char32_t parseECMAScriptIdContinue();
-    char32_t parseECMAScriptWhiteSpace();
-    char32_t parseECMAScriptLineTerminator();
-    char32_t parseECMAScriptHexDigit();
-    char32_t parseECMAScriptDecimalDigit();
-    char32_t parseECMAScriptBinaryDigit();
-    char32_t parseECMAScriptOctalDigit();
-    char32_t parseECMAScriptNonZeroDigit();
-    char32_t parseECMAScriptExponentIndicator();
-    unsigned parseECMAScriptDigitValue();
-    char32_t parseECMAScriptSingleEscapeCharacter();
-    char32_t parseECMAScriptEscapeCharacter();
-    char32_t parseECMAScriptNonEscapeCharacter();
+    unsigned parseTokenizerHexDigitValue();
+    char32_t parseTokenizerLineTerminatorSequence();
+    void parseTokenizerComment();
+    void parseTokenizerMultiLineComment();
+    void parseTokenizerMultiLineCommentNoLineTerminator();
+    void parseTokenizerSingleLineComment();
+    char32_t parseTokenizerUnicodeEscapeSequence();
+    char32_t parseTokenizerUnicodeEscapeOrChar();
+    javascript_tasklets::String parseTokenizerIdentifierName();
+    javascript_tasklets::String parseTokenizerEscapelessIdentifierName();
+    void parseTokenizerReservedWord();
+    void parseTokenizerAwait();
+    void parseTokenizerBreak();
+    void parseTokenizerCase();
+    void parseTokenizerCatch();
+    void parseTokenizerClass();
+    void parseTokenizerConst();
+    void parseTokenizerContinue();
+    void parseTokenizerDebugger();
+    void parseTokenizerDefault();
+    void parseTokenizerDelete();
+    void parseTokenizerDo();
+    void parseTokenizerElse();
+    void parseTokenizerEnum();
+    void parseTokenizerExport();
+    void parseTokenizerExtends();
+    void parseTokenizerFalse();
+    void parseTokenizerFinally();
+    void parseTokenizerFor();
+    void parseTokenizerFunction();
+    void parseTokenizerIf();
+    void parseTokenizerImplements();
+    void parseTokenizerImport();
+    void parseTokenizerIn();
+    void parseTokenizerInstanceOf();
+    void parseTokenizerInterface();
+    void parseTokenizerNew();
+    void parseTokenizerNull();
+    void parseTokenizerPackage();
+    void parseTokenizerPrivate();
+    void parseTokenizerProtected();
+    void parseTokenizerPublic();
+    void parseTokenizerReturn();
+    void parseTokenizerSuper();
+    void parseTokenizerSwitch();
+    void parseTokenizerThis();
+    void parseTokenizerThrow();
+    void parseTokenizerTrue();
+    void parseTokenizerTry();
+    void parseTokenizerTypeOf();
+    void parseTokenizerVar();
+    void parseTokenizerVoid();
+    void parseTokenizerWhile();
+    void parseTokenizerWith();
+    void parseTokenizerYield();
+    void parseTokenizerKeyword();
+    void parseTokenizerFutureReservedWord();
+    void parseTokenizerNullLiteral();
+    bool parseTokenizerBooleanLiteral();
 
 private:
-    RuleResult internalParseUnicodeCategoryLu(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryLu(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodeCategoryLl(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryLl(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodeCategoryLt(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryLt(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodeCategoryLm(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryLm(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodeCategoryLo(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryLo(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodeCategoryNl(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryNl(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodeCategoryMn(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryMn(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodePropertyPattern_Syntax(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodePropertyPattern_Syntax(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodeCategoryMc(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryMc(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodeCategoryNd(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryNd(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodeCategoryPc(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryPc(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodeCategoryZs(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodeCategoryZs(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodePropertyPattern_White_Space(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodePropertyPattern_White_Space(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodePropertyOther_ID_Start(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodePropertyOther_ID_Start(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodePropertyOther_ID_Continue(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodePropertyOther_ID_Continue(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodePropertyIdStart(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodePropertyIdStart(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseUnicodePropertyIdContinue(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateUnicodePropertyIdContinue(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptIdStart(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptIdStart(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptIdContinue(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptIdContinue(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptWhiteSpace(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptWhiteSpace(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptLineTerminator(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptLineTerminator(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptHexDigit(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptHexDigit(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptDecimalDigit(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptDecimalDigit(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptBinaryDigit(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptBinaryDigit(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptOctalDigit(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptOctalDigit(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptNonZeroDigit(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptNonZeroDigit(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptExponentIndicator(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptExponentIndicator(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptDigitValue(std::size_t startLocation, bool isRequiredForSuccess);
-    unsigned internalEvaluateECMAScriptDigitValue(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptSingleEscapeCharacter(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptSingleEscapeCharacter(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptEscapeCharacter(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptEscapeCharacter(std::size_t startLocation, RuleResult &ruleResult);
-    RuleResult internalParseECMAScriptNonEscapeCharacter(std::size_t startLocation, bool isRequiredForSuccess);
-    char32_t internalEvaluateECMAScriptNonEscapeCharacter(std::size_t startLocation, RuleResult &ruleResult);
+    unsigned internalParseTokenizerHexDigitValue(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    char32_t internalParseTokenizerLineTerminatorSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerComment(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerMultiLineComment(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerMultiLineCommentNoLineTerminator(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerSingleLineComment(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    char32_t internalParseTokenizerUnicodeEscapeSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    char32_t internalParseTokenizerUnicodeEscapeOrChar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    javascript_tasklets::String internalParseTokenizerIdentifierName(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    javascript_tasklets::String internalParseTokenizerEscapelessIdentifierName(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerReservedWord(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerAwait(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerBreak(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerCase(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerCatch(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerClass(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerConst(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerContinue(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerDebugger(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerDefault(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerDelete(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerDo(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerElse(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerEnum(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerExport(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerExtends(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerFalse(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerFinally(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerFor(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerFunction(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerIf(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerImplements(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerImport(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerIn(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerInstanceOf(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerInterface(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerNew(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerNull(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPackage(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPrivate(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerProtected(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPublic(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerReturn(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerSuper(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerSwitch(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerThis(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerThrow(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerTrue(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerTry(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerTypeOf(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerVar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerVoid(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerWhile(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerWith(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerYield(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerKeyword(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerFutureReservedWord(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerNullLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    bool internalParseTokenizerBooleanLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
 };
 }
+}
 
-#endif /* PARSER_IMP_H_ */
+#endif /* JAVASCRIPT_TASKLETS_PARSER_PARSER_IMP_H_ */
