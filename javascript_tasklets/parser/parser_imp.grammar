@@ -111,7 +111,7 @@ TokenizerEscapelessIdentifierName:String =
         if(!character_properties::javascriptIdStart(startChar))
             $? = "expected identifier start";
         else
-            $$ = startChar;
+            $$ = appendCodePoint(u"", startChar);
     }
     (
         [^]:continueChar
@@ -119,7 +119,7 @@ TokenizerEscapelessIdentifierName:String =
             if(!character_properties::javascriptIdContinue(continueChar))
                 $? = "expected identifier continue";
             else
-                $$ = continueChar;
+                $$ = appendCodePoint(std::move($$), continueChar);
         }
     )*
     !"\\";
@@ -211,3 +211,139 @@ TokenizerFutureReservedWord = TokenizerAwait
 TokenizerNullLiteral = TokenizerNull;
 
 TokenizerBooleanLiteral:bool = TokenizerTrue {$$ = true;} / TokenizerFalse {$$ = false;};
+
+TokenizerLBrace = "{";
+TokenizerRBrace = "}";
+TokenizerLParen = "(";
+TokenizerRParen = ")";
+TokenizerLBracket = "[";
+TokenizerRBracket = "]";
+TokenizerPeriod = !"..." "." ![0-9];
+TokenizerEllipsis = "...";
+TokenizerSemicolon = ";";
+TokenizerComma = ",";
+TokenizerLAngle = "<" ![<=];
+TokenizerRAngle = ">" ![>=];
+TokenizerLAngleEqual = "<=";
+TokenizerRAngleEqual = ">=";
+TokenizerEqualEqual = "==" !"=";
+TokenizerEMarkEqual = "!=" !"=";
+TokenizerEqualEqualEqual = "===";
+TokenizerEMarkEqualEqual = "!==";
+TokenizerPlus = "+" ![+=];
+TokenizerMinus = "-" ![\-=];
+TokenizerStar = "*" ![*=];
+TokenizerStarStar = "**";
+TokenizerPercent = "%" !"=";
+TokenizerPlusPlus = "++";
+TokenizerMinusMinus = "--";
+TokenizerLAngleLAngle = "<<" !"=";
+TokenizerRAngleRAngle = ">>" ![>=];
+TokenizerRAngleRAngleRAngle = ">>>" !"=";
+TokenizerAmp = "&" ![&=];
+TokenizerPipe = "|" ![|=];
+TokenizerCaret = "^" !"=";
+TokenizerEMark = "!" !"=";
+TokenizerTilde = "~";
+TokenizerAmpAmp = "&&";
+TokenizerPipePipe = "||";
+TokenizerQMark = "?";
+TokenizerColon = ":";
+TokenizerEqual = "=" ![=>];
+TokenizerPlusEqual = "+=";
+TokenizerMinusEqual = "-=";
+TokenizerStarEqual = "*=";
+TokenizerPercentEqual = "%=";
+TokenizerLAngleLAngleEqual = "<<=";
+TokenizerRAngleRAngleEqual = ">>=";
+TokenizerRAngleRAngleRAngleEqual = ">>>=";
+TokenizerAmpEqual = "&=";
+TokenizerPipeEqual = "|=";
+TokenizerCaretEqual = "^=";
+TokenizerArrow = "=>";
+TokenizerFSlash = "/" ![=/*];
+TokenizerFSlashEqual = "/=";
+
+TokenizerPunctuator = TokenizerLBrace
+                    / TokenizerLParen
+                    / TokenizerRParen
+                    / TokenizerLBracket
+                    / TokenizerRBracket
+                    / TokenizerPeriod
+                    / TokenizerEllipsis
+                    / TokenizerSemicolon
+                    / TokenizerComma
+                    / TokenizerLAngle
+                    / TokenizerRAngle
+                    / TokenizerLAngleEqual
+                    / TokenizerRAngleEqual
+                    / TokenizerEqualEqual
+                    / TokenizerEMarkEqual
+                    / TokenizerEqualEqualEqual
+                    / TokenizerEMarkEqualEqual
+                    / TokenizerPlus
+                    / TokenizerMinus
+                    / TokenizerStar
+                    / TokenizerStarStar
+                    / TokenizerPercent
+                    / TokenizerPlusPlus
+                    / TokenizerMinusMinus
+                    / TokenizerLAngleLAngle
+                    / TokenizerRAngleRAngle
+                    / TokenizerRAngleRAngleRAngle
+                    / TokenizerAmp
+                    / TokenizerPipe
+                    / TokenizerCaret
+                    / TokenizerEMark
+                    / TokenizerTilde
+                    / TokenizerAmpAmp
+                    / TokenizerPipePipe
+                    / TokenizerQMark
+                    / TokenizerColon
+                    / TokenizerEqual
+                    / TokenizerPlusEqual
+                    / TokenizerMinusEqual
+                    / TokenizerStarEqual
+                    / TokenizerPercentEqual
+                    / TokenizerLAngleLAngleEqual
+                    / TokenizerRAngleRAngleEqual
+                    / TokenizerRAngleRAngleRAngleEqual
+                    / TokenizerAmpEqual
+                    / TokenizerPipeEqual
+                    / TokenizerCaretEqual
+                    / TokenizerArrow;
+
+TokenizerDivPunctuator = TokenizerFSlash / TokenizerFSlashEqual;
+
+TokenizerRightBracePunctuator = TokenizerRBrace;
+
+TokenizerNumericLiteral:String = TokenizerDecimalLiteral:value0 {$$ = value0;}
+                               / TokenizerBinaryIntegerLiteral:value1 {$$ = value1;}
+                               / TokenizerOctalIntegerLiteral:value2 {$$ = value2;}
+                               / TokenizerHexIntegerLiteral:value3 {$$ = value3;};
+
+TokenizerDecimalLiteral:String = TokenizerDecimalIntegerLiteral:value0 {$$ = value0;}
+                                 "." {$$ += u'.';}
+                                 (
+                                     TokenizerDecimalDigits:value1 {$$ += value1;}
+                                 )?
+                                 (
+                                     TokenizerExponentPart:value2 {$$ += value2;}
+                                 )?
+                               / "." {$$ = u'.';}
+                                 TokenizerDecimalDigits:value3 {$$ += value3;}
+                                 (
+                                     TokenizerExponentPart:value4 {$$ += value4;}
+                                 )?
+                               / TokenizerDecimalIntegerLiteral:value5 {$$ = value5;}
+                                 TokenizerDecimalDigits:value6 {$$ += value6;}
+                                 (
+                                     TokenizerExponentPart:value7 {$$ += value7;}
+                                 )?
+                               ;
+
+
+
+
+
+
