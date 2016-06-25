@@ -21,7 +21,7 @@ code license {
  */
 
 // to regenerate this file, use https://github.com/programmerjake/peg_parser_generator
-// command: peg_parser_generator parser_imp.grammar
+// command: peg_parser_generator parser_imp.peg
 }
 
 namespace javascript_tasklets::parser;
@@ -205,8 +205,9 @@ TokenizerKeyword = TokenizerBreak
                  / TokenizerWith
                  / TokenizerYield;
 
-TokenizerFutureReservedWord = TokenizerAwait
-                            / TokenizerEnum;
+TokenizerFutureReservedWord =
+    TokenizerAwait
+    / TokenizerEnum;
 
 TokenizerNullLiteral = TokenizerNull;
 
