@@ -30,11 +30,8 @@ using namespace javascript_tasklets;
 namespace test
 {
 const auto testSource =
-    uR"(
-
-{{}debugger}
-debugger;;
-)";
+    uR"('abc \u{1d11e}\
+\x7Ea')";
 void main()
 {
     using namespace value;
@@ -42,22 +39,16 @@ void main()
     const std::shared_ptr<GC> gcPointer = GC::make();
     GC &gc = *gcPointer;
     HandleScope handleScope(gc);
-    gc::LocalLocationGetter locationGetter(gc, u"main");
     try
     {
         try
         {
             auto source = gc.createSource(u"builtin:testSource.js", testSource);
-#if 1
             auto value = parser::parseScript(source, gc)
                              .call(ObjectHandle::getGlobalObject(gc), {}, gc)
                              .toString(gc);
             writeString(std::cout, value.getValue(gc));
             std::cout << std::endl;
-#else
-#warning testing parser
-            parser::testParse(source, gc);
-#endif
         }
         catch(gc::ScriptException &e)
         {

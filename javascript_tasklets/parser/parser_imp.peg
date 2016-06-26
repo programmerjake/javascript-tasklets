@@ -28,6 +28,39 @@ namespace javascript_tasklets::parser;
 
 code header {
 #include "../string.h"
+
+namespace javascript_tasklets
+{
+namespace parser
+{
+struct RawAndCookedString final
+{
+    String raw;
+    String cooked;
+    RawAndCookedString() : raw(), cooked()
+    {
+    }
+    RawAndCookedString(String raw) : raw(raw), cooked(std::move(raw))
+    {
+    }
+    RawAndCookedString(String raw, String cooked) : raw(std::move(raw)), cooked(std::move(cooked))
+    {
+    }
+};
+
+struct RawStringAndChar final
+{
+    String raw;
+    char32_t ch;
+    RawStringAndChar() : raw(), ch()
+    {
+    }
+    RawStringAndChar(String raw, char32_t ch) : raw(std::move(raw)), ch(ch)
+    {
+    }
+};
+}
+}
 }
 
 code source {
@@ -36,19 +69,22 @@ code source {
 
 typedef unsigned unsigned;
 typedef bool bool;
-typedef javascript_tasklets::String String;
+typedef String String;
+typedef RawAndCookedString RawAndCookedString;
+typedef RawStringAndChar RawStringAndChar;
 
 TokenizerHexDigitValue:unsigned = 
     [^]:ch
     &{
         auto digitValue = character_properties::javascriptDigitValue(ch);
         if(digitValue >= 0 && digitValue < 0x10)
-            $$ = ch;
+            $$ = digitValue;
         else
             $? = "missing hex digit";
     };
 
 TokenizerLineTerminatorSequence:char = "\r\n" {$$ = U'\n';}
+                                     / "\r" {$$ = U'\n';}
                                      / [^]:char1
                                      &{
                                          $$ = char1;
@@ -65,26 +101,90 @@ TokenizerMultiLineCommentNoLineTerminator = "/*" (!"*/" !TokenizerLineTerminator
 
 TokenizerSingleLineComment = "//" (!TokenizerLineTerminatorSequence [^])*;
 
-TokenizerUnicodeEscapeSequence:char = "\\u" {$$ = 0;} (
+TokenizerUnicodeEscapeSequence:RawStringAndChar = "u" {$$ = RawStringAndChar(u"u", 0);} (
     "{"
     (
-        TokenizerHexDigitValue:digitValue
+        [^]:digit
         &{
-            $$ = $$ * 0x10 + digitValue;
-            if($$ > 0x10FFFF)
+            auto digitValue = character_properties::javascriptDigitValue(digit);
+            if(digitValue < 0 || digitValue >= 0x10)
+                $? = "missing hex digit";
+            else
+            {
+                $$.ch = $$.ch * 0x10 + digitValue;
+                $$.raw = appendCodePoint(std::move($$.raw), digit);
+            }
+            if($$.ch > 0x10FFFF)
                 $? = "unicode escape value is too big";
         }
     )+
     "}"
-    / TokenizerHexDigitValue:digit1
-      TokenizerHexDigitValue:digit2
-      TokenizerHexDigitValue:digit3
-      TokenizerHexDigitValue:digit4
-      {$$ = digit1 * 0x1000 + digit2 * 0x100 + digit3 * 0x10 + digit4;}
+    / [^]:digit1
+      &{
+          auto digitValue = character_properties::javascriptDigitValue(digit1);
+          if(digitValue < 0 || digitValue >= 0x10)
+              $? = "missing hex digit";
+          else
+          {
+              $$.ch = $$.ch * 0x10 + digitValue;
+              $$.raw = appendCodePoint(std::move($$.raw), digit1);
+          }
+      }
+      [^]:digit2
+      &{
+          auto digitValue = character_properties::javascriptDigitValue(digit2);
+          if(digitValue < 0 || digitValue >= 0x10)
+              $? = "missing hex digit";
+          else
+          {
+              $$.ch = $$.ch * 0x10 + digitValue;
+              $$.raw = appendCodePoint(std::move($$.raw), digit2);
+          }
+      }
+      [^]:digit3
+      &{
+          auto digitValue = character_properties::javascriptDigitValue(digit3);
+          if(digitValue < 0 || digitValue >= 0x10)
+              $? = "missing hex digit";
+          else
+          {
+              $$.ch = $$.ch * 0x10 + digitValue;
+              $$.raw = appendCodePoint(std::move($$.raw), digit3);
+          }
+      }
+      [^]:digit4
+      &{
+          auto digitValue = character_properties::javascriptDigitValue(digit4);
+          if(digitValue < 0 || digitValue >= 0x10)
+              $? = "missing hex digit";
+          else
+          {
+              $$.ch = $$.ch * 0x10 + digitValue;
+              $$.raw = appendCodePoint(std::move($$.raw), digit4);
+          }
+      }
     );
 
-TokenizerUnicodeEscapeOrChar:char = TokenizerUnicodeEscapeSequence:escape {$$ = escape;}
+TokenizerUnicodeEscapeOrChar:char = "\\" TokenizerUnicodeEscapeSequence:escape {$$ = escape.ch;}
                                   / [^]:ch {$$ = ch;};
+
+TokenizerEscapelessIdentifierStart:char =
+    [^]:ch
+    &{
+        if(!character_properties::javascriptIdStart(ch))
+            $? = "expected identifier start";
+        else
+            $$ = ch;
+    };
+
+TokenizerEscapelessIdentifierPart:char =
+    [^]:ch
+    &{
+        if(!character_properties::javascriptIdContinue(ch))
+            $? = "expected identifier part";
+        else
+            $$ = ch;
+    };
 
 TokenizerIdentifierName:String =
     TokenizerUnicodeEscapeOrChar:startChar
@@ -124,52 +224,52 @@ TokenizerEscapelessIdentifierName:String =
     )*
     !"\\";
 
-TokenizerReservedWord = TokenizerKeyword / TokenizerFutureReservedWord / TokenizerNullLiteral / TokenizerBooleanLiteral;
+TokenizerReservedWord<isModule:bool, isStrict:bool> = TokenizerKeyword / TokenizerFutureReservedWord / TokenizerNullLiteral / TokenizerBooleanLiteral;
 
-TokenizerAwait = "await" !TokenizerUnicodeEscapeOrChar;
-TokenizerBreak = "break" !TokenizerUnicodeEscapeOrChar;
-TokenizerCase = "case" !TokenizerUnicodeEscapeOrChar;
-TokenizerCatch = "catch" !TokenizerUnicodeEscapeOrChar;
-TokenizerClass = "class" !TokenizerUnicodeEscapeOrChar;
-TokenizerConst = "const" !TokenizerUnicodeEscapeOrChar;
-TokenizerContinue = "continue" !TokenizerUnicodeEscapeOrChar;
-TokenizerDebugger = "debugger" !TokenizerUnicodeEscapeOrChar;
-TokenizerDefault = "default" !TokenizerUnicodeEscapeOrChar;
-TokenizerDelete = "delete" !TokenizerUnicodeEscapeOrChar;
-TokenizerDo = "do" !TokenizerUnicodeEscapeOrChar;
-TokenizerElse = "else" !TokenizerUnicodeEscapeOrChar;
-TokenizerEnum = "enum" !TokenizerUnicodeEscapeOrChar;
-TokenizerExport = "export" !TokenizerUnicodeEscapeOrChar;
-TokenizerExtends = "extends" !TokenizerUnicodeEscapeOrChar;
-TokenizerFalse = "false" !TokenizerUnicodeEscapeOrChar;
-TokenizerFinally = "finally" !TokenizerUnicodeEscapeOrChar;
-TokenizerFor = "for" !TokenizerUnicodeEscapeOrChar;
-TokenizerFunction = "function" !TokenizerUnicodeEscapeOrChar;
-TokenizerIf = "if" !TokenizerUnicodeEscapeOrChar;
-TokenizerImplements = "implements" !TokenizerUnicodeEscapeOrChar;
-TokenizerImport = "import" !TokenizerUnicodeEscapeOrChar;
-TokenizerIn = "in" !TokenizerUnicodeEscapeOrChar;
-TokenizerInstanceOf = "instanceof" !TokenizerUnicodeEscapeOrChar;
-TokenizerInterface = "interface" !TokenizerUnicodeEscapeOrChar;
-TokenizerNew = "new" !TokenizerUnicodeEscapeOrChar;
-TokenizerNull = "null" !TokenizerUnicodeEscapeOrChar;
-TokenizerPackage = "package" !TokenizerUnicodeEscapeOrChar;
-TokenizerPrivate = "private" !TokenizerUnicodeEscapeOrChar;
-TokenizerProtected = "protected" !TokenizerUnicodeEscapeOrChar;
-TokenizerPublic = "public" !TokenizerUnicodeEscapeOrChar;
-TokenizerReturn = "return" !TokenizerUnicodeEscapeOrChar;
-TokenizerSuper = "super" !TokenizerUnicodeEscapeOrChar;
-TokenizerSwitch = "switch" !TokenizerUnicodeEscapeOrChar;
-TokenizerThis = "this" !TokenizerUnicodeEscapeOrChar;
-TokenizerThrow = "throw" !TokenizerUnicodeEscapeOrChar;
-TokenizerTrue = "true" !TokenizerUnicodeEscapeOrChar;
-TokenizerTry = "try" !TokenizerUnicodeEscapeOrChar;
-TokenizerTypeOf = "typeof" !TokenizerUnicodeEscapeOrChar;
-TokenizerVar = "var" !TokenizerUnicodeEscapeOrChar;
-TokenizerVoid = "void" !TokenizerUnicodeEscapeOrChar;
-TokenizerWhile = "while" !TokenizerUnicodeEscapeOrChar;
-TokenizerWith = "with" !TokenizerUnicodeEscapeOrChar;
-TokenizerYield = "yield" !TokenizerUnicodeEscapeOrChar;
+TokenizerAwait = "await" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerBreak = "break" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerCase = "case" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerCatch = "catch" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerClass = "class" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerConst = "const" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerContinue = "continue" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerDebugger = "debugger" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerDefault = "default" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerDelete = "delete" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerDo = "do" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerElse = "else" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerEnum = "enum" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerExport = "export" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerExtends = "extends" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerFalse = "false" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerFinally = "finally" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerFor = "for" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerFunction = "function" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerIf = "if" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerImplements = "implements" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerImport = "import" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerIn = "in" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerInstanceOf = "instanceof" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerInterface = "interface" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerNew = "new" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerNull = "null" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerPackage = "package" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerPrivate = "private" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerProtected = "protected" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerPublic = "public" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerReturn = "return" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerSuper = "super" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerSwitch = "switch" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerThis = "this" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerThrow = "throw" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerTrue = "true" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerTry = "try" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerTypeOf = "typeof" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerVar = "var" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerVoid = "void" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerWhile = "while" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerWith = "with" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerYield = "yield" !"\\" !TokenizerEscapelessIdentifierPart;
 
 TokenizerKeyword = TokenizerBreak
                  / TokenizerCase
@@ -205,9 +305,18 @@ TokenizerKeyword = TokenizerBreak
                  / TokenizerWith
                  / TokenizerYield;
 
-TokenizerFutureReservedWord =
-    TokenizerAwait
-    / TokenizerEnum;
+TokenizerFutureReservedWord<isModule:bool, isStrict:bool> =
+    TokenizerAwait &{if(isModule) $? = "not in a module";}
+    / TokenizerEnum
+    / &{if(!isStrict) $? = "not strict";}
+    (
+        TokenizerImplements
+        / TokenizerInterface
+        / TokenizerPackage
+        / TokenizerPrivate
+        / TokenizerProtected
+        / TokenizerPublic
+    );
 
 TokenizerNullLiteral = TokenizerNull;
 
@@ -342,6 +451,214 @@ TokenizerDecimalLiteral:String = TokenizerDecimalIntegerLiteral:value0 {$$ = val
                                      TokenizerExponentPart:value7 {$$ += value7;}
                                  )?
                                ;
+
+TokenizerDecimalIntegerLiteral:String =
+    "0" {$$ = u"0";} ![0-9]
+    / [1-9]:nonZeroDigit
+    {$$ = appendCodePoint(u"", nonZeroDigit);}
+    (TokenizerDecimalDigits:digits {$$ += digits;})?;
+
+TokenizerDecimalDigits:String =
+    {$$ = u"";}
+    (
+        [0-9]:digit
+        {$$ = appendCodePoint(std::move($$), digit);}
+    )+;
+
+TokenizerExponentPart:String =
+    [eE]:exponentIndicator
+    {$$ = appendCodePoint(u"", exponentIndicator);}
+    TokenizerSignedInteger:signedInteger
+    {$$ += signedInteger;}
+    ;
+
+TokenizerSignedInteger:String =
+    {$$ = u"";}
+    (
+        [+\-]:sign
+        {$$ = appendCodePoint(u"", sign);}
+    )?
+    TokenizerDecimalDigits:digits
+    {$$ += digits;}
+    ;
+
+TokenizerBinaryIntegerLiteral:String =
+    "0"
+    {$$ = u"0";}
+    [bB]:binaryIndicator
+    {$$ = appendCodePoint(std::move($$), binaryIndicator);}
+    TokenizerBinaryDigits:digits
+    {$$ += digits;}
+    ;
+
+TokenizerBinaryDigits:String =
+    {$$ = u"";}
+    (
+        [01]:digit
+        {$$ = appendCodePoint(std::move($$), digit);}
+    )+;
+
+TokenizerOctalIntegerLiteral:String =
+    "0"
+    {$$ = u"0";}
+    [oO]:octalIndicator
+    {$$ = appendCodePoint(std::move($$), octalIndicator);}
+    TokenizerOctalDigits:digits
+    {$$ += digits;}
+    ;
+
+TokenizerOctalDigits:String =
+    {$$ = u"";}
+    (
+        [0-7]:digit
+        {$$ = appendCodePoint(std::move($$), digit);}
+    )+;
+
+TokenizerHexIntegerLiteral:String =
+    "0"
+    {$$ = u"0";}
+    [xX]:hexIndicator
+    {$$ = appendCodePoint(std::move($$), hexIndicator);}
+    TokenizerHexDigits:digits
+    {$$ += digits;}
+    ;
+
+TokenizerHexDigits:String =
+    {$$ = u"";}
+    (
+        [0-9a-fA-F]:digit
+        {$$ = appendCodePoint(std::move($$), digit);}
+    )+;
+
+TokenizerStringLiteral:String =
+    "\'"
+    {$$ = u"";}
+    (
+        TokenizerSingleStringCharacters:characters1
+        {$$ = characters1;}
+    )?
+    "\'"
+    / "\""
+    {$$ = u"";}
+    (
+        TokenizerDoubleStringCharacters:characters2
+        {$$ = characters2;}
+    )?
+    "\"";
+
+TokenizerSingleStringCharacters:String =
+    TokenizerSingleStringCharacter:first
+    {$$ = first;}
+    (
+        TokenizerSingleStringCharacter:next
+        {$$ += next;}
+    )*;
+
+TokenizerDoubleStringCharacters:String =
+    TokenizerDoubleStringCharacter:first
+    {$$ = first;}
+    (
+        TokenizerDoubleStringCharacter:next
+        {$$ += next;}
+    )*;
+
+TokenizerSingleStringCharacter:String =
+    !"\'"
+    !"\\"
+    !TokenizerLineTerminatorSequence
+    [^]:ch
+    {$$ = appendCodePoint(u"", ch);}
+    / "\\" TokenizerEscapeSequence:escape
+    {$$ = escape.cooked;}
+    / TokenizerLineContinuation
+    {$$ = u"";}
+    ;
+
+TokenizerDoubleStringCharacter:String =
+    !"\""
+    !"\\"
+    !TokenizerLineTerminatorSequence
+    [^]:ch
+    {$$ = appendCodePoint(u"", ch);}
+    / "\\" TokenizerEscapeSequence:escape
+    {$$ = escape.cooked;}
+    / TokenizerLineContinuation
+    {$$ = u"";}
+    ;
+
+TokenizerLineContinuation:String = "\\" TokenizerLineTerminatorSequence:lineTerminator {$$ = appendCodePoint(u"\\", lineTerminator);};
+
+TokenizerEscapeSequence:RawAndCookedString =
+    "0"
+    ![0-9]
+    {$$ = RawAndCookedString(u"\\0", String(1, u'\0'));}
+    / TokenizerCharacterEscapeSequence:characterEscape
+    {$$ = characterEscape;}
+    / TokenizerUnicodeEscapeSequence:unicodeEscape
+    {$$ = RawAndCookedString(unicodeEscape.raw, appendCodePoint(u"", unicodeEscape.ch));}
+    / TokenizerHexEscapeSequence:hexEscape
+    {$$ = RawAndCookedString(hexEscape.raw, appendCodePoint(u"", hexEscape.ch));}
+    ;
+
+TokenizerHexEscapeSequence:RawStringAndChar = 
+    "x"
+    {$$ = RawStringAndChar(u"x", 0);}
+    [^]:digit1
+    &{
+        auto digitValue = character_properties::javascriptDigitValue(digit1);
+        if(digitValue < 0 || digitValue >= 0x10)
+            $? = "missing hex digit";
+        else
+        {
+            $$.ch = $$.ch * 0x10 + digitValue;
+            $$.raw = appendCodePoint(std::move($$.raw), digit1);
+        }
+    }
+    [^]:digit2
+    &{
+        auto digitValue = character_properties::javascriptDigitValue(digit2);
+        if(digitValue < 0 || digitValue >= 0x10)
+            $? = "missing hex digit";
+        else
+        {
+            $$.ch = $$.ch * 0x10 + digitValue;
+            $$.raw = appendCodePoint(std::move($$.raw), digit2);
+        }
+    }
+    ;
+
+TokenizerCharacterEscapeSequence:RawAndCookedString =
+    TokenizerSingleEscapeCharacter:singleEscapeCharacter
+    {$$ = singleEscapeCharacter;}
+    / TokenizerNonEscapeCharacter:nonEscapeCharacter
+    {$$ = RawAndCookedString(appendCodePoint(u"", nonEscapeCharacter));}
+    ;
+
+TokenizerSingleEscapeCharacter:RawAndCookedString =
+    ['"\\]:char1
+    {$$ = RawAndCookedString(appendCodePoint(u"", char1));}
+    / "b"
+    {$$ = RawAndCookedString(u"b", u"\b");}
+    / "f"
+    {$$ = RawAndCookedString(u"f", u"\f");}
+    / "n"
+    {$$ = RawAndCookedString(u"n", u"\n");}
+    / "r"
+    {$$ = RawAndCookedString(u"r", u"\r");}
+    / "t"
+    {$$ = RawAndCookedString(u"t", u"\t");}
+    / "v"
+    {$$ = RawAndCookedString(u"v", u"\v");}
+    ;
+
+TokenizerNonEscapeCharacter:char =
+    !TokenizerLineTerminatorSequence
+    ![0-9xu]
+    !TokenizerSingleEscapeCharacter
+    [^]:ch
+    {$$ = ch;}
+    ;
+
 
 
 

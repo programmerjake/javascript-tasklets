@@ -186,7 +186,7 @@ struct StringCastHelper<std::string, String> final
             {
                 value = ch & 0x3FFU;
                 value <<= 10;
-                value += src[i++] & 0x3FFU;
+                value += src[++i] & 0x3FFU;
                 value += 0x10000UL;
             }
             if(value < 0x80)

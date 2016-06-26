@@ -32,7 +32,6 @@ namespace parser
 struct ASTTranslator;
 struct CodeEmitter;
 value::ObjectHandle parseScript(SourceHandle source, GC &gc); // returns a function object
-void testParse(SourceHandle source, GC &gc);
 }
 }
 

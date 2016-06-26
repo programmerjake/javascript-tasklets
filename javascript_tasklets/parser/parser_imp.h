@@ -1,5 +1,5 @@
-// automatically generated from javascript_tasklets/parser/parser_imp.grammar
-#line 1 "javascript_tasklets/parser/parser_imp.grammar"
+// automatically generated from javascript_tasklets/parser/parser_imp.peg
+#line 1 "javascript_tasklets/parser/parser_imp.peg"
               
 /*
  * Copyright (C) 2012-2016 Jacob R. Lifshay
@@ -23,7 +23,7 @@
  */
 
 // to regenerate this file, use https://github.com/programmerjake/peg_parser_generator
-// command: peg_parser_generator parser_imp.grammar
+// command: peg_parser_generator parser_imp.peg
 
 #line 29 "javascript_tasklets/parser/parser_imp.h"
 #ifndef JAVASCRIPT_TASKLETS_PARSER_PARSER_IMP_H_
@@ -38,11 +38,44 @@
 #include <vector>
 #include <list>
 #include <cassert>
-#line 29 "javascript_tasklets/parser/parser_imp.grammar"
+#line 29 "javascript_tasklets/parser/parser_imp.peg"
              
 #include "../string.h"
 
-#line 46 "javascript_tasklets/parser/parser_imp.h"
+namespace javascript_tasklets
+{
+namespace parser
+{
+struct RawAndCookedString final
+{
+    String raw;
+    String cooked;
+    RawAndCookedString() : raw(), cooked()
+    {
+    }
+    RawAndCookedString(String raw) : raw(raw), cooked(std::move(raw))
+    {
+    }
+    RawAndCookedString(String raw, String cooked) : raw(std::move(raw)), cooked(std::move(cooked))
+    {
+    }
+};
+
+struct RawStringAndChar final
+{
+    String raw;
+    char32_t ch;
+    RawStringAndChar() : raw(), ch()
+    {
+    }
+    RawStringAndChar(String raw, char32_t ch) : raw(std::move(raw)), ch(ch)
+    {
+    }
+};
+}
+}
+
+#line 79 "javascript_tasklets/parser/parser_imp.h"
 
 namespace javascript_tasklets
 {
@@ -92,6 +125,8 @@ private:
         RuleResult resultTokenizerSingleLineComment;
         RuleResult resultTokenizerUnicodeEscapeSequence;
         RuleResult resultTokenizerUnicodeEscapeOrChar;
+        RuleResult resultTokenizerEscapelessIdentifierStart;
+        RuleResult resultTokenizerEscapelessIdentifierPart;
         RuleResult resultTokenizerIdentifierName;
         RuleResult resultTokenizerEscapelessIdentifierName;
         RuleResult resultTokenizerAwait;
@@ -138,7 +173,71 @@ private:
         RuleResult resultTokenizerWhile;
         RuleResult resultTokenizerWith;
         RuleResult resultTokenizerYield;
+        RuleResult resultTokenizerFutureReservedWord[2][2];
         RuleResult resultTokenizerBooleanLiteral;
+        RuleResult resultTokenizerPeriod;
+        RuleResult resultTokenizerEllipsis;
+        RuleResult resultTokenizerLAngle;
+        RuleResult resultTokenizerRAngle;
+        RuleResult resultTokenizerLAngleEqual;
+        RuleResult resultTokenizerRAngleEqual;
+        RuleResult resultTokenizerEqualEqual;
+        RuleResult resultTokenizerEMarkEqual;
+        RuleResult resultTokenizerEqualEqualEqual;
+        RuleResult resultTokenizerEMarkEqualEqual;
+        RuleResult resultTokenizerPlus;
+        RuleResult resultTokenizerMinus;
+        RuleResult resultTokenizerStar;
+        RuleResult resultTokenizerStarStar;
+        RuleResult resultTokenizerPercent;
+        RuleResult resultTokenizerPlusPlus;
+        RuleResult resultTokenizerMinusMinus;
+        RuleResult resultTokenizerLAngleLAngle;
+        RuleResult resultTokenizerRAngleRAngle;
+        RuleResult resultTokenizerRAngleRAngleRAngle;
+        RuleResult resultTokenizerAmp;
+        RuleResult resultTokenizerPipe;
+        RuleResult resultTokenizerCaret;
+        RuleResult resultTokenizerEMark;
+        RuleResult resultTokenizerAmpAmp;
+        RuleResult resultTokenizerPipePipe;
+        RuleResult resultTokenizerEqual;
+        RuleResult resultTokenizerPlusEqual;
+        RuleResult resultTokenizerMinusEqual;
+        RuleResult resultTokenizerStarEqual;
+        RuleResult resultTokenizerPercentEqual;
+        RuleResult resultTokenizerLAngleLAngleEqual;
+        RuleResult resultTokenizerRAngleRAngleEqual;
+        RuleResult resultTokenizerRAngleRAngleRAngleEqual;
+        RuleResult resultTokenizerAmpEqual;
+        RuleResult resultTokenizerPipeEqual;
+        RuleResult resultTokenizerCaretEqual;
+        RuleResult resultTokenizerArrow;
+        RuleResult resultTokenizerFSlash;
+        RuleResult resultTokenizerFSlashEqual;
+        RuleResult resultTokenizerNumericLiteral;
+        RuleResult resultTokenizerDecimalLiteral;
+        RuleResult resultTokenizerDecimalIntegerLiteral;
+        RuleResult resultTokenizerDecimalDigits;
+        RuleResult resultTokenizerExponentPart;
+        RuleResult resultTokenizerSignedInteger;
+        RuleResult resultTokenizerBinaryIntegerLiteral;
+        RuleResult resultTokenizerBinaryDigits;
+        RuleResult resultTokenizerOctalIntegerLiteral;
+        RuleResult resultTokenizerOctalDigits;
+        RuleResult resultTokenizerHexIntegerLiteral;
+        RuleResult resultTokenizerHexDigits;
+        RuleResult resultTokenizerStringLiteral;
+        RuleResult resultTokenizerSingleStringCharacters;
+        RuleResult resultTokenizerDoubleStringCharacters;
+        RuleResult resultTokenizerSingleStringCharacter;
+        RuleResult resultTokenizerDoubleStringCharacter;
+        RuleResult resultTokenizerLineContinuation;
+        RuleResult resultTokenizerEscapeSequence;
+        RuleResult resultTokenizerHexEscapeSequence;
+        RuleResult resultTokenizerCharacterEscapeSequence;
+        RuleResult resultTokenizerSingleEscapeCharacter;
+        RuleResult resultTokenizerNonEscapeCharacter;
     };
     struct ResultsChunk final
     {
@@ -244,10 +343,13 @@ public:
     void parseTokenizerMultiLineComment();
     void parseTokenizerMultiLineCommentNoLineTerminator();
     void parseTokenizerSingleLineComment();
-    char32_t parseTokenizerUnicodeEscapeSequence();
+    RawStringAndChar parseTokenizerUnicodeEscapeSequence();
     char32_t parseTokenizerUnicodeEscapeOrChar();
-    javascript_tasklets::String parseTokenizerIdentifierName();
-    javascript_tasklets::String parseTokenizerEscapelessIdentifierName();
+    char32_t parseTokenizerEscapelessIdentifierStart();
+    char32_t parseTokenizerEscapelessIdentifierPart();
+    String parseTokenizerIdentifierName();
+    String parseTokenizerEscapelessIdentifierName();
+    template <bool isModule, bool isStrict>
     void parseTokenizerReservedWord();
     void parseTokenizerAwait();
     void parseTokenizerBreak();
@@ -294,9 +396,87 @@ public:
     void parseTokenizerWith();
     void parseTokenizerYield();
     void parseTokenizerKeyword();
+    template <bool isModule, bool isStrict>
     void parseTokenizerFutureReservedWord();
     void parseTokenizerNullLiteral();
     bool parseTokenizerBooleanLiteral();
+    void parseTokenizerLBrace();
+    void parseTokenizerRBrace();
+    void parseTokenizerLParen();
+    void parseTokenizerRParen();
+    void parseTokenizerLBracket();
+    void parseTokenizerRBracket();
+    void parseTokenizerPeriod();
+    void parseTokenizerEllipsis();
+    void parseTokenizerSemicolon();
+    void parseTokenizerComma();
+    void parseTokenizerLAngle();
+    void parseTokenizerRAngle();
+    void parseTokenizerLAngleEqual();
+    void parseTokenizerRAngleEqual();
+    void parseTokenizerEqualEqual();
+    void parseTokenizerEMarkEqual();
+    void parseTokenizerEqualEqualEqual();
+    void parseTokenizerEMarkEqualEqual();
+    void parseTokenizerPlus();
+    void parseTokenizerMinus();
+    void parseTokenizerStar();
+    void parseTokenizerStarStar();
+    void parseTokenizerPercent();
+    void parseTokenizerPlusPlus();
+    void parseTokenizerMinusMinus();
+    void parseTokenizerLAngleLAngle();
+    void parseTokenizerRAngleRAngle();
+    void parseTokenizerRAngleRAngleRAngle();
+    void parseTokenizerAmp();
+    void parseTokenizerPipe();
+    void parseTokenizerCaret();
+    void parseTokenizerEMark();
+    void parseTokenizerTilde();
+    void parseTokenizerAmpAmp();
+    void parseTokenizerPipePipe();
+    void parseTokenizerQMark();
+    void parseTokenizerColon();
+    void parseTokenizerEqual();
+    void parseTokenizerPlusEqual();
+    void parseTokenizerMinusEqual();
+    void parseTokenizerStarEqual();
+    void parseTokenizerPercentEqual();
+    void parseTokenizerLAngleLAngleEqual();
+    void parseTokenizerRAngleRAngleEqual();
+    void parseTokenizerRAngleRAngleRAngleEqual();
+    void parseTokenizerAmpEqual();
+    void parseTokenizerPipeEqual();
+    void parseTokenizerCaretEqual();
+    void parseTokenizerArrow();
+    void parseTokenizerFSlash();
+    void parseTokenizerFSlashEqual();
+    void parseTokenizerPunctuator();
+    void parseTokenizerDivPunctuator();
+    void parseTokenizerRightBracePunctuator();
+    String parseTokenizerNumericLiteral();
+    String parseTokenizerDecimalLiteral();
+    String parseTokenizerDecimalIntegerLiteral();
+    String parseTokenizerDecimalDigits();
+    String parseTokenizerExponentPart();
+    String parseTokenizerSignedInteger();
+    String parseTokenizerBinaryIntegerLiteral();
+    String parseTokenizerBinaryDigits();
+    String parseTokenizerOctalIntegerLiteral();
+    String parseTokenizerOctalDigits();
+    String parseTokenizerHexIntegerLiteral();
+    String parseTokenizerHexDigits();
+    String parseTokenizerStringLiteral();
+    String parseTokenizerSingleStringCharacters();
+    String parseTokenizerDoubleStringCharacters();
+    String parseTokenizerSingleStringCharacter();
+    String parseTokenizerDoubleStringCharacter();
+    String parseTokenizerLineContinuation();
+    RawAndCookedString parseTokenizerEscapeSequence();
+    RawStringAndChar parseTokenizerHexEscapeSequence();
+    RawAndCookedString parseTokenizerCharacterEscapeSequence();
+    RawAndCookedString parseTokenizerSingleEscapeCharacter();
+    char32_t parseTokenizerNonEscapeCharacter();
 
 private:
     unsigned internalParseTokenizerHexDigitValue(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
@@ -305,10 +485,13 @@ private:
     void internalParseTokenizerMultiLineComment(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     void internalParseTokenizerMultiLineCommentNoLineTerminator(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     void internalParseTokenizerSingleLineComment(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
-    char32_t internalParseTokenizerUnicodeEscapeSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    RawStringAndChar internalParseTokenizerUnicodeEscapeSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     char32_t internalParseTokenizerUnicodeEscapeOrChar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
-    javascript_tasklets::String internalParseTokenizerIdentifierName(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
-    javascript_tasklets::String internalParseTokenizerEscapelessIdentifierName(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    char32_t internalParseTokenizerEscapelessIdentifierStart(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    char32_t internalParseTokenizerEscapelessIdentifierPart(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerIdentifierName(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerEscapelessIdentifierName(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict>
     void internalParseTokenizerReservedWord(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     void internalParseTokenizerAwait(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     void internalParseTokenizerBreak(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
@@ -355,10 +538,105 @@ private:
     void internalParseTokenizerWith(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     void internalParseTokenizerYield(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     void internalParseTokenizerKeyword(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict>
     void internalParseTokenizerFutureReservedWord(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     void internalParseTokenizerNullLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     bool internalParseTokenizerBooleanLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerLBrace(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerRBrace(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerLParen(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerRParen(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerLBracket(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerRBracket(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPeriod(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerEllipsis(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerSemicolon(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerComma(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerLAngle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerRAngle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerLAngleEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerRAngleEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerEqualEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerEMarkEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerEqualEqualEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerEMarkEqualEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPlus(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerMinus(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerStar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerStarStar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPercent(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPlusPlus(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerMinusMinus(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerLAngleLAngle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerRAngleRAngle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerRAngleRAngleRAngle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerAmp(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPipe(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerCaret(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerEMark(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerTilde(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerAmpAmp(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPipePipe(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerQMark(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerColon(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPlusEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerMinusEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerStarEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPercentEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerLAngleLAngleEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerRAngleRAngleEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerRAngleRAngleRAngleEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerAmpEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPipeEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerCaretEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerArrow(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerFSlash(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerFSlashEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerPunctuator(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerDivPunctuator(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerRightBracePunctuator(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerNumericLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerDecimalLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerDecimalIntegerLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerDecimalDigits(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerExponentPart(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerSignedInteger(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerBinaryIntegerLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerBinaryDigits(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerOctalIntegerLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerOctalDigits(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerHexIntegerLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerHexDigits(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerStringLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerSingleStringCharacters(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerDoubleStringCharacters(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerSingleStringCharacter(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerDoubleStringCharacter(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerLineContinuation(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    RawAndCookedString internalParseTokenizerEscapeSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    RawStringAndChar internalParseTokenizerHexEscapeSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    RawAndCookedString internalParseTokenizerCharacterEscapeSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    RawAndCookedString internalParseTokenizerSingleEscapeCharacter(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    char32_t internalParseTokenizerNonEscapeCharacter(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
 };
+
+extern template void Parser::parseTokenizerReservedWord<false, false>();
+extern template void Parser::internalParseTokenizerReservedWord<false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template void Parser::parseTokenizerReservedWord<false, true>();
+extern template void Parser::internalParseTokenizerReservedWord<false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template void Parser::parseTokenizerReservedWord<true, false>();
+extern template void Parser::internalParseTokenizerReservedWord<true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template void Parser::parseTokenizerReservedWord<true, true>();
+extern template void Parser::internalParseTokenizerReservedWord<true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template void Parser::parseTokenizerFutureReservedWord<false, false>();
+extern template void Parser::internalParseTokenizerFutureReservedWord<false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template void Parser::parseTokenizerFutureReservedWord<false, true>();
+extern template void Parser::internalParseTokenizerFutureReservedWord<false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template void Parser::parseTokenizerFutureReservedWord<true, false>();
+extern template void Parser::internalParseTokenizerFutureReservedWord<true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template void Parser::parseTokenizerFutureReservedWord<true, true>();
+extern template void Parser::internalParseTokenizerFutureReservedWord<true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 }
 }
 

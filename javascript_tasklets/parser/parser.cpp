@@ -20,6 +20,8 @@
  */
 #include "parser.h"
 #include "parser_imp.h"
+#include <memory>
+#include <iostream>
 
 namespace javascript_tasklets
 {
@@ -27,12 +29,37 @@ namespace parser
 {
 value::ObjectHandle parseScript(SourceHandle source, GC &gc)
 {
-    return Parser::mainParseScript(source, gc);
-}
-
-void testParse(SourceHandle source, GC &gc)
-{
-    Parser::mainTestParse(source, gc);
+    HandleScope handleScope(gc);
+    std::u32string u32source;
+    const String &u16source = source.get()->contents;
+    u32source.reserve(u16source.size());
+    for(std::size_t i = 0; i < u16source.size(); i++)
+    {
+        std::uint16_t ch = u16source[i];
+        std::uint_fast32_t value = ch;
+        if(ch >= 0xD800U && ch < 0xDC00U && i + 1 < u16source.size() && u16source[i + 1] >= 0xDC00U
+           && u16source[i + 1] < 0xC000U)
+        {
+            value = ch & 0x3FFU;
+            value <<= 10;
+            value += u16source[++i] & 0x3FFU;
+            value += 0x10000UL;
+        }
+        u32source += static_cast<char32_t>(value);
+    }
+    try
+    {
+#warning finish
+        writeString(std::cout, Parser(std::move(u32source)).parseTokenizerStringLiteral());
+        std::cout << std::endl;
+    }
+    catch(Parser::ParseError &e)
+    {
+        value::ObjectHandle::throwSyntaxError(string_cast<String>(std::string(e.message)), LocationHandle(gc, Location(source, e.location)), gc);
+        return value::ObjectHandle();
+    }
+    value::ObjectHandle::throwSyntaxError(u"parseScript is not implemented", LocationHandle(gc, Location(source, 0)), gc);
+    return value::ObjectHandle();
 }
 }
 }
