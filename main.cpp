@@ -30,8 +30,8 @@ using namespace javascript_tasklets;
 namespace test
 {
 const auto testSource =
-    uR"('abc \u{1d11e}\
-\x7Ea')";
+    uR"(
+`\uD835\uDE45`)" + 1 /* skip first \n */;
 void main()
 {
     using namespace value;

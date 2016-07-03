@@ -50,15 +50,23 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
     try
     {
 #warning finish
-        writeString(std::cout, Parser(std::move(u32source)).parseTokenizerStringLiteral());
-        std::cout << std::endl;
+        auto result = Parser(std::move(u32source)).parseTokenizerNoSubstitutionTemplate();
+        std::cout << "raw:'";
+        writeString(std::cout, result.raw);
+        std::cout << "'" << std::endl
+                  << "cooked:'";
+        writeString(std::cout, result.cooked);
+        std::cout << "'" << std::endl;
     }
     catch(Parser::ParseError &e)
     {
-        value::ObjectHandle::throwSyntaxError(string_cast<String>(std::string(e.message)), LocationHandle(gc, Location(source, e.location)), gc);
+        value::ObjectHandle::throwSyntaxError(string_cast<String>(std::string(e.message)),
+                                              LocationHandle(gc, Location(source, e.location)),
+                                              gc);
         return value::ObjectHandle();
     }
-    value::ObjectHandle::throwSyntaxError(u"parseScript is not implemented", LocationHandle(gc, Location(source, 0)), gc);
+    value::ObjectHandle::throwSyntaxError(
+        u"parseScript is not implemented", LocationHandle(gc, Location(source, 0)), gc);
     return value::ObjectHandle();
 }
 }

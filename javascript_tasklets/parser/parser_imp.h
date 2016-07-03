@@ -72,10 +72,22 @@ struct RawStringAndChar final
     {
     }
 };
+
+struct BodyAndFlags final
+{
+    String body;
+    String flags;
+    BodyAndFlags() : body(), flags()
+    {
+    }
+    BodyAndFlags(String body, String flags) : body(std::move(body)), flags(std::move(flags))
+    {
+    }
+};
 }
 }
 
-#line 79 "javascript_tasklets/parser/parser_imp.h"
+#line 91 "javascript_tasklets/parser/parser_imp.h"
 
 namespace javascript_tasklets
 {
@@ -238,6 +250,18 @@ private:
         RuleResult resultTokenizerCharacterEscapeSequence;
         RuleResult resultTokenizerSingleEscapeCharacter;
         RuleResult resultTokenizerNonEscapeCharacter;
+        RuleResult resultTokenizerRegularExpressionLiteral;
+        RuleResult resultTokenizerRegularExpressionBody;
+        RuleResult resultTokenizerRegularExpressionChar;
+        RuleResult resultTokenizerRegularExpressionBackslashSequence;
+        RuleResult resultTokenizerRegularExpressionClass;
+        RuleResult resultTokenizerRegularExpressionClassChar;
+        RuleResult resultTokenizerRegularExpressionFlags;
+        RuleResult resultTokenizerNoSubstitutionTemplate;
+        RuleResult resultTokenizerTemplateHead;
+        RuleResult resultTokenizerTemplateMiddle;
+        RuleResult resultTokenizerTemplateTail;
+        RuleResult resultTokenizerTemplateCharacter;
     };
     struct ResultsChunk final
     {
@@ -477,6 +501,18 @@ public:
     RawAndCookedString parseTokenizerCharacterEscapeSequence();
     RawAndCookedString parseTokenizerSingleEscapeCharacter();
     char32_t parseTokenizerNonEscapeCharacter();
+    BodyAndFlags parseTokenizerRegularExpressionLiteral();
+    String parseTokenizerRegularExpressionBody();
+    String parseTokenizerRegularExpressionChar();
+    String parseTokenizerRegularExpressionBackslashSequence();
+    String parseTokenizerRegularExpressionClass();
+    String parseTokenizerRegularExpressionClassChar();
+    String parseTokenizerRegularExpressionFlags();
+    RawAndCookedString parseTokenizerNoSubstitutionTemplate();
+    RawAndCookedString parseTokenizerTemplateHead();
+    RawAndCookedString parseTokenizerTemplateMiddle();
+    RawAndCookedString parseTokenizerTemplateTail();
+    RawAndCookedString parseTokenizerTemplateCharacter();
 
 private:
     unsigned internalParseTokenizerHexDigitValue(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
@@ -619,6 +655,18 @@ private:
     RawAndCookedString internalParseTokenizerCharacterEscapeSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     RawAndCookedString internalParseTokenizerSingleEscapeCharacter(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     char32_t internalParseTokenizerNonEscapeCharacter(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    BodyAndFlags internalParseTokenizerRegularExpressionLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerRegularExpressionBody(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerRegularExpressionChar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerRegularExpressionBackslashSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerRegularExpressionClass(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerRegularExpressionClassChar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenizerRegularExpressionFlags(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    RawAndCookedString internalParseTokenizerNoSubstitutionTemplate(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    RawAndCookedString internalParseTokenizerTemplateHead(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    RawAndCookedString internalParseTokenizerTemplateMiddle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    RawAndCookedString internalParseTokenizerTemplateTail(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    RawAndCookedString internalParseTokenizerTemplateCharacter(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
 };
 
 extern template void Parser::parseTokenizerReservedWord<false, false>();

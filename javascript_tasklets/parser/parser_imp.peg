@@ -59,6 +59,18 @@ struct RawStringAndChar final
     {
     }
 };
+
+struct BodyAndFlags final
+{
+    String body;
+    String flags;
+    BodyAndFlags() : body(), flags()
+    {
+    }
+    BodyAndFlags(String body, String flags) : body(std::move(body)), flags(std::move(flags))
+    {
+    }
+};
 }
 }
 }
@@ -72,6 +84,7 @@ typedef bool bool;
 typedef String String;
 typedef RawAndCookedString RawAndCookedString;
 typedef RawStringAndChar RawStringAndChar;
+typedef BodyAndFlags BodyAndFlags;
 
 TokenizerHexDigitValue:unsigned = 
     [^]:ch
@@ -103,6 +116,7 @@ TokenizerSingleLineComment = "//" (!TokenizerLineTerminatorSequence [^])*;
 
 TokenizerUnicodeEscapeSequence:RawStringAndChar = "u" {$$ = RawStringAndChar(u"u", 0);} (
     "{"
+    {$$.raw += u"{";}
     (
         [^]:digit
         &{
@@ -119,6 +133,7 @@ TokenizerUnicodeEscapeSequence:RawStringAndChar = "u" {$$ = RawStringAndChar(u"u
         }
     )+
     "}"
+    {$$.raw += u"}";}
     / [^]:digit1
       &{
           auto digitValue = character_properties::javascriptDigitValue(digit1);
@@ -591,7 +606,7 @@ TokenizerLineContinuation:String = "\\" TokenizerLineTerminatorSequence:lineTerm
 TokenizerEscapeSequence:RawAndCookedString =
     "0"
     ![0-9]
-    {$$ = RawAndCookedString(u"\\0", String(1, u'\0'));}
+    {$$ = RawAndCookedString(u"0", String(1, u'\0'));}
     / TokenizerCharacterEscapeSequence:characterEscape
     {$$ = characterEscape;}
     / TokenizerUnicodeEscapeSequence:unicodeEscape
@@ -659,9 +674,124 @@ TokenizerNonEscapeCharacter:char =
     {$$ = ch;}
     ;
 
+TokenizerRegularExpressionLiteral:BodyAndFlags =
+    "/"
+    TokenizerRegularExpressionBody:body
+    "/"
+    TokenizerRegularExpressionFlags:flags
+    {$$ = BodyAndFlags(body, flags);};
 
+TokenizerRegularExpressionBody:String =
+    !"*"
+    {$$ = u"";}
+    (
+        TokenizerRegularExpressionChar:value
+        {$$ += value;}
+    )+;
 
+TokenizerRegularExpressionChar:String =
+    ![\\/[]
+    !TokenizerLineTerminatorSequence
+    [^]:nonTerminator
+    {$$ = appendCodePoint(u"", nonTerminator);}
+    / TokenizerRegularExpressionBackslashSequence:backslashSequence
+    {$$ = backslashSequence;}
+    / TokenizerRegularExpressionClass:classValue
+    {$$ = classValue;}
+    ;
 
+TokenizerRegularExpressionBackslashSequence:String =
+    "\\"
+    !TokenizerLineTerminatorSequence
+    [^]:nonTerminator
+    {$$ = appendCodePoint(u"\\", nonTerminator);}
+    ;
 
+TokenizerRegularExpressionClass:String =
+    "["
+    {$$ = u"[";}
+    (
+        TokenizerRegularExpressionClassChar:classChar
+        {$$ += classChar;}
+    )*
+    "]"
+    {$$ += u"]";}
+    ;
 
+TokenizerRegularExpressionClassChar:String =
+    ![\\\]]
+    !TokenizerLineTerminatorSequence
+    [^]:nonTerminator
+    {$$ = appendCodePoint(u"", nonTerminator);}
+    / TokenizerRegularExpressionBackslashSequence:backslashSequence
+    {$$ = backslashSequence;}
+    ;
 
+TokenizerRegularExpressionFlags:String =
+    {$$ = u"";}
+    (
+        TokenizerEscapelessIdentifierPart:ch
+        {$$ = appendCodePoint(std::move($$), ch);}
+        / "\\"
+        TokenizerUnicodeEscapeSequence:unicodeEscape
+        {$$ += u"\\" + unicodeEscape.raw;}
+    )*
+    !"\\"
+    ;
+
+TokenizerNoSubstitutionTemplate:RawAndCookedString =
+    "`"
+    (
+        TokenizerTemplateCharacter:value
+        {$$.raw += value.raw; $$.cooked += value.cooked;}
+    )*
+    "`";
+
+TokenizerTemplateHead:RawAndCookedString =
+    "`"
+    (
+        TokenizerTemplateCharacter:value
+        {$$.raw += value.raw; $$.cooked += value.cooked;}
+    )*
+    "${";
+
+TokenizerTemplateMiddle:RawAndCookedString =
+    "}"
+    (
+        TokenizerTemplateCharacter:value
+        {$$.raw += value.raw; $$.cooked += value.cooked;}
+    )*
+    "${";
+
+TokenizerTemplateTail:RawAndCookedString =
+    "}"
+    (
+        TokenizerTemplateCharacter:value
+        {$$.raw += value.raw; $$.cooked += value.cooked;}
+    )*
+    "`";
+
+TokenizerTemplateCharacter:RawAndCookedString =
+    "$"
+    !"{"
+    {$$ = RawAndCookedString(u"$");}
+    / "\\"
+    TokenizerEscapeSequence:escapeSequence
+    {$$.raw += u"\\" + escapeSequence.raw; $$.cooked += escapeSequence.cooked;}
+    / "\\"
+    TokenizerLineTerminatorSequence:lineContinuation
+    {$$.raw = appendCodePoint(std::move($$.raw) + u"\\", lineContinuation);}
+    / TokenizerLineTerminatorSequence:lineTerminator
+    {
+        $$.raw = appendCodePoint(std::move($$.raw), lineTerminator);
+        $$.cooked = appendCodePoint(std::move($$.cooked), lineTerminator);
+    }
+    / !TokenizerLineTerminatorSequence
+    [^`\\$]:ch
+    {
+        $$.raw = appendCodePoint(std::move($$.raw), ch);
+        $$.cooked = appendCodePoint(std::move($$.cooked), ch);
+    }
+    ;
+
+    
