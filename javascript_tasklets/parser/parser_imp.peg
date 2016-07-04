@@ -28,6 +28,11 @@ namespace javascript_tasklets::parser;
 
 code header {
 #include "../string.h"
+#include <memory>
+#include "ast/node.h"
+#include "ast/expression.h"
+#include "ast/expression_this.h"
+#include "ast/arena.h"
 
 namespace javascript_tasklets
 {
@@ -71,8 +76,16 @@ struct BodyAndFlags final
     {
     }
 };
+
+typedef ast::Node *NodePointer;
+typedef ast::Expression *ExpressionPointer;
 }
 }
+}
+
+code class {
+public:
+    ast::Arena arena = ast::Arena();
 }
 
 code source {
@@ -85,6 +98,8 @@ typedef String String;
 typedef RawAndCookedString RawAndCookedString;
 typedef RawStringAndChar RawStringAndChar;
 typedef BodyAndFlags BodyAndFlags;
+typedef ExpressionPointer ExpressionPointer;
+typedef NodePointer NodePointer;
 
 TokenizerHexDigitValue:unsigned = 
     [^]:ch
@@ -105,14 +120,58 @@ TokenizerLineTerminatorSequence:char = "\r\n" {$$ = U'\n';}
                                              $? = "expected a line terminator";
                                      };
 
-TokenizerComment = TokenizerMultiLineComment
-                 / TokenizerSingleLineComment;
+TokenizerComment<lineTerminatorAllowed:bool> =
+    TokenizerMultiLineComment
+    / TokenizerSingleLineComment;
 
-TokenizerMultiLineComment = "/*" (!"*/" [^])* "*/";
-
-TokenizerMultiLineCommentNoLineTerminator = "/*" (!"*/" !TokenizerLineTerminatorSequence [^])* "*/";
+TokenizerMultiLineComment<lineTerminatorAllowed:bool>:bool =
+    "/*"
+    {$$ = false;}
+    (
+        !"*/"
+        (
+            TokenizerLineTerminatorSequence
+            &{
+                if(!lineTerminatorAllowed)
+                    $? = "line terminator not allowed here";
+                $$ = true;
+            }
+            / !TokenizerLineTerminatorSequence
+            [^]
+        )
+    )*
+    "*/";
 
 TokenizerSingleLineComment = "//" (!TokenizerLineTerminatorSequence [^])*;
+
+TokenizerTokenSeperator<lineTerminatorAllowed:bool> = 
+    (
+        TokenizerMultiLineComment
+        / TokenizerSingleLineComment
+        / TokenizerLineTerminatorSequence
+        &{
+            if(!lineTerminatorAllowed)
+                $? = "line terminator not allowed here";
+        }
+        / !TokenizerLineTerminatorSequence
+        [^]:ch
+        &{
+            if(!character_properties::javascriptWhiteSpace(ch))
+                $? = "not a whitespace character";
+        }
+    )*;
+
+TokenizerTokenSeperatorWithLineTerminator = 
+    TokenizerTokenSeperator<false>
+    (
+        TokenizerMultiLineComment<true>:hasLineTerminator
+        &{
+            if(!hasLineTerminator)
+                $? = "missing line terminator";
+        }
+        / TokenizerLineTerminatorSequence
+    );
+        
 
 TokenizerUnicodeEscapeSequence:RawStringAndChar = "u" {$$ = RawStringAndChar(u"u", 0);} (
     "{"
@@ -794,4 +853,74 @@ TokenizerTemplateCharacter:RawAndCookedString =
     }
     ;
 
-    
+IdentifierName:String =
+    TokenizerTokenSeperator<true>
+    TokenizerIdentifierName:value
+    {$$ = value;}
+    ;
+
+TokenAwait = TokenizerTokenSeperator<true> TokenizerAwait;
+TokenBreak = TokenizerTokenSeperator<true> TokenizerBreak;
+TokenCase = TokenizerTokenSeperator<true> TokenizerCase;
+TokenCatch = TokenizerTokenSeperator<true> TokenizerCatch;
+TokenClass = TokenizerTokenSeperator<true> TokenizerClass;
+TokenConst = TokenizerTokenSeperator<true> TokenizerConst;
+TokenContinue = TokenizerTokenSeperator<true> TokenizerContinue;
+TokenDebugger = TokenizerTokenSeperator<true> TokenizerDebugger;
+TokenDefault = TokenizerTokenSeperator<true> TokenizerDefault;
+TokenDelete = TokenizerTokenSeperator<true> TokenizerDelete;
+TokenDo = TokenizerTokenSeperator<true> TokenizerDo;
+TokenElse = TokenizerTokenSeperator<true> TokenizerElse;
+TokenEnum = TokenizerTokenSeperator<true> TokenizerEnum;
+TokenExport = TokenizerTokenSeperator<true> TokenizerExport;
+TokenExtends = TokenizerTokenSeperator<true> TokenizerExtends;
+TokenFalse = TokenizerTokenSeperator<true> TokenizerFalse;
+TokenFinally = TokenizerTokenSeperator<true> TokenizerFinally;
+TokenFor = TokenizerTokenSeperator<true> TokenizerFor;
+TokenFunction = TokenizerTokenSeperator<true> TokenizerFunction;
+TokenIf = TokenizerTokenSeperator<true> TokenizerIf;
+TokenImplements = TokenizerTokenSeperator<true> TokenizerImplements;
+TokenImport = TokenizerTokenSeperator<true> TokenizerImport;
+TokenIn = TokenizerTokenSeperator<true> TokenizerIn;
+TokenInstanceOf = TokenizerTokenSeperator<true> TokenizerInstanceOf;
+TokenInterface = TokenizerTokenSeperator<true> TokenizerInterface;
+TokenNew = TokenizerTokenSeperator<true> TokenizerNew;
+TokenNull = TokenizerTokenSeperator<true> TokenizerNull;
+TokenPackage = TokenizerTokenSeperator<true> TokenizerPackage;
+TokenPrivate = TokenizerTokenSeperator<true> TokenizerPrivate;
+TokenProtected = TokenizerTokenSeperator<true> TokenizerProtected;
+TokenPublic = TokenizerTokenSeperator<true> TokenizerPublic;
+TokenReturn = TokenizerTokenSeperator<true> TokenizerReturn;
+TokenSuper = TokenizerTokenSeperator<true> TokenizerSuper;
+TokenSwitch = TokenizerTokenSeperator<true> TokenizerSwitch;
+TokenThis = TokenizerTokenSeperator<true> TokenizerThis;
+TokenThrow = TokenizerTokenSeperator<true> TokenizerThrow;
+TokenTrue = TokenizerTokenSeperator<true> TokenizerTrue;
+TokenTry = TokenizerTokenSeperator<true> TokenizerTry;
+TokenTypeOf = TokenizerTokenSeperator<true> TokenizerTypeOf;
+TokenVar = TokenizerTokenSeperator<true> TokenizerVar;
+TokenVoid = TokenizerTokenSeperator<true> TokenizerVoid;
+TokenWhile = TokenizerTokenSeperator<true> TokenizerWhile;
+TokenWith = TokenizerTokenSeperator<true> TokenizerWith;
+TokenYield = TokenizerTokenSeperator<true> TokenizerYield;
+
+TokenIdentifier<isModule:bool, isStrict:bool>:String =
+    TokenizerTokenSeperator<true>
+    !TokenizerReservedWord
+    TokenizerIdentifierName:value
+    {$$ = value;};
+
+TokenIdentifierOrYield<isModule:bool, isStrict:bool, canHaveYield:bool>:String =
+    &{
+        if(!canHaveYield)
+            $? = "yield not allowed here";
+    }
+    TokenYield
+    {$$ = u"yield";}
+    / TokenIdentifier:value
+    {$$ = value;}
+    ;
+
+PrimaryExpression<isModule:bool, isStrict:bool, canHaveYield:bool>:ExpressionPointer =
+    TokenThis {$$ = arena.make<ast::ExpressionThis>($_);}
+    ;

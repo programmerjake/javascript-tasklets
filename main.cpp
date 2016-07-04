@@ -31,7 +31,8 @@ namespace test
 {
 const auto testSource =
     uR"(
-`\uD835\uDE45`)" + 1 /* skip first \n */;
+this
+)";
 void main()
 {
     using namespace value;

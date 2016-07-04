@@ -41,6 +41,11 @@
 #line 29 "javascript_tasklets/parser/parser_imp.peg"
              
 #include "../string.h"
+#include <memory>
+#include "ast/node.h"
+#include "ast/expression.h"
+#include "ast/expression_this.h"
+#include "ast/arena.h"
 
 namespace javascript_tasklets
 {
@@ -84,10 +89,13 @@ struct BodyAndFlags final
     {
     }
 };
+
+typedef ast::Node *NodePointer;
+typedef ast::Expression *ExpressionPointer;
 }
 }
 
-#line 91 "javascript_tasklets/parser/parser_imp.h"
+#line 99 "javascript_tasklets/parser/parser_imp.h"
 
 namespace javascript_tasklets
 {
@@ -97,6 +105,12 @@ class Parser final
 {
     Parser(const Parser &) = delete;
     Parser &operator=(const Parser &) = delete;
+#line 86 "javascript_tasklets/parser/parser_imp.peg"
+            
+public:
+    ast::Arena arena = ast::Arena();
+
+#line 114 "javascript_tasklets/parser/parser_imp.h"
 
 private:
     struct RuleResult final
@@ -132,9 +146,10 @@ private:
     {
         RuleResult resultTokenizerHexDigitValue;
         RuleResult resultTokenizerLineTerminatorSequence;
-        RuleResult resultTokenizerMultiLineComment;
-        RuleResult resultTokenizerMultiLineCommentNoLineTerminator;
+        RuleResult resultTokenizerMultiLineComment[2];
         RuleResult resultTokenizerSingleLineComment;
+        RuleResult resultTokenizerTokenSeperator[2];
+        RuleResult resultTokenizerTokenSeperatorWithLineTerminator;
         RuleResult resultTokenizerUnicodeEscapeSequence;
         RuleResult resultTokenizerUnicodeEscapeOrChar;
         RuleResult resultTokenizerEscapelessIdentifierStart;
@@ -262,6 +277,54 @@ private:
         RuleResult resultTokenizerTemplateMiddle;
         RuleResult resultTokenizerTemplateTail;
         RuleResult resultTokenizerTemplateCharacter;
+        RuleResult resultIdentifierName;
+        RuleResult resultTokenAwait;
+        RuleResult resultTokenBreak;
+        RuleResult resultTokenCase;
+        RuleResult resultTokenCatch;
+        RuleResult resultTokenClass;
+        RuleResult resultTokenConst;
+        RuleResult resultTokenContinue;
+        RuleResult resultTokenDebugger;
+        RuleResult resultTokenDefault;
+        RuleResult resultTokenDelete;
+        RuleResult resultTokenDo;
+        RuleResult resultTokenElse;
+        RuleResult resultTokenEnum;
+        RuleResult resultTokenExport;
+        RuleResult resultTokenExtends;
+        RuleResult resultTokenFalse;
+        RuleResult resultTokenFinally;
+        RuleResult resultTokenFor;
+        RuleResult resultTokenFunction;
+        RuleResult resultTokenIf;
+        RuleResult resultTokenImplements;
+        RuleResult resultTokenImport;
+        RuleResult resultTokenIn;
+        RuleResult resultTokenInstanceOf;
+        RuleResult resultTokenInterface;
+        RuleResult resultTokenNew;
+        RuleResult resultTokenNull;
+        RuleResult resultTokenPackage;
+        RuleResult resultTokenPrivate;
+        RuleResult resultTokenProtected;
+        RuleResult resultTokenPublic;
+        RuleResult resultTokenReturn;
+        RuleResult resultTokenSuper;
+        RuleResult resultTokenSwitch;
+        RuleResult resultTokenThis;
+        RuleResult resultTokenThrow;
+        RuleResult resultTokenTrue;
+        RuleResult resultTokenTry;
+        RuleResult resultTokenTypeOf;
+        RuleResult resultTokenVar;
+        RuleResult resultTokenVoid;
+        RuleResult resultTokenWhile;
+        RuleResult resultTokenWith;
+        RuleResult resultTokenYield;
+        RuleResult resultTokenIdentifier[2][2];
+        RuleResult resultTokenIdentifierOrYield[2][2][2];
+        RuleResult resultPrimaryExpression[2][2][2];
     };
     struct ResultsChunk final
     {
@@ -363,10 +426,14 @@ public:
 public:
     unsigned parseTokenizerHexDigitValue();
     char32_t parseTokenizerLineTerminatorSequence();
+    template <bool lineTerminatorAllowed>
     void parseTokenizerComment();
-    void parseTokenizerMultiLineComment();
-    void parseTokenizerMultiLineCommentNoLineTerminator();
+    template <bool lineTerminatorAllowed>
+    bool parseTokenizerMultiLineComment();
     void parseTokenizerSingleLineComment();
+    template <bool lineTerminatorAllowed>
+    void parseTokenizerTokenSeperator();
+    void parseTokenizerTokenSeperatorWithLineTerminator();
     RawStringAndChar parseTokenizerUnicodeEscapeSequence();
     char32_t parseTokenizerUnicodeEscapeOrChar();
     char32_t parseTokenizerEscapelessIdentifierStart();
@@ -513,14 +580,69 @@ public:
     RawAndCookedString parseTokenizerTemplateMiddle();
     RawAndCookedString parseTokenizerTemplateTail();
     RawAndCookedString parseTokenizerTemplateCharacter();
+    String parseIdentifierName();
+    void parseTokenAwait();
+    void parseTokenBreak();
+    void parseTokenCase();
+    void parseTokenCatch();
+    void parseTokenClass();
+    void parseTokenConst();
+    void parseTokenContinue();
+    void parseTokenDebugger();
+    void parseTokenDefault();
+    void parseTokenDelete();
+    void parseTokenDo();
+    void parseTokenElse();
+    void parseTokenEnum();
+    void parseTokenExport();
+    void parseTokenExtends();
+    void parseTokenFalse();
+    void parseTokenFinally();
+    void parseTokenFor();
+    void parseTokenFunction();
+    void parseTokenIf();
+    void parseTokenImplements();
+    void parseTokenImport();
+    void parseTokenIn();
+    void parseTokenInstanceOf();
+    void parseTokenInterface();
+    void parseTokenNew();
+    void parseTokenNull();
+    void parseTokenPackage();
+    void parseTokenPrivate();
+    void parseTokenProtected();
+    void parseTokenPublic();
+    void parseTokenReturn();
+    void parseTokenSuper();
+    void parseTokenSwitch();
+    void parseTokenThis();
+    void parseTokenThrow();
+    void parseTokenTrue();
+    void parseTokenTry();
+    void parseTokenTypeOf();
+    void parseTokenVar();
+    void parseTokenVoid();
+    void parseTokenWhile();
+    void parseTokenWith();
+    void parseTokenYield();
+    template <bool isModule, bool isStrict>
+    String parseTokenIdentifier();
+    template <bool isModule, bool isStrict, bool canHaveYield>
+    String parseTokenIdentifierOrYield();
+    template <bool isModule, bool isStrict, bool canHaveYield>
+    ExpressionPointer parsePrimaryExpression();
 
 private:
     unsigned internalParseTokenizerHexDigitValue(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     char32_t internalParseTokenizerLineTerminatorSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool lineTerminatorAllowed>
     void internalParseTokenizerComment(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
-    void internalParseTokenizerMultiLineComment(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
-    void internalParseTokenizerMultiLineCommentNoLineTerminator(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool lineTerminatorAllowed>
+    bool internalParseTokenizerMultiLineComment(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     void internalParseTokenizerSingleLineComment(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool lineTerminatorAllowed>
+    void internalParseTokenizerTokenSeperator(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenizerTokenSeperatorWithLineTerminator(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     RawStringAndChar internalParseTokenizerUnicodeEscapeSequence(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     char32_t internalParseTokenizerUnicodeEscapeOrChar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     char32_t internalParseTokenizerEscapelessIdentifierStart(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
@@ -667,8 +789,71 @@ private:
     RawAndCookedString internalParseTokenizerTemplateMiddle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     RawAndCookedString internalParseTokenizerTemplateTail(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     RawAndCookedString internalParseTokenizerTemplateCharacter(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseIdentifierName(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenAwait(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenBreak(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenCase(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenCatch(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenClass(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenConst(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenContinue(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenDebugger(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenDefault(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenDelete(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenDo(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenElse(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenEnum(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenExport(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenExtends(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenFalse(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenFinally(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenFor(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenFunction(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenIf(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenImplements(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenImport(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenIn(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenInstanceOf(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenInterface(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenNew(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenNull(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPackage(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPrivate(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenProtected(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPublic(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenReturn(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenSuper(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenSwitch(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenThis(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenThrow(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenTrue(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenTry(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenTypeOf(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenVar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenVoid(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenWhile(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenWith(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenYield(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict>
+    String internalParseTokenIdentifier(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveYield>
+    String internalParseTokenIdentifierOrYield(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveYield>
+    ExpressionPointer internalParsePrimaryExpression(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
 };
 
+extern template void Parser::parseTokenizerComment<false>();
+extern template void Parser::internalParseTokenizerComment<false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template void Parser::parseTokenizerComment<true>();
+extern template void Parser::internalParseTokenizerComment<true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template bool Parser::parseTokenizerMultiLineComment<false>();
+extern template bool Parser::internalParseTokenizerMultiLineComment<false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template bool Parser::parseTokenizerMultiLineComment<true>();
+extern template bool Parser::internalParseTokenizerMultiLineComment<true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template void Parser::parseTokenizerTokenSeperator<false>();
+extern template void Parser::internalParseTokenizerTokenSeperator<false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template void Parser::parseTokenizerTokenSeperator<true>();
+extern template void Parser::internalParseTokenizerTokenSeperator<true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 extern template void Parser::parseTokenizerReservedWord<false, false>();
 extern template void Parser::internalParseTokenizerReservedWord<false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 extern template void Parser::parseTokenizerReservedWord<false, true>();
@@ -685,6 +870,46 @@ extern template void Parser::parseTokenizerFutureReservedWord<true, false>();
 extern template void Parser::internalParseTokenizerFutureReservedWord<true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 extern template void Parser::parseTokenizerFutureReservedWord<true, true>();
 extern template void Parser::internalParseTokenizerFutureReservedWord<true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifier<false, false>();
+extern template String Parser::internalParseTokenIdentifier<false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifier<false, true>();
+extern template String Parser::internalParseTokenIdentifier<false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifier<true, false>();
+extern template String Parser::internalParseTokenIdentifier<true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifier<true, true>();
+extern template String Parser::internalParseTokenIdentifier<true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifierOrYield<false, false, false>();
+extern template String Parser::internalParseTokenIdentifierOrYield<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifierOrYield<false, false, true>();
+extern template String Parser::internalParseTokenIdentifierOrYield<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifierOrYield<false, true, false>();
+extern template String Parser::internalParseTokenIdentifierOrYield<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifierOrYield<false, true, true>();
+extern template String Parser::internalParseTokenIdentifierOrYield<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifierOrYield<true, false, false>();
+extern template String Parser::internalParseTokenIdentifierOrYield<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifierOrYield<true, false, true>();
+extern template String Parser::internalParseTokenIdentifierOrYield<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifierOrYield<true, true, false>();
+extern template String Parser::internalParseTokenIdentifierOrYield<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template String Parser::parseTokenIdentifierOrYield<true, true, true>();
+extern template String Parser::internalParseTokenIdentifierOrYield<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parsePrimaryExpression<false, false, false>();
+extern template ExpressionPointer Parser::internalParsePrimaryExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parsePrimaryExpression<false, false, true>();
+extern template ExpressionPointer Parser::internalParsePrimaryExpression<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parsePrimaryExpression<false, true, false>();
+extern template ExpressionPointer Parser::internalParsePrimaryExpression<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parsePrimaryExpression<false, true, true>();
+extern template ExpressionPointer Parser::internalParsePrimaryExpression<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parsePrimaryExpression<true, false, false>();
+extern template ExpressionPointer Parser::internalParsePrimaryExpression<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parsePrimaryExpression<true, false, true>();
+extern template ExpressionPointer Parser::internalParsePrimaryExpression<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parsePrimaryExpression<true, true, false>();
+extern template ExpressionPointer Parser::internalParsePrimaryExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parsePrimaryExpression<true, true, true>();
+extern template ExpressionPointer Parser::internalParsePrimaryExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 }
 }
 

@@ -20,6 +20,7 @@
  */
 #include "parser.h"
 #include "parser_imp.h"
+#include "ast/arena.h"
 #include <memory>
 #include <iostream>
 
@@ -47,16 +48,14 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
         }
         u32source += static_cast<char32_t>(value);
     }
+    ast::Arena arena;
+    ast::Node *result;
     try
     {
+        Parser parser(std::move(u32source));
 #warning finish
-        auto result = Parser(std::move(u32source)).parseTokenizerNoSubstitutionTemplate();
-        std::cout << "raw:'";
-        writeString(std::cout, result.raw);
-        std::cout << "'" << std::endl
-                  << "cooked:'";
-        writeString(std::cout, result.cooked);
-        std::cout << "'" << std::endl;
+        result = parser.parsePrimaryExpression<false, false, true>();
+        arena = std::move(parser.arena);
     }
     catch(Parser::ParseError &e)
     {
