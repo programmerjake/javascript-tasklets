@@ -31,7 +31,7 @@ namespace test
 {
 const auto testSource =
     uR"(
-this
+/abc/def
 )";
 void main()
 {

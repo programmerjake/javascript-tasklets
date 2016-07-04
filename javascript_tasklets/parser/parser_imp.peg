@@ -31,7 +31,6 @@ code header {
 #include <memory>
 #include "ast/node.h"
 #include "ast/expression.h"
-#include "ast/expression_this.h"
 #include "ast/arena.h"
 
 namespace javascript_tasklets
@@ -90,6 +89,10 @@ public:
 
 code source {
 #include "../character_properties.h"
+#include "ast/expression_this.h"
+#include "ast/literal.h"
+#include "ast/identifier_reference.h"
+#include "../value.h"
 }
 
 typedef unsigned unsigned;
@@ -904,15 +907,67 @@ TokenWhile = TokenizerTokenSeperator<true> TokenizerWhile;
 TokenWith = TokenizerTokenSeperator<true> TokenizerWith;
 TokenYield = TokenizerTokenSeperator<true> TokenizerYield;
 
+TokenLBrace = TokenizerTokenSeperator<true> TokenizerLBrace;
+TokenRBrace = TokenizerTokenSeperator<true> TokenizerRBrace;
+TokenLParen = TokenizerTokenSeperator<true> TokenizerLParen;
+TokenRParen = TokenizerTokenSeperator<true> TokenizerRParen;
+TokenLBracket = TokenizerTokenSeperator<true> TokenizerLBracket;
+TokenRBracket = TokenizerTokenSeperator<true> TokenizerRBracket;
+TokenPeriod = TokenizerTokenSeperator<true> TokenizerPeriod;
+TokenEllipsis = TokenizerTokenSeperator<true> TokenizerEllipsis;
+TokenSemicolon = TokenizerTokenSeperator<true> TokenizerSemicolon;
+TokenComma = TokenizerTokenSeperator<true> TokenizerComma;
+TokenLAngle = TokenizerTokenSeperator<true> TokenizerLAngle;
+TokenRAngle = TokenizerTokenSeperator<true> TokenizerRAngle;
+TokenLAngleEqual = TokenizerTokenSeperator<true> TokenizerLAngleEqual;
+TokenRAngleEqual = TokenizerTokenSeperator<true> TokenizerRAngleEqual;
+TokenEqualEqual = TokenizerTokenSeperator<true> TokenizerEqualEqual;
+TokenEMarkEqual = TokenizerTokenSeperator<true> TokenizerEMarkEqual;
+TokenEqualEqualEqual = TokenizerTokenSeperator<true> TokenizerEqualEqualEqual;
+TokenEMarkEqualEqual = TokenizerTokenSeperator<true> TokenizerEMarkEqualEqual;
+TokenPlus = TokenizerTokenSeperator<true> TokenizerPlus;
+TokenMinus = TokenizerTokenSeperator<true> TokenizerMinus;
+TokenStar = TokenizerTokenSeperator<true> TokenizerStar;
+TokenStarStar = TokenizerTokenSeperator<true> TokenizerStarStar;
+TokenPercent = TokenizerTokenSeperator<true> TokenizerPercent;
+TokenPlusPlus = TokenizerTokenSeperator<true> TokenizerPlusPlus;
+TokenMinusMinus = TokenizerTokenSeperator<true> TokenizerMinusMinus;
+TokenLAngleLAngle = TokenizerTokenSeperator<true> TokenizerLAngleLAngle;
+TokenRAngleRAngle = TokenizerTokenSeperator<true> TokenizerRAngleRAngle;
+TokenRAngleRAngleRAngle = TokenizerTokenSeperator<true> TokenizerRAngleRAngleRAngle;
+TokenAmp = TokenizerTokenSeperator<true> TokenizerAmp;
+TokenPipe = TokenizerTokenSeperator<true> TokenizerPipe;
+TokenCaret = TokenizerTokenSeperator<true> TokenizerCaret;
+TokenEMark = TokenizerTokenSeperator<true> TokenizerEMark;
+TokenTilde = TokenizerTokenSeperator<true> TokenizerTilde;
+TokenAmpAmp = TokenizerTokenSeperator<true> TokenizerAmpAmp;
+TokenPipePipe = TokenizerTokenSeperator<true> TokenizerPipePipe;
+TokenQMark = TokenizerTokenSeperator<true> TokenizerQMark;
+TokenColon = TokenizerTokenSeperator<true> TokenizerColon;
+TokenEqual = TokenizerTokenSeperator<true> TokenizerEqual;
+TokenPlusEqual = TokenizerTokenSeperator<true> TokenizerPlusEqual;
+TokenMinusEqual = TokenizerTokenSeperator<true> TokenizerMinusEqual;
+TokenStarEqual = TokenizerTokenSeperator<true> TokenizerStarEqual;
+TokenPercentEqual = TokenizerTokenSeperator<true> TokenizerPercentEqual;
+TokenLAngleLAngleEqual = TokenizerTokenSeperator<true> TokenizerLAngleLAngleEqual;
+TokenRAngleRAngleEqual = TokenizerTokenSeperator<true> TokenizerRAngleRAngleEqual;
+TokenRAngleRAngleRAngleEqual = TokenizerTokenSeperator<true> TokenizerRAngleRAngleRAngleEqual;
+TokenAmpEqual = TokenizerTokenSeperator<true> TokenizerAmpEqual;
+TokenPipeEqual = TokenizerTokenSeperator<true> TokenizerPipeEqual;
+TokenCaretEqual = TokenizerTokenSeperator<true> TokenizerCaretEqual;
+TokenArrow = TokenizerTokenSeperator<true> TokenizerArrow;
+TokenFSlash = TokenizerTokenSeperator<true> TokenizerFSlash;
+TokenFSlashEqual = TokenizerTokenSeperator<true> TokenizerFSlashEqual;
+
 TokenIdentifier<isModule:bool, isStrict:bool>:String =
     TokenizerTokenSeperator<true>
     !TokenizerReservedWord
     TokenizerIdentifierName:value
     {$$ = value;};
 
-TokenIdentifierOrYield<isModule:bool, isStrict:bool, canHaveYield:bool>:String =
+TokenIdentifierOrYield<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:String =
     &{
-        if(!canHaveYield)
+        if(!canHaveYieldOperator || isStrict)
             $? = "yield not allowed here";
     }
     TokenYield
@@ -921,6 +976,120 @@ TokenIdentifierOrYield<isModule:bool, isStrict:bool, canHaveYield:bool>:String =
     {$$ = value;}
     ;
 
-PrimaryExpression<isModule:bool, isStrict:bool, canHaveYield:bool>:ExpressionPointer =
-    TokenThis {$$ = arena.make<ast::ExpressionThis>($_);}
+TokenNumericLiteral:String =
+    TokenizerTokenSeperator<true>
+    TokenizerNumericLiteral:value
+    {$$ = value;}
+    ;
+
+TokenStringLiteral:String =
+    TokenizerTokenSeperator<true>
+    TokenizerStringLiteral:value
+    {$$ = value;}
+    ;
+
+TokenRegularExpressionLiteral:BodyAndFlags =
+    TokenizerTokenSeperator<true>
+    TokenizerRegularExpressionLiteral:value
+    {$$ = value;}
+    ;
+
+RegularExpressionLiteral:ExpressionPointer =
+    TokenRegularExpressionLiteral:regExp
+    {$$ = arena.make<ast::ExpressionRegExpLiteral>($_, regExp.body, regExp.flags);}
+    ;
+
+Literal:ExpressionPointer =
+    TokenNull
+    {$$ = arena.make<ast::ExpressionNullLiteral>($_);}
+    / TokenFalse
+    {$$ = arena.make<ast::ExpressionBooleanLiteral>($_, false);}
+    / TokenTrue
+    {$$ = arena.make<ast::ExpressionBooleanLiteral>($_, true);}
+    / TokenNumericLiteral:numericLiteral
+    {$$ = arena.make<ast::ExpressionNumericLiteral>($_, value::StringHandle::toNumberValue(numericLiteral));}
+    / TokenStringLiteral:stringLiteral
+    {$$ = arena.make<ast::ExpressionStringLiteral>($_, stringLiteral);}
+    ;
+
+IdentifierReference<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenIdentifierOrYield:name
+    {$$ = arena.make<ast::ExpressionIdentifierReference>($_, name);}
+    ;
+
+ArrayLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    &{
+        $? = "not implemented";
+#warning implement array literal
+    };
+
+ObjectLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    &{
+        $? = "not implemented";
+#warning implement object literal
+    };
+
+FunctionExpression<isModule:bool, isStrict:bool>:ExpressionPointer =
+    &{
+        $? = "not implemented";
+#warning implement function expression
+    };
+
+GeneratorExpression<isModule:bool, isStrict:bool>:ExpressionPointer =
+    &{
+        $? = "not implemented";
+#warning implement generator expression
+    };
+
+ClassExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    &{
+        $? = "not implemented";
+#warning implement class expression
+    };
+
+TemplateLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    &{
+        $? = "not implemented";
+#warning implement template literal
+    };
+
+Expression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    &{
+        $? = "not implemented";
+#warning implement expression
+    };
+
+ParenthesizedExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    "("
+    Expression<isModule, isStrict, true, canHaveYieldOperator>:expression
+    ")"
+    (
+        &TokenizerTokenSeperatorWithLineTerminator
+        / !TokenArrow
+    )
+    {$$ = expression;};
+
+PrimaryExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenThis
+    {$$ = arena.make<ast::ExpressionThis>($_);}
+    / IdentifierReference:identifierReference
+    {$$ = identifierReference;}
+    / Literal:literal
+    {$$ = literal;}
+    / ArrayLiteral:arrayLiteral
+    {$$ = arrayLiteral;}
+    / ObjectLiteral:objectLiteral
+    {$$ = objectLiteral;}
+    / FunctionExpression:functionExpression
+    {$$ = functionExpression;}
+    / ClassExpression:classExpression
+    {$$ = classExpression;}
+    / GeneratorExpression:generatorExpression
+    {$$ = generatorExpression;}
+    / RegularExpressionLiteral:regularExpressionLiteral
+    {$$ = regularExpressionLiteral;}
+    / TemplateLiteral:templateLiteral
+    {$$ = templateLiteral;}
+    / ParenthesizedExpression:parenthesizedExpression
+    {$$ = parenthesizedExpression;}
     ;

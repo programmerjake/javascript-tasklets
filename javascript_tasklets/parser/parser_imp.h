@@ -44,7 +44,6 @@
 #include <memory>
 #include "ast/node.h"
 #include "ast/expression.h"
-#include "ast/expression_this.h"
 #include "ast/arena.h"
 
 namespace javascript_tasklets
@@ -95,7 +94,7 @@ typedef ast::Expression *ExpressionPointer;
 }
 }
 
-#line 99 "javascript_tasklets/parser/parser_imp.h"
+#line 98 "javascript_tasklets/parser/parser_imp.h"
 
 namespace javascript_tasklets
 {
@@ -105,12 +104,12 @@ class Parser final
 {
     Parser(const Parser &) = delete;
     Parser &operator=(const Parser &) = delete;
-#line 86 "javascript_tasklets/parser/parser_imp.peg"
+#line 85 "javascript_tasklets/parser/parser_imp.peg"
             
 public:
     ast::Arena arena = ast::Arena();
 
-#line 114 "javascript_tasklets/parser/parser_imp.h"
+#line 113 "javascript_tasklets/parser/parser_imp.h"
 
 private:
     struct RuleResult final
@@ -322,8 +321,73 @@ private:
         RuleResult resultTokenWhile;
         RuleResult resultTokenWith;
         RuleResult resultTokenYield;
+        RuleResult resultTokenLBrace;
+        RuleResult resultTokenRBrace;
+        RuleResult resultTokenLParen;
+        RuleResult resultTokenRParen;
+        RuleResult resultTokenLBracket;
+        RuleResult resultTokenRBracket;
+        RuleResult resultTokenPeriod;
+        RuleResult resultTokenEllipsis;
+        RuleResult resultTokenSemicolon;
+        RuleResult resultTokenComma;
+        RuleResult resultTokenLAngle;
+        RuleResult resultTokenRAngle;
+        RuleResult resultTokenLAngleEqual;
+        RuleResult resultTokenRAngleEqual;
+        RuleResult resultTokenEqualEqual;
+        RuleResult resultTokenEMarkEqual;
+        RuleResult resultTokenEqualEqualEqual;
+        RuleResult resultTokenEMarkEqualEqual;
+        RuleResult resultTokenPlus;
+        RuleResult resultTokenMinus;
+        RuleResult resultTokenStar;
+        RuleResult resultTokenStarStar;
+        RuleResult resultTokenPercent;
+        RuleResult resultTokenPlusPlus;
+        RuleResult resultTokenMinusMinus;
+        RuleResult resultTokenLAngleLAngle;
+        RuleResult resultTokenRAngleRAngle;
+        RuleResult resultTokenRAngleRAngleRAngle;
+        RuleResult resultTokenAmp;
+        RuleResult resultTokenPipe;
+        RuleResult resultTokenCaret;
+        RuleResult resultTokenEMark;
+        RuleResult resultTokenTilde;
+        RuleResult resultTokenAmpAmp;
+        RuleResult resultTokenPipePipe;
+        RuleResult resultTokenQMark;
+        RuleResult resultTokenColon;
+        RuleResult resultTokenEqual;
+        RuleResult resultTokenPlusEqual;
+        RuleResult resultTokenMinusEqual;
+        RuleResult resultTokenStarEqual;
+        RuleResult resultTokenPercentEqual;
+        RuleResult resultTokenLAngleLAngleEqual;
+        RuleResult resultTokenRAngleRAngleEqual;
+        RuleResult resultTokenRAngleRAngleRAngleEqual;
+        RuleResult resultTokenAmpEqual;
+        RuleResult resultTokenPipeEqual;
+        RuleResult resultTokenCaretEqual;
+        RuleResult resultTokenArrow;
+        RuleResult resultTokenFSlash;
+        RuleResult resultTokenFSlashEqual;
         RuleResult resultTokenIdentifier[2][2];
         RuleResult resultTokenIdentifierOrYield[2][2][2];
+        RuleResult resultTokenNumericLiteral;
+        RuleResult resultTokenStringLiteral;
+        RuleResult resultTokenRegularExpressionLiteral;
+        RuleResult resultRegularExpressionLiteral;
+        RuleResult resultLiteral;
+        RuleResult resultIdentifierReference[2][2][2];
+        RuleResult resultArrayLiteral[2][2][2];
+        RuleResult resultObjectLiteral[2][2][2];
+        RuleResult resultFunctionExpression[2][2];
+        RuleResult resultGeneratorExpression[2][2];
+        RuleResult resultClassExpression[2][2][2];
+        RuleResult resultTemplateLiteral[2][2][2];
+        RuleResult resultExpression[2][2][2][2];
+        RuleResult resultParenthesizedExpression[2][2][2];
         RuleResult resultPrimaryExpression[2][2][2];
     };
     struct ResultsChunk final
@@ -625,11 +689,85 @@ public:
     void parseTokenWhile();
     void parseTokenWith();
     void parseTokenYield();
+    void parseTokenLBrace();
+    void parseTokenRBrace();
+    void parseTokenLParen();
+    void parseTokenRParen();
+    void parseTokenLBracket();
+    void parseTokenRBracket();
+    void parseTokenPeriod();
+    void parseTokenEllipsis();
+    void parseTokenSemicolon();
+    void parseTokenComma();
+    void parseTokenLAngle();
+    void parseTokenRAngle();
+    void parseTokenLAngleEqual();
+    void parseTokenRAngleEqual();
+    void parseTokenEqualEqual();
+    void parseTokenEMarkEqual();
+    void parseTokenEqualEqualEqual();
+    void parseTokenEMarkEqualEqual();
+    void parseTokenPlus();
+    void parseTokenMinus();
+    void parseTokenStar();
+    void parseTokenStarStar();
+    void parseTokenPercent();
+    void parseTokenPlusPlus();
+    void parseTokenMinusMinus();
+    void parseTokenLAngleLAngle();
+    void parseTokenRAngleRAngle();
+    void parseTokenRAngleRAngleRAngle();
+    void parseTokenAmp();
+    void parseTokenPipe();
+    void parseTokenCaret();
+    void parseTokenEMark();
+    void parseTokenTilde();
+    void parseTokenAmpAmp();
+    void parseTokenPipePipe();
+    void parseTokenQMark();
+    void parseTokenColon();
+    void parseTokenEqual();
+    void parseTokenPlusEqual();
+    void parseTokenMinusEqual();
+    void parseTokenStarEqual();
+    void parseTokenPercentEqual();
+    void parseTokenLAngleLAngleEqual();
+    void parseTokenRAngleRAngleEqual();
+    void parseTokenRAngleRAngleRAngleEqual();
+    void parseTokenAmpEqual();
+    void parseTokenPipeEqual();
+    void parseTokenCaretEqual();
+    void parseTokenArrow();
+    void parseTokenFSlash();
+    void parseTokenFSlashEqual();
     template <bool isModule, bool isStrict>
     String parseTokenIdentifier();
-    template <bool isModule, bool isStrict, bool canHaveYield>
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
     String parseTokenIdentifierOrYield();
-    template <bool isModule, bool isStrict, bool canHaveYield>
+    String parseTokenNumericLiteral();
+    String parseTokenStringLiteral();
+    BodyAndFlags parseTokenRegularExpressionLiteral();
+    ExpressionPointer parseRegularExpressionLiteral();
+    ExpressionPointer parseLiteral();
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer parseIdentifierReference();
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer parseArrayLiteral();
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer parseObjectLiteral();
+    template <bool isModule, bool isStrict>
+    ExpressionPointer parseFunctionExpression();
+    template <bool isModule, bool isStrict>
+    ExpressionPointer parseGeneratorExpression();
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer parseClassExpression();
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer parseTemplateLiteral();
+    template <bool isModule, bool isStrict, bool canHaveInOperator, bool canHaveYieldOperator>
+    ExpressionPointer parseExpression();
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer parseParenthesizedExpression();
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
     ExpressionPointer parsePrimaryExpression();
 
 private:
@@ -834,11 +972,85 @@ private:
     void internalParseTokenWhile(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     void internalParseTokenWith(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     void internalParseTokenYield(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenLBrace(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenRBrace(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenLParen(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenRParen(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenLBracket(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenRBracket(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPeriod(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenEllipsis(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenSemicolon(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenComma(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenLAngle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenRAngle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenLAngleEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenRAngleEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenEqualEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenEMarkEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenEqualEqualEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenEMarkEqualEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPlus(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenMinus(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenStar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenStarStar(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPercent(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPlusPlus(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenMinusMinus(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenLAngleLAngle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenRAngleRAngle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenRAngleRAngleRAngle(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenAmp(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPipe(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenCaret(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenEMark(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenTilde(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenAmpAmp(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPipePipe(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenQMark(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenColon(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPlusEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenMinusEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenStarEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPercentEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenLAngleLAngleEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenRAngleRAngleEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenRAngleRAngleRAngleEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenAmpEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenPipeEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenCaretEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenArrow(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenFSlash(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    void internalParseTokenFSlashEqual(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     template <bool isModule, bool isStrict>
     String internalParseTokenIdentifier(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
-    template <bool isModule, bool isStrict, bool canHaveYield>
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
     String internalParseTokenIdentifierOrYield(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
-    template <bool isModule, bool isStrict, bool canHaveYield>
+    String internalParseTokenNumericLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    String internalParseTokenStringLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    BodyAndFlags internalParseTokenRegularExpressionLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    ExpressionPointer internalParseRegularExpressionLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    ExpressionPointer internalParseLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer internalParseIdentifierReference(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer internalParseArrayLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer internalParseObjectLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict>
+    ExpressionPointer internalParseFunctionExpression(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict>
+    ExpressionPointer internalParseGeneratorExpression(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer internalParseClassExpression(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer internalParseTemplateLiteral(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveInOperator, bool canHaveYieldOperator>
+    ExpressionPointer internalParseExpression(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+    ExpressionPointer internalParseParenthesizedExpression(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator>
     ExpressionPointer internalParsePrimaryExpression(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
 };
 
@@ -894,6 +1106,150 @@ extern template String Parser::parseTokenIdentifierOrYield<true, true, false>();
 extern template String Parser::internalParseTokenIdentifierOrYield<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 extern template String Parser::parseTokenIdentifierOrYield<true, true, true>();
 extern template String Parser::internalParseTokenIdentifierOrYield<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseIdentifierReference<false, false, false>();
+extern template ExpressionPointer Parser::internalParseIdentifierReference<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseIdentifierReference<false, false, true>();
+extern template ExpressionPointer Parser::internalParseIdentifierReference<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseIdentifierReference<false, true, false>();
+extern template ExpressionPointer Parser::internalParseIdentifierReference<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseIdentifierReference<false, true, true>();
+extern template ExpressionPointer Parser::internalParseIdentifierReference<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseIdentifierReference<true, false, false>();
+extern template ExpressionPointer Parser::internalParseIdentifierReference<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseIdentifierReference<true, false, true>();
+extern template ExpressionPointer Parser::internalParseIdentifierReference<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseIdentifierReference<true, true, false>();
+extern template ExpressionPointer Parser::internalParseIdentifierReference<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseIdentifierReference<true, true, true>();
+extern template ExpressionPointer Parser::internalParseIdentifierReference<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseArrayLiteral<false, false, false>();
+extern template ExpressionPointer Parser::internalParseArrayLiteral<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseArrayLiteral<false, false, true>();
+extern template ExpressionPointer Parser::internalParseArrayLiteral<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseArrayLiteral<false, true, false>();
+extern template ExpressionPointer Parser::internalParseArrayLiteral<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseArrayLiteral<false, true, true>();
+extern template ExpressionPointer Parser::internalParseArrayLiteral<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseArrayLiteral<true, false, false>();
+extern template ExpressionPointer Parser::internalParseArrayLiteral<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseArrayLiteral<true, false, true>();
+extern template ExpressionPointer Parser::internalParseArrayLiteral<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseArrayLiteral<true, true, false>();
+extern template ExpressionPointer Parser::internalParseArrayLiteral<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseArrayLiteral<true, true, true>();
+extern template ExpressionPointer Parser::internalParseArrayLiteral<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseObjectLiteral<false, false, false>();
+extern template ExpressionPointer Parser::internalParseObjectLiteral<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseObjectLiteral<false, false, true>();
+extern template ExpressionPointer Parser::internalParseObjectLiteral<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseObjectLiteral<false, true, false>();
+extern template ExpressionPointer Parser::internalParseObjectLiteral<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseObjectLiteral<false, true, true>();
+extern template ExpressionPointer Parser::internalParseObjectLiteral<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseObjectLiteral<true, false, false>();
+extern template ExpressionPointer Parser::internalParseObjectLiteral<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseObjectLiteral<true, false, true>();
+extern template ExpressionPointer Parser::internalParseObjectLiteral<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseObjectLiteral<true, true, false>();
+extern template ExpressionPointer Parser::internalParseObjectLiteral<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseObjectLiteral<true, true, true>();
+extern template ExpressionPointer Parser::internalParseObjectLiteral<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseFunctionExpression<false, false>();
+extern template ExpressionPointer Parser::internalParseFunctionExpression<false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseFunctionExpression<false, true>();
+extern template ExpressionPointer Parser::internalParseFunctionExpression<false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseFunctionExpression<true, false>();
+extern template ExpressionPointer Parser::internalParseFunctionExpression<true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseFunctionExpression<true, true>();
+extern template ExpressionPointer Parser::internalParseFunctionExpression<true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseGeneratorExpression<false, false>();
+extern template ExpressionPointer Parser::internalParseGeneratorExpression<false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseGeneratorExpression<false, true>();
+extern template ExpressionPointer Parser::internalParseGeneratorExpression<false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseGeneratorExpression<true, false>();
+extern template ExpressionPointer Parser::internalParseGeneratorExpression<true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseGeneratorExpression<true, true>();
+extern template ExpressionPointer Parser::internalParseGeneratorExpression<true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseClassExpression<false, false, false>();
+extern template ExpressionPointer Parser::internalParseClassExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseClassExpression<false, false, true>();
+extern template ExpressionPointer Parser::internalParseClassExpression<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseClassExpression<false, true, false>();
+extern template ExpressionPointer Parser::internalParseClassExpression<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseClassExpression<false, true, true>();
+extern template ExpressionPointer Parser::internalParseClassExpression<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseClassExpression<true, false, false>();
+extern template ExpressionPointer Parser::internalParseClassExpression<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseClassExpression<true, false, true>();
+extern template ExpressionPointer Parser::internalParseClassExpression<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseClassExpression<true, true, false>();
+extern template ExpressionPointer Parser::internalParseClassExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseClassExpression<true, true, true>();
+extern template ExpressionPointer Parser::internalParseClassExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseTemplateLiteral<false, false, false>();
+extern template ExpressionPointer Parser::internalParseTemplateLiteral<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseTemplateLiteral<false, false, true>();
+extern template ExpressionPointer Parser::internalParseTemplateLiteral<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseTemplateLiteral<false, true, false>();
+extern template ExpressionPointer Parser::internalParseTemplateLiteral<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseTemplateLiteral<false, true, true>();
+extern template ExpressionPointer Parser::internalParseTemplateLiteral<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseTemplateLiteral<true, false, false>();
+extern template ExpressionPointer Parser::internalParseTemplateLiteral<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseTemplateLiteral<true, false, true>();
+extern template ExpressionPointer Parser::internalParseTemplateLiteral<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseTemplateLiteral<true, true, false>();
+extern template ExpressionPointer Parser::internalParseTemplateLiteral<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseTemplateLiteral<true, true, true>();
+extern template ExpressionPointer Parser::internalParseTemplateLiteral<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<false, false, false, false>();
+extern template ExpressionPointer Parser::internalParseExpression<false, false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<false, false, false, true>();
+extern template ExpressionPointer Parser::internalParseExpression<false, false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<false, false, true, false>();
+extern template ExpressionPointer Parser::internalParseExpression<false, false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<false, false, true, true>();
+extern template ExpressionPointer Parser::internalParseExpression<false, false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<false, true, false, false>();
+extern template ExpressionPointer Parser::internalParseExpression<false, true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<false, true, false, true>();
+extern template ExpressionPointer Parser::internalParseExpression<false, true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<false, true, true, false>();
+extern template ExpressionPointer Parser::internalParseExpression<false, true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<false, true, true, true>();
+extern template ExpressionPointer Parser::internalParseExpression<false, true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<true, false, false, false>();
+extern template ExpressionPointer Parser::internalParseExpression<true, false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<true, false, false, true>();
+extern template ExpressionPointer Parser::internalParseExpression<true, false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<true, false, true, false>();
+extern template ExpressionPointer Parser::internalParseExpression<true, false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<true, false, true, true>();
+extern template ExpressionPointer Parser::internalParseExpression<true, false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<true, true, false, false>();
+extern template ExpressionPointer Parser::internalParseExpression<true, true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<true, true, false, true>();
+extern template ExpressionPointer Parser::internalParseExpression<true, true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<true, true, true, false>();
+extern template ExpressionPointer Parser::internalParseExpression<true, true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseExpression<true, true, true, true>();
+extern template ExpressionPointer Parser::internalParseExpression<true, true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseParenthesizedExpression<false, false, false>();
+extern template ExpressionPointer Parser::internalParseParenthesizedExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseParenthesizedExpression<false, false, true>();
+extern template ExpressionPointer Parser::internalParseParenthesizedExpression<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseParenthesizedExpression<false, true, false>();
+extern template ExpressionPointer Parser::internalParseParenthesizedExpression<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseParenthesizedExpression<false, true, true>();
+extern template ExpressionPointer Parser::internalParseParenthesizedExpression<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseParenthesizedExpression<true, false, false>();
+extern template ExpressionPointer Parser::internalParseParenthesizedExpression<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseParenthesizedExpression<true, false, true>();
+extern template ExpressionPointer Parser::internalParseParenthesizedExpression<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseParenthesizedExpression<true, true, false>();
+extern template ExpressionPointer Parser::internalParseParenthesizedExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template ExpressionPointer Parser::parseParenthesizedExpression<true, true, true>();
+extern template ExpressionPointer Parser::internalParseParenthesizedExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 extern template ExpressionPointer Parser::parsePrimaryExpression<false, false, false>();
 extern template ExpressionPointer Parser::internalParsePrimaryExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 extern template ExpressionPointer Parser::parsePrimaryExpression<false, false, true>();
