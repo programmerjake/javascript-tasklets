@@ -65,7 +65,7 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
         return value::ObjectHandle();
     }
     value::ObjectHandle::throwSyntaxError(
-        u"parseScript is not implemented", LocationHandle(gc, Location(source, 0)), gc);
+        u"parse successful but parseScript is not implemented", LocationHandle(gc, Location(source, 0)), gc);
     return value::ObjectHandle();
 }
 }

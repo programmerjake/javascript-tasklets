@@ -23,7 +23,9 @@
 #define JAVASCRIPT_TASKLETS_PARSER_AST_LITERAL_H_
 
 #include "expression.h"
+#include "node.h"
 #include "../../string.h"
+#include <vector>
 
 namespace javascript_tasklets
 {
@@ -68,6 +70,69 @@ struct ExpressionRegExpLiteral : public Expression
     String flags;
     ExpressionRegExpLiteral(std::size_t location, String body, String flags)
         : Expression(location), body(std::move(body)), flags(std::move(flags))
+    {
+    }
+};
+
+struct ArrayLiteralElement : public Node
+{
+    using Node::Node;
+};
+
+struct ExpressionArrayLiteralElement : public ArrayLiteralElement
+{
+    Expression *expression;
+    ExpressionArrayLiteralElement(std::size_t location, Expression *expression)
+        : ArrayLiteralElement(location), expression(expression)
+    {
+    }
+};
+
+struct SpreadArrayLiteralElement : public ArrayLiteralElement
+{
+    Expression *expression;
+    SpreadArrayLiteralElement(std::size_t location, Expression *expression)
+        : ArrayLiteralElement(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionArrayLiteral : public Expression
+{
+    std::vector<ArrayLiteralElement *> elements; // null for empty element
+    ExpressionArrayLiteral(std::size_t location, std::vector<ArrayLiteralElement *> elements)
+        : Expression(location), elements(std::move(elements))
+    {
+    }
+};
+
+struct TemplateString final
+{
+    String raw;
+    String cooked;
+    TemplateString(String raw, String cooked) : raw(std::move(raw)), cooked(std::move(cooked))
+    {
+    }
+};
+
+struct TemplateSubstitutionAndString final
+{
+    Expression *substitution;
+    TemplateString string;
+    TemplateSubstitutionAndString(Expression *substitution, TemplateString string)
+        : substitution(substitution), string(std::move(string))
+    {
+    }
+};
+
+typedef std::vector<TemplateSubstitutionAndString> TemplateRest;
+
+struct ExpressionTemplateLiteral : public Expression
+{
+    TemplateString first;
+    TemplateRest rest;
+    ExpressionTemplateLiteral(std::size_t location, TemplateString first, TemplateRest rest = TemplateRest())
+        : Expression(location), first(std::move(first)), rest(std::move(rest))
     {
     }
 };

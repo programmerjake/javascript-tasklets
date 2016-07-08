@@ -29,8 +29,10 @@ namespace javascript_tasklets::parser;
 code header {
 #include "../string.h"
 #include <memory>
+#include <vector>
 #include "ast/node.h"
 #include "ast/expression.h"
+#include "ast/literal.h"
 #include "ast/arena.h"
 
 namespace javascript_tasklets
@@ -78,6 +80,8 @@ struct BodyAndFlags final
 
 typedef ast::Node *NodePointer;
 typedef ast::Expression *ExpressionPointer;
+typedef ast::ArrayLiteralElement *ArrayLiteralElementPointer;
+typedef std::vector<ast::ArrayLiteralElement *> ArrayLiteralElementList;
 }
 }
 }
@@ -90,8 +94,8 @@ public:
 code source {
 #include "../character_properties.h"
 #include "ast/expression_this.h"
-#include "ast/literal.h"
 #include "ast/identifier_reference.h"
+#include "ast/comma_operator.h"
 #include "../value.h"
 }
 
@@ -103,6 +107,9 @@ typedef RawStringAndChar RawStringAndChar;
 typedef BodyAndFlags BodyAndFlags;
 typedef ExpressionPointer ExpressionPointer;
 typedef NodePointer NodePointer;
+typedef ArrayLiteralElementPointer ArrayLiteralElementPointer;
+typedef ArrayLiteralElementList ArrayLiteralElementList;
+typedef ast::TemplateRest TemplateRest;
 
 TokenizerHexDigitValue:unsigned = 
     [^]:ch
@@ -862,6 +869,30 @@ IdentifierName:String =
     {$$ = value;}
     ;
 
+TokenNoSubstitutionTemplate:RawAndCookedString =
+    TokenizerTokenSeperator<true>
+    TokenizerNoSubstitutionTemplate:value
+    {$$ = std::move(value);}
+    ;
+
+TokenTemplateHead:RawAndCookedString =
+    TokenizerTokenSeperator<true>
+    TokenizerTemplateHead:value
+    {$$ = std::move(value);}
+    ;
+
+TokenTemplateMiddle:RawAndCookedString =
+    TokenizerTokenSeperator<true>
+    TokenizerTemplateMiddle:value
+    {$$ = std::move(value);}
+    ;
+
+TokenTemplateTail:RawAndCookedString =
+    TokenizerTokenSeperator<true>
+    TokenizerTemplateTail:value
+    {$$ = std::move(value);}
+    ;
+
 TokenAwait = TokenizerTokenSeperator<true> TokenizerAwait;
 TokenBreak = TokenizerTokenSeperator<true> TokenizerBreak;
 TokenCase = TokenizerTokenSeperator<true> TokenizerCase;
@@ -999,64 +1030,33 @@ RegularExpressionLiteral:ExpressionPointer =
     {$$ = arena.make<ast::ExpressionRegExpLiteral>($_, regExp.body, regExp.flags);}
     ;
 
-Literal:ExpressionPointer =
-    TokenNull
-    {$$ = arena.make<ast::ExpressionNullLiteral>($_);}
-    / TokenFalse
-    {$$ = arena.make<ast::ExpressionBooleanLiteral>($_, false);}
-    / TokenTrue
-    {$$ = arena.make<ast::ExpressionBooleanLiteral>($_, true);}
-    / TokenNumericLiteral:numericLiteral
-    {$$ = arena.make<ast::ExpressionNumericLiteral>($_, value::StringHandle::toNumberValue(numericLiteral));}
-    / TokenStringLiteral:stringLiteral
-    {$$ = arena.make<ast::ExpressionStringLiteral>($_, stringLiteral);}
-    ;
-
 IdentifierReference<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     TokenIdentifierOrYield:name
     {$$ = arena.make<ast::ExpressionIdentifierReference>($_, name);}
     ;
 
-ArrayLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
-    &{
-        $? = "not implemented";
-#warning implement array literal
-    };
-
-ObjectLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
-    &{
-        $? = "not implemented";
-#warning implement object literal
-    };
-
 FunctionExpression<isModule:bool, isStrict:bool>:ExpressionPointer =
     &{
-        $? = "not implemented";
+        $? = "FunctionExpression not implemented";
 #warning implement function expression
     };
 
 GeneratorExpression<isModule:bool, isStrict:bool>:ExpressionPointer =
     &{
-        $? = "not implemented";
+        $? = "GeneratorExpression not implemented";
 #warning implement generator expression
     };
 
 ClassExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     &{
-        $? = "not implemented";
+        $? = "ClassExpression not implemented";
 #warning implement class expression
     };
 
-TemplateLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+AssignmentExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     &{
-        $? = "not implemented";
-#warning implement template literal
-    };
-
-Expression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
-    &{
-        $? = "not implemented";
-#warning implement expression
+        $? = "AssignmentExpression not implemented";
+#warning implement assignment expression
     };
 
 ParenthesizedExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
@@ -1093,3 +1093,91 @@ PrimaryExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Expre
     / ParenthesizedExpression:parenthesizedExpression
     {$$ = parenthesizedExpression;}
     ;
+
+Literal:ExpressionPointer =
+    TokenNull
+    {$$ = arena.make<ast::ExpressionNullLiteral>($_);}
+    / TokenFalse
+    {$$ = arena.make<ast::ExpressionBooleanLiteral>($_, false);}
+    / TokenTrue
+    {$$ = arena.make<ast::ExpressionBooleanLiteral>($_, true);}
+    / TokenNumericLiteral:numericLiteral
+    {$$ = arena.make<ast::ExpressionNumericLiteral>($_, value::StringHandle::toNumberValue(numericLiteral));}
+    / TokenStringLiteral:stringLiteral
+    {$$ = arena.make<ast::ExpressionStringLiteral>($_, stringLiteral);}
+    ;
+
+ArrayLiteralElement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ArrayLiteralElementPointer =
+    &(
+        TokenComma
+        !TokenRBracket
+    )
+    {$$ = nullptr;}
+    / TokenEllipsis
+    AssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>:spreadExpression
+    {$$ = arena.make<ast::SpreadArrayLiteralElement>($_, spreadExpression);}
+    / AssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>:expression
+    {$$ = arena.make<ast::ExpressionArrayLiteralElement>($_, expression);}
+    ;
+
+ArrayLiteralElementList<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ArrayLiteralElementList =
+    (
+        ArrayLiteralElement:element
+        TokenComma
+        {$$.push_back(element);}
+    )*
+    (
+        ArrayLiteralElement:lastElement
+        {$$.push_back(lastElement);}
+    )?
+    ;
+
+ArrayLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenLBracket
+    ArrayLiteralElementList:elements
+    TokenRBracket
+    {$$ = arena.make<ast::ExpressionArrayLiteral>($_, std::move(elements));}
+    ;
+
+ObjectLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    &{
+        $? = "ObjectLiteral not implemented";
+#warning implement object literal
+    };
+
+TemplateLiteralRest<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:TemplateRest =
+    (
+        Expression<isModule, isStrict, true, canHaveYieldOperator>:expression
+        TokenTemplateMiddle:middle
+        {$$.emplace_back(expression, ast::TemplateString(middle.raw, middle.cooked));}
+    )*
+    Expression<isModule, isStrict, true, canHaveYieldOperator>:lastExpression
+    TokenTemplateTail:tail
+    {$$.emplace_back(lastExpression, ast::TemplateString(tail.raw, tail.cooked));}
+    ;
+
+TemplateLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenNoSubstitutionTemplate:noSubstitutionTemplate
+    {
+        $$ = arena.make<ast::ExpressionTemplateLiteral>($_,
+                                                        ast::TemplateString(noSubstitutionTemplate.raw,
+                                                                       noSubstitutionTemplate.cooked));
+    }
+    / TokenTemplateHead:first
+    TemplateLiteralRest:rest
+    {
+        $$ = arena.make<ast::ExpressionTemplateLiteral>($_, ast::TemplateString(first.raw, first.cooked), std::move(rest));
+    }
+    ;
+
+Expression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    AssignmentExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenComma
+        AssignmentExpression:nextExpression
+        {$$ = arena.make<ast::ExpressionCommaOperator>($_, $$, nextExpression);}
+    )*
+    !TokenComma
+    ;
+
