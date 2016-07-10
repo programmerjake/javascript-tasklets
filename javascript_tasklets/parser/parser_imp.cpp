@@ -22,13 +22,13 @@
  *
  */
 
-// to regenerate this file, use https://github.com/programmerjake/peg_parser_generator
-// command: peg_parser_generator parser_imp.peg
+// to regenerate parser_imp.h and parser_imp.cpp, use https://github.com/programmerjake/peg_parser_generator
+// command: peg_parser_generator javascript_tasklets/parser/parser_imp.peg
 
 #line 29 "javascript_tasklets/parser/parser_imp.cpp"
 #include "parser_imp.h"
 
-#line 94 "javascript_tasklets/parser/parser_imp.peg"
+#line 97 "javascript_tasklets/parser/parser_imp.peg"
              
 #include "../character_properties.h"
 #include "ast/expressions.h"
@@ -180,7 +180,7 @@ unsigned Parser::internalParseTokenizerHexDigitValue(std::size_t startLocation__
         {
             const char *predicateReturnValue__ = nullptr;
             {
-#line 114 "javascript_tasklets/parser/parser_imp.peg"
+#line 121 "javascript_tasklets/parser/parser_imp.peg"
       
         auto digitValue = character_properties::javascriptDigitValue(ch);
         if(digitValue >= 0 && digitValue < 0x10)
@@ -255,7 +255,7 @@ char32_t Parser::internalParseTokenizerLineTerminatorSequence(std::size_t startL
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 122 "javascript_tasklets/parser/parser_imp.peg"
+#line 129 "javascript_tasklets/parser/parser_imp.peg"
                                                (returnValue__) = U'\n';
 #line 261 "javascript_tasklets/parser/parser_imp.cpp"
         }
@@ -282,7 +282,7 @@ char32_t Parser::internalParseTokenizerLineTerminatorSequence(std::size_t startL
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 123 "javascript_tasklets/parser/parser_imp.peg"
+#line 130 "javascript_tasklets/parser/parser_imp.peg"
                                              (returnValue__) = U'\n';
 #line 288 "javascript_tasklets/parser/parser_imp.cpp"
             }
@@ -324,7 +324,7 @@ char32_t Parser::internalParseTokenizerLineTerminatorSequence(std::size_t startL
             {
                 const char *predicateReturnValue__ = nullptr;
                 {
-#line 125 "javascript_tasklets/parser/parser_imp.peg"
+#line 132 "javascript_tasklets/parser/parser_imp.peg"
                                        
                                          (returnValue__) = char1;
                                          if(!character_properties::javascriptLineTerminator((returnValue__)))
@@ -440,7 +440,7 @@ bool Parser::internalParseTokenizerMultiLineComment(std::size_t startLocation__,
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 137 "javascript_tasklets/parser/parser_imp.peg"
+#line 144 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = false;
 #line 446 "javascript_tasklets/parser/parser_imp.cpp"
         }
@@ -509,7 +509,7 @@ bool Parser::internalParseTokenizerMultiLineComment(std::size_t startLocation__,
                         {
                             const char *predicateReturnValue__ = nullptr;
                             {
-#line 142 "javascript_tasklets/parser/parser_imp.peg"
+#line 149 "javascript_tasklets/parser/parser_imp.peg"
               
                 if(!lineTerminatorAllowed)
                     (predicateReturnValue__) = "line terminator not allowed here";
@@ -780,7 +780,7 @@ void Parser::internalParseTokenizerTokenSeperator(std::size_t startLocation__, R
                     {
                         const char *predicateReturnValue__ = nullptr;
                         {
-#line 160 "javascript_tasklets/parser/parser_imp.peg"
+#line 167 "javascript_tasklets/parser/parser_imp.peg"
           
             if(!lineTerminatorAllowed)
                 (predicateReturnValue__) = "line terminator not allowed here";
@@ -843,7 +843,7 @@ void Parser::internalParseTokenizerTokenSeperator(std::size_t startLocation__, R
                     {
                         const char *predicateReturnValue__ = nullptr;
                         {
-#line 166 "javascript_tasklets/parser/parser_imp.peg"
+#line 173 "javascript_tasklets/parser/parser_imp.peg"
           
             if(!character_properties::javascriptWhiteSpace(ch))
                 (predicateReturnValue__) = "not a whitespace character";
@@ -911,7 +911,7 @@ void Parser::internalParseTokenizerTokenSeperatorWithLineTerminator(std::size_t 
             {
                 const char *predicateReturnValue__ = nullptr;
                 {
-#line 176 "javascript_tasklets/parser/parser_imp.peg"
+#line 183 "javascript_tasklets/parser/parser_imp.peg"
           
             if(!hasLineTerminator)
                 (predicateReturnValue__) = "missing line terminator";
@@ -984,7 +984,7 @@ RawStringAndChar Parser::internalParseTokenizerUnicodeEscapeSequence(std::size_t
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 184 "javascript_tasklets/parser/parser_imp.peg"
+#line 191 "javascript_tasklets/parser/parser_imp.peg"
                                                        (returnValue__) = RawStringAndChar(u"u", 0);
 #line 990 "javascript_tasklets/parser/parser_imp.cpp"
         }
@@ -1012,7 +1012,7 @@ RawStringAndChar Parser::internalParseTokenizerUnicodeEscapeSequence(std::size_t
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 186 "javascript_tasklets/parser/parser_imp.peg"
+#line 193 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__).raw += u"{";
 #line 1018 "javascript_tasklets/parser/parser_imp.cpp"
             }
@@ -1047,7 +1047,7 @@ RawStringAndChar Parser::internalParseTokenizerUnicodeEscapeSequence(std::size_t
                 {
                     const char *predicateReturnValue__ = nullptr;
                     {
-#line 189 "javascript_tasklets/parser/parser_imp.peg"
+#line 196 "javascript_tasklets/parser/parser_imp.peg"
           
             auto digitValue = character_properties::javascriptDigitValue(digit);
             if(digitValue < 0 || digitValue >= 0x10)
@@ -1100,7 +1100,7 @@ RawStringAndChar Parser::internalParseTokenizerUnicodeEscapeSequence(std::size_t
                         {
                             const char *predicateReturnValue__ = nullptr;
                             {
-#line 189 "javascript_tasklets/parser/parser_imp.peg"
+#line 196 "javascript_tasklets/parser/parser_imp.peg"
           
             auto digitValue = character_properties::javascriptDigitValue(digit);
             if(digitValue < 0 || digitValue >= 0x10)
@@ -1155,7 +1155,7 @@ RawStringAndChar Parser::internalParseTokenizerUnicodeEscapeSequence(std::size_t
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 203 "javascript_tasklets/parser/parser_imp.peg"
+#line 210 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__).raw += u"}";
 #line 1161 "javascript_tasklets/parser/parser_imp.cpp"
             }
@@ -1189,7 +1189,7 @@ RawStringAndChar Parser::internalParseTokenizerUnicodeEscapeSequence(std::size_t
                 {
                     const char *predicateReturnValue__ = nullptr;
                     {
-#line 205 "javascript_tasklets/parser/parser_imp.peg"
+#line 212 "javascript_tasklets/parser/parser_imp.peg"
         
           auto digitValue = character_properties::javascriptDigitValue(digit1);
           if(digitValue < 0 || digitValue >= 0x10)
@@ -1238,7 +1238,7 @@ RawStringAndChar Parser::internalParseTokenizerUnicodeEscapeSequence(std::size_t
                 {
                     const char *predicateReturnValue__ = nullptr;
                     {
-#line 216 "javascript_tasklets/parser/parser_imp.peg"
+#line 223 "javascript_tasklets/parser/parser_imp.peg"
         
           auto digitValue = character_properties::javascriptDigitValue(digit2);
           if(digitValue < 0 || digitValue >= 0x10)
@@ -1287,7 +1287,7 @@ RawStringAndChar Parser::internalParseTokenizerUnicodeEscapeSequence(std::size_t
                 {
                     const char *predicateReturnValue__ = nullptr;
                     {
-#line 227 "javascript_tasklets/parser/parser_imp.peg"
+#line 234 "javascript_tasklets/parser/parser_imp.peg"
         
           auto digitValue = character_properties::javascriptDigitValue(digit3);
           if(digitValue < 0 || digitValue >= 0x10)
@@ -1336,7 +1336,7 @@ RawStringAndChar Parser::internalParseTokenizerUnicodeEscapeSequence(std::size_t
                 {
                     const char *predicateReturnValue__ = nullptr;
                     {
-#line 238 "javascript_tasklets/parser/parser_imp.peg"
+#line 245 "javascript_tasklets/parser/parser_imp.peg"
         
           auto digitValue = character_properties::javascriptDigitValue(digit4);
           if(digitValue < 0 || digitValue >= 0x10)
@@ -1416,7 +1416,7 @@ char32_t Parser::internalParseTokenizerUnicodeEscapeOrChar(std::size_t startLoca
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 250 "javascript_tasklets/parser/parser_imp.peg"
+#line 257 "javascript_tasklets/parser/parser_imp.peg"
                                                                                 (returnValue__) = escape.ch;
 #line 1422 "javascript_tasklets/parser/parser_imp.cpp"
         }
@@ -1448,7 +1448,7 @@ char32_t Parser::internalParseTokenizerUnicodeEscapeOrChar(std::size_t startLoca
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 251 "javascript_tasklets/parser/parser_imp.peg"
+#line 258 "javascript_tasklets/parser/parser_imp.peg"
                                             (returnValue__) = ch;
 #line 1454 "javascript_tasklets/parser/parser_imp.cpp"
             }
@@ -1511,7 +1511,7 @@ char32_t Parser::internalParseTokenizerEscapelessIdentifierStart(std::size_t sta
         {
             const char *predicateReturnValue__ = nullptr;
             {
-#line 255 "javascript_tasklets/parser/parser_imp.peg"
+#line 262 "javascript_tasklets/parser/parser_imp.peg"
       
         if(!character_properties::javascriptIdStart(ch))
             (predicateReturnValue__) = "expected identifier start";
@@ -1574,7 +1574,7 @@ char32_t Parser::internalParseTokenizerEscapelessIdentifierPart(std::size_t star
         {
             const char *predicateReturnValue__ = nullptr;
             {
-#line 264 "javascript_tasklets/parser/parser_imp.peg"
+#line 271 "javascript_tasklets/parser/parser_imp.peg"
       
         if(!character_properties::javascriptIdContinue(ch))
             (predicateReturnValue__) = "expected identifier part";
@@ -1624,7 +1624,7 @@ String Parser::internalParseTokenizerIdentifierName(std::size_t startLocation__,
         {
             const char *predicateReturnValue__ = nullptr;
             {
-#line 273 "javascript_tasklets/parser/parser_imp.peg"
+#line 280 "javascript_tasklets/parser/parser_imp.peg"
       
         if(!character_properties::javascriptIdStart(startChar))
             (predicateReturnValue__) = "expected identifier start";
@@ -1661,7 +1661,7 @@ String Parser::internalParseTokenizerIdentifierName(std::size_t startLocation__,
                     {
                         const char *predicateReturnValue__ = nullptr;
                         {
-#line 281 "javascript_tasklets/parser/parser_imp.peg"
+#line 288 "javascript_tasklets/parser/parser_imp.peg"
           
             if(!character_properties::javascriptIdContinue(continueChar))
                 (predicateReturnValue__) = "expected identifier continue";
@@ -1760,7 +1760,7 @@ String Parser::internalParseTokenizerEscapelessIdentifierName(std::size_t startL
         {
             const char *predicateReturnValue__ = nullptr;
             {
-#line 292 "javascript_tasklets/parser/parser_imp.peg"
+#line 299 "javascript_tasklets/parser/parser_imp.peg"
       
         if(!character_properties::javascriptIdStart(startChar))
             (predicateReturnValue__) = "expected identifier start";
@@ -1811,7 +1811,7 @@ String Parser::internalParseTokenizerEscapelessIdentifierName(std::size_t startL
                     {
                         const char *predicateReturnValue__ = nullptr;
                         {
-#line 300 "javascript_tasklets/parser/parser_imp.peg"
+#line 307 "javascript_tasklets/parser/parser_imp.peg"
           
             if(!character_properties::javascriptIdContinue(continueChar))
                 (predicateReturnValue__) = "expected identifier continue";
@@ -7257,6 +7257,167 @@ void Parser::internalParseTokenizerSwitch(std::size_t startLocation__, RuleResul
     ruleResultOut__ = ruleResult__;
 }
 
+void Parser::parseTokenizerTarget()
+{
+    RuleResult result;
+    internalParseTokenizerTarget(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+}
+
+void Parser::internalParseTokenizerTarget(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    auto &ruleResult__ = this->getResults(startLocation__).resultTokenizerTarget;
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return;
+    }
+    if(startLocation__ >= this->sourceSize)
+    {
+        ruleResult__ = this->makeFail(startLocation__, "missing t", isRequiredForSuccess__);
+    }
+    else if(this->source.get()[startLocation__] == U't')
+    {
+        ruleResult__ = this->makeSuccess(startLocation__ + 1, startLocation__ + 1);
+    }
+    else
+    {
+        ruleResult__ = this->makeFail(startLocation__, startLocation__ + 1, "missing t", isRequiredForSuccess__);
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        if(startLocation__ >= this->sourceSize)
+        {
+            ruleResult__ = this->makeFail(startLocation__, "missing a", isRequiredForSuccess__);
+        }
+        else if(this->source.get()[startLocation__] == U'a')
+        {
+            ruleResult__ = this->makeSuccess(startLocation__ + 1, startLocation__ + 1);
+        }
+        else
+        {
+            ruleResult__ = this->makeFail(startLocation__, startLocation__ + 1, "missing a", isRequiredForSuccess__);
+        }
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        if(startLocation__ >= this->sourceSize)
+        {
+            ruleResult__ = this->makeFail(startLocation__, "missing r", isRequiredForSuccess__);
+        }
+        else if(this->source.get()[startLocation__] == U'r')
+        {
+            ruleResult__ = this->makeSuccess(startLocation__ + 1, startLocation__ + 1);
+        }
+        else
+        {
+            ruleResult__ = this->makeFail(startLocation__, startLocation__ + 1, "missing r", isRequiredForSuccess__);
+        }
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        if(startLocation__ >= this->sourceSize)
+        {
+            ruleResult__ = this->makeFail(startLocation__, "missing g", isRequiredForSuccess__);
+        }
+        else if(this->source.get()[startLocation__] == U'g')
+        {
+            ruleResult__ = this->makeSuccess(startLocation__ + 1, startLocation__ + 1);
+        }
+        else
+        {
+            ruleResult__ = this->makeFail(startLocation__, startLocation__ + 1, "missing g", isRequiredForSuccess__);
+        }
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        if(startLocation__ >= this->sourceSize)
+        {
+            ruleResult__ = this->makeFail(startLocation__, "missing e", isRequiredForSuccess__);
+        }
+        else if(this->source.get()[startLocation__] == U'e')
+        {
+            ruleResult__ = this->makeSuccess(startLocation__ + 1, startLocation__ + 1);
+        }
+        else
+        {
+            ruleResult__ = this->makeFail(startLocation__, startLocation__ + 1, "missing e", isRequiredForSuccess__);
+        }
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        if(startLocation__ >= this->sourceSize)
+        {
+            ruleResult__ = this->makeFail(startLocation__, "missing t", isRequiredForSuccess__);
+        }
+        else if(this->source.get()[startLocation__] == U't')
+        {
+            ruleResult__ = this->makeSuccess(startLocation__ + 1, startLocation__ + 1);
+        }
+        else
+        {
+            ruleResult__ = this->makeFail(startLocation__, startLocation__ + 1, "missing t", isRequiredForSuccess__);
+        }
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        isRequiredForSuccess__ = !isRequiredForSuccess__;
+        if(startLocation__ >= this->sourceSize)
+        {
+            ruleResult__ = this->makeFail(startLocation__, "missing \\", isRequiredForSuccess__);
+        }
+        else if(this->source.get()[startLocation__] == U'\\')
+        {
+            ruleResult__ = this->makeSuccess(startLocation__ + 1, startLocation__ + 1);
+        }
+        else
+        {
+            ruleResult__ = this->makeFail(startLocation__, startLocation__ + 1, "missing \\", isRequiredForSuccess__);
+        }
+        isRequiredForSuccess__ = !isRequiredForSuccess__;
+        if(ruleResult__.success())
+            ruleResult__ = this->makeFail(startLocation__, "not allowed here", isRequiredForSuccess__);
+        else
+            ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        isRequiredForSuccess__ = !isRequiredForSuccess__;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenizerEscapelessIdentifierPart(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        isRequiredForSuccess__ = !isRequiredForSuccess__;
+        if(ruleResult__.success())
+            ruleResult__ = this->makeFail(startLocation__, "not allowed here", isRequiredForSuccess__);
+        else
+            ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+}
+
 void Parser::parseTokenizerThis()
 {
     RuleResult result;
@@ -9056,9 +9217,9 @@ void Parser::internalParseTokenizerFutureReservedWord(std::size_t startLocation_
         {
             const char *predicateReturnValue__ = nullptr;
             {
-#line 391 "javascript_tasklets/parser/parser_imp.peg"
+#line 399 "javascript_tasklets/parser/parser_imp.peg"
                      if(isModule) (predicateReturnValue__) = "not in a module";
-#line 9062 "javascript_tasklets/parser/parser_imp.cpp"
+#line 9223 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             if(predicateReturnValue__ != nullptr)
@@ -9086,9 +9247,9 @@ void Parser::internalParseTokenizerFutureReservedWord(std::size_t startLocation_
         {
             const char *predicateReturnValue__ = nullptr;
             {
-#line 393 "javascript_tasklets/parser/parser_imp.peg"
+#line 401 "javascript_tasklets/parser/parser_imp.peg"
         if(!isStrict) (predicateReturnValue__) = "not strict";
-#line 9092 "javascript_tasklets/parser/parser_imp.cpp"
+#line 9253 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             if(predicateReturnValue__ != nullptr)
@@ -9229,9 +9390,9 @@ bool Parser::internalParseTokenizerBooleanLiteral(std::size_t startLocation__, R
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 405 "javascript_tasklets/parser/parser_imp.peg"
+#line 413 "javascript_tasklets/parser/parser_imp.peg"
                                               (returnValue__) = true;
-#line 9235 "javascript_tasklets/parser/parser_imp.cpp"
+#line 9396 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -9247,9 +9408,9 @@ bool Parser::internalParseTokenizerBooleanLiteral(std::size_t startLocation__, R
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 405 "javascript_tasklets/parser/parser_imp.peg"
+#line 413 "javascript_tasklets/parser/parser_imp.peg"
                                                                             (returnValue__) = false;
-#line 9253 "javascript_tasklets/parser/parser_imp.cpp"
+#line 9414 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -12854,9 +13015,9 @@ String Parser::internalParseTokenizerNumericLiteral(std::size_t startLocation__,
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 512 "javascript_tasklets/parser/parser_imp.peg"
+#line 520 "javascript_tasklets/parser/parser_imp.peg"
                                                                  (returnValue__) = value0;
-#line 12860 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13021 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -12872,9 +13033,9 @@ String Parser::internalParseTokenizerNumericLiteral(std::size_t startLocation__,
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 513 "javascript_tasklets/parser/parser_imp.peg"
+#line 521 "javascript_tasklets/parser/parser_imp.peg"
                                                                        (returnValue__) = value1;
-#line 12878 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13039 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -12898,9 +13059,9 @@ String Parser::internalParseTokenizerNumericLiteral(std::size_t startLocation__,
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 514 "javascript_tasklets/parser/parser_imp.peg"
+#line 522 "javascript_tasklets/parser/parser_imp.peg"
                                                                       (returnValue__) = value2;
-#line 12904 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13065 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -12924,9 +13085,9 @@ String Parser::internalParseTokenizerNumericLiteral(std::size_t startLocation__,
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 515 "javascript_tasklets/parser/parser_imp.peg"
+#line 523 "javascript_tasklets/parser/parser_imp.peg"
                                                                     (returnValue__) = value3;
-#line 12930 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13091 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -12978,9 +13139,9 @@ String Parser::internalParseTokenizerDecimalLiteral(std::size_t startLocation__,
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 517 "javascript_tasklets/parser/parser_imp.peg"
+#line 525 "javascript_tasklets/parser/parser_imp.peg"
                                                                         (returnValue__) = value0;
-#line 12984 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13145 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -13008,9 +13169,9 @@ String Parser::internalParseTokenizerDecimalLiteral(std::size_t startLocation__,
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 518 "javascript_tasklets/parser/parser_imp.peg"
+#line 526 "javascript_tasklets/parser/parser_imp.peg"
                                       (returnValue__) += u'.';
-#line 13014 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13175 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -13027,9 +13188,9 @@ String Parser::internalParseTokenizerDecimalLiteral(std::size_t startLocation__,
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 520 "javascript_tasklets/parser/parser_imp.peg"
+#line 528 "javascript_tasklets/parser/parser_imp.peg"
                                                                     (returnValue__) += value1;
-#line 13033 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13194 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -13050,9 +13211,9 @@ String Parser::internalParseTokenizerDecimalLiteral(std::size_t startLocation__,
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 523 "javascript_tasklets/parser/parser_imp.peg"
+#line 531 "javascript_tasklets/parser/parser_imp.peg"
                                                                    (returnValue__) += value2;
-#line 13056 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13217 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -13081,9 +13242,9 @@ String Parser::internalParseTokenizerDecimalLiteral(std::size_t startLocation__,
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 525 "javascript_tasklets/parser/parser_imp.peg"
+#line 533 "javascript_tasklets/parser/parser_imp.peg"
                                       (returnValue__) = u'.';
-#line 13087 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13248 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -13102,9 +13263,9 @@ String Parser::internalParseTokenizerDecimalLiteral(std::size_t startLocation__,
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 526 "javascript_tasklets/parser/parser_imp.peg"
+#line 534 "javascript_tasklets/parser/parser_imp.peg"
                                                                 (returnValue__) += value3;
-#line 13108 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13269 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -13121,9 +13282,9 @@ String Parser::internalParseTokenizerDecimalLiteral(std::size_t startLocation__,
                 auto savedStartLocation__ = startLocation__;
                 startLocation__ = ruleResult__.location;
                 {
-#line 528 "javascript_tasklets/parser/parser_imp.peg"
+#line 536 "javascript_tasklets/parser/parser_imp.peg"
                                                                    (returnValue__) += value4;
-#line 13127 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13288 "javascript_tasklets/parser/parser_imp.cpp"
                 }
                 ruleResult__ = this->makeSuccess(startLocation__);
                 startLocation__ = savedStartLocation__;
@@ -13151,9 +13312,9 @@ String Parser::internalParseTokenizerDecimalLiteral(std::size_t startLocation__,
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 530 "javascript_tasklets/parser/parser_imp.peg"
+#line 538 "javascript_tasklets/parser/parser_imp.peg"
                                                                         (returnValue__) = value5;
-#line 13157 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13318 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -13172,9 +13333,9 @@ String Parser::internalParseTokenizerDecimalLiteral(std::size_t startLocation__,
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 531 "javascript_tasklets/parser/parser_imp.peg"
+#line 539 "javascript_tasklets/parser/parser_imp.peg"
                                                                 (returnValue__) += value6;
-#line 13178 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13339 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -13191,9 +13352,9 @@ String Parser::internalParseTokenizerDecimalLiteral(std::size_t startLocation__,
                 auto savedStartLocation__ = startLocation__;
                 startLocation__ = ruleResult__.location;
                 {
-#line 533 "javascript_tasklets/parser/parser_imp.peg"
+#line 541 "javascript_tasklets/parser/parser_imp.peg"
                                                                    (returnValue__) += value7;
-#line 13197 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13358 "javascript_tasklets/parser/parser_imp.cpp"
                 }
                 ruleResult__ = this->makeSuccess(startLocation__);
                 startLocation__ = savedStartLocation__;
@@ -13252,9 +13413,9 @@ String Parser::internalParseTokenizerDecimalIntegerLiteral(std::size_t startLoca
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 538 "javascript_tasklets/parser/parser_imp.peg"
+#line 546 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = u"0";
-#line 13258 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13419 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -13320,9 +13481,9 @@ String Parser::internalParseTokenizerDecimalIntegerLiteral(std::size_t startLoca
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 540 "javascript_tasklets/parser/parser_imp.peg"
+#line 548 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = appendCodePoint(u"", nonZeroDigit);
-#line 13326 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13487 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -13339,9 +13500,9 @@ String Parser::internalParseTokenizerDecimalIntegerLiteral(std::size_t startLoca
                 auto savedStartLocation__ = startLocation__;
                 startLocation__ = ruleResult__.location;
                 {
-#line 541 "javascript_tasklets/parser/parser_imp.peg"
+#line 549 "javascript_tasklets/parser/parser_imp.peg"
                                     (returnValue__) += digits;
-#line 13345 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13506 "javascript_tasklets/parser/parser_imp.cpp"
                 }
                 ruleResult__ = this->makeSuccess(startLocation__);
                 startLocation__ = savedStartLocation__;
@@ -13383,9 +13544,9 @@ String Parser::internalParseTokenizerDecimalDigits(std::size_t startLocation__, 
         return returnValue__;
     }
     {
-#line 544 "javascript_tasklets/parser/parser_imp.peg"
+#line 552 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 13389 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13550 "javascript_tasklets/parser/parser_imp.cpp"
     }
     ruleResult__ = this->makeSuccess(startLocation__);
     if(ruleResult__.success())
@@ -13418,9 +13579,9 @@ String Parser::internalParseTokenizerDecimalDigits(std::size_t startLocation__, 
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 547 "javascript_tasklets/parser/parser_imp.peg"
+#line 555 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = appendCodePoint(std::move((returnValue__)), digit);
-#line 13424 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13585 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -13459,9 +13620,9 @@ String Parser::internalParseTokenizerDecimalDigits(std::size_t startLocation__, 
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 547 "javascript_tasklets/parser/parser_imp.peg"
+#line 555 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = appendCodePoint(std::move((returnValue__)), digit);
-#line 13465 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13626 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -13532,9 +13693,9 @@ String Parser::internalParseTokenizerExponentPart(std::size_t startLocation__, R
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 552 "javascript_tasklets/parser/parser_imp.peg"
+#line 560 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = appendCodePoint(u"", exponentIndicator);
-#line 13538 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13699 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -13553,9 +13714,9 @@ String Parser::internalParseTokenizerExponentPart(std::size_t startLocation__, R
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 554 "javascript_tasklets/parser/parser_imp.peg"
+#line 562 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) += signedInteger;
-#line 13559 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13720 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -13586,9 +13747,9 @@ String Parser::internalParseTokenizerSignedInteger(std::size_t startLocation__, 
         return returnValue__;
     }
     {
-#line 558 "javascript_tasklets/parser/parser_imp.peg"
+#line 566 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 13592 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13753 "javascript_tasklets/parser/parser_imp.cpp"
     }
     ruleResult__ = this->makeSuccess(startLocation__);
     if(ruleResult__.success())
@@ -13625,9 +13786,9 @@ String Parser::internalParseTokenizerSignedInteger(std::size_t startLocation__, 
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 561 "javascript_tasklets/parser/parser_imp.peg"
+#line 569 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = appendCodePoint(u"", sign);
-#line 13631 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13792 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -13650,9 +13811,9 @@ String Parser::internalParseTokenizerSignedInteger(std::size_t startLocation__, 
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 564 "javascript_tasklets/parser/parser_imp.peg"
+#line 572 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) += digits;
-#line 13656 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13817 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -13699,9 +13860,9 @@ String Parser::internalParseTokenizerBinaryIntegerLiteral(std::size_t startLocat
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 569 "javascript_tasklets/parser/parser_imp.peg"
+#line 577 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"0";
-#line 13705 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13866 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -13742,9 +13903,9 @@ String Parser::internalParseTokenizerBinaryIntegerLiteral(std::size_t startLocat
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 571 "javascript_tasklets/parser/parser_imp.peg"
+#line 579 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = appendCodePoint(std::move((returnValue__)), binaryIndicator);
-#line 13748 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13909 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -13763,9 +13924,9 @@ String Parser::internalParseTokenizerBinaryIntegerLiteral(std::size_t startLocat
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 573 "javascript_tasklets/parser/parser_imp.peg"
+#line 581 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) += digits;
-#line 13769 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13930 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -13795,9 +13956,9 @@ String Parser::internalParseTokenizerBinaryDigits(std::size_t startLocation__, R
         return returnValue__;
     }
     {
-#line 577 "javascript_tasklets/parser/parser_imp.peg"
+#line 585 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 13801 "javascript_tasklets/parser/parser_imp.cpp"
+#line 13962 "javascript_tasklets/parser/parser_imp.cpp"
     }
     ruleResult__ = this->makeSuccess(startLocation__);
     if(ruleResult__.success())
@@ -13834,9 +13995,9 @@ String Parser::internalParseTokenizerBinaryDigits(std::size_t startLocation__, R
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 580 "javascript_tasklets/parser/parser_imp.peg"
+#line 588 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = appendCodePoint(std::move((returnValue__)), digit);
-#line 13840 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14001 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -13879,9 +14040,9 @@ String Parser::internalParseTokenizerBinaryDigits(std::size_t startLocation__, R
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 580 "javascript_tasklets/parser/parser_imp.peg"
+#line 588 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = appendCodePoint(std::move((returnValue__)), digit);
-#line 13885 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14046 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -13939,9 +14100,9 @@ String Parser::internalParseTokenizerOctalIntegerLiteral(std::size_t startLocati
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 585 "javascript_tasklets/parser/parser_imp.peg"
+#line 593 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"0";
-#line 13945 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14106 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -13982,9 +14143,9 @@ String Parser::internalParseTokenizerOctalIntegerLiteral(std::size_t startLocati
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 587 "javascript_tasklets/parser/parser_imp.peg"
+#line 595 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = appendCodePoint(std::move((returnValue__)), octalIndicator);
-#line 13988 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14149 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -14003,9 +14164,9 @@ String Parser::internalParseTokenizerOctalIntegerLiteral(std::size_t startLocati
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 589 "javascript_tasklets/parser/parser_imp.peg"
+#line 597 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) += digits;
-#line 14009 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14170 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -14035,9 +14196,9 @@ String Parser::internalParseTokenizerOctalDigits(std::size_t startLocation__, Ru
         return returnValue__;
     }
     {
-#line 593 "javascript_tasklets/parser/parser_imp.peg"
+#line 601 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 14041 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14202 "javascript_tasklets/parser/parser_imp.cpp"
     }
     ruleResult__ = this->makeSuccess(startLocation__);
     if(ruleResult__.success())
@@ -14070,9 +14231,9 @@ String Parser::internalParseTokenizerOctalDigits(std::size_t startLocation__, Ru
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 596 "javascript_tasklets/parser/parser_imp.peg"
+#line 604 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = appendCodePoint(std::move((returnValue__)), digit);
-#line 14076 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14237 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -14111,9 +14272,9 @@ String Parser::internalParseTokenizerOctalDigits(std::size_t startLocation__, Ru
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 596 "javascript_tasklets/parser/parser_imp.peg"
+#line 604 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = appendCodePoint(std::move((returnValue__)), digit);
-#line 14117 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14278 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -14171,9 +14332,9 @@ String Parser::internalParseTokenizerHexIntegerLiteral(std::size_t startLocation
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 601 "javascript_tasklets/parser/parser_imp.peg"
+#line 609 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"0";
-#line 14177 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14338 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -14214,9 +14375,9 @@ String Parser::internalParseTokenizerHexIntegerLiteral(std::size_t startLocation
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 603 "javascript_tasklets/parser/parser_imp.peg"
+#line 611 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = appendCodePoint(std::move((returnValue__)), hexIndicator);
-#line 14220 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14381 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -14235,9 +14396,9 @@ String Parser::internalParseTokenizerHexIntegerLiteral(std::size_t startLocation
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 605 "javascript_tasklets/parser/parser_imp.peg"
+#line 613 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) += digits;
-#line 14241 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14402 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -14267,9 +14428,9 @@ String Parser::internalParseTokenizerHexDigits(std::size_t startLocation__, Rule
         return returnValue__;
     }
     {
-#line 609 "javascript_tasklets/parser/parser_imp.peg"
+#line 617 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 14273 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14434 "javascript_tasklets/parser/parser_imp.cpp"
     }
     ruleResult__ = this->makeSuccess(startLocation__);
     if(ruleResult__.success())
@@ -14310,9 +14471,9 @@ String Parser::internalParseTokenizerHexDigits(std::size_t startLocation__, Rule
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 612 "javascript_tasklets/parser/parser_imp.peg"
+#line 620 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = appendCodePoint(std::move((returnValue__)), digit);
-#line 14316 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14477 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -14359,9 +14520,9 @@ String Parser::internalParseTokenizerHexDigits(std::size_t startLocation__, Rule
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 612 "javascript_tasklets/parser/parser_imp.peg"
+#line 620 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = appendCodePoint(std::move((returnValue__)), digit);
-#line 14365 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14526 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -14419,9 +14580,9 @@ String Parser::internalParseTokenizerStringLiteral(std::size_t startLocation__, 
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 617 "javascript_tasklets/parser/parser_imp.peg"
+#line 625 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 14425 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14586 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -14438,9 +14599,9 @@ String Parser::internalParseTokenizerStringLiteral(std::size_t startLocation__, 
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 620 "javascript_tasklets/parser/parser_imp.peg"
+#line 628 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = characters1;
-#line 14444 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14605 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -14487,9 +14648,9 @@ String Parser::internalParseTokenizerStringLiteral(std::size_t startLocation__, 
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 624 "javascript_tasklets/parser/parser_imp.peg"
+#line 632 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 14493 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14654 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -14506,9 +14667,9 @@ String Parser::internalParseTokenizerStringLiteral(std::size_t startLocation__, 
                 auto savedStartLocation__ = startLocation__;
                 startLocation__ = ruleResult__.location;
                 {
-#line 627 "javascript_tasklets/parser/parser_imp.peg"
+#line 635 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = characters2;
-#line 14512 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14673 "javascript_tasklets/parser/parser_imp.cpp"
                 }
                 ruleResult__ = this->makeSuccess(startLocation__);
                 startLocation__ = savedStartLocation__;
@@ -14576,9 +14737,9 @@ String Parser::internalParseTokenizerSingleStringCharacters(std::size_t startLoc
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 633 "javascript_tasklets/parser/parser_imp.peg"
+#line 641 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = first;
-#line 14582 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14743 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -14603,9 +14764,9 @@ String Parser::internalParseTokenizerSingleStringCharacters(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 636 "javascript_tasklets/parser/parser_imp.peg"
+#line 644 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) += next;
-#line 14609 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14770 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -14654,9 +14815,9 @@ String Parser::internalParseTokenizerDoubleStringCharacters(std::size_t startLoc
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 641 "javascript_tasklets/parser/parser_imp.peg"
+#line 649 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = first;
-#line 14660 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14821 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -14681,9 +14842,9 @@ String Parser::internalParseTokenizerDoubleStringCharacters(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 644 "javascript_tasklets/parser/parser_imp.peg"
+#line 652 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) += next;
-#line 14687 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14848 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -14809,9 +14970,9 @@ String Parser::internalParseTokenizerSingleStringCharacter(std::size_t startLoca
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 652 "javascript_tasklets/parser/parser_imp.peg"
+#line 660 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = appendCodePoint(u"", ch);
-#line 14815 "javascript_tasklets/parser/parser_imp.cpp"
+#line 14976 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -14845,9 +15006,9 @@ String Parser::internalParseTokenizerSingleStringCharacter(std::size_t startLoca
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 654 "javascript_tasklets/parser/parser_imp.peg"
+#line 662 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = escape.cooked;
-#line 14851 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15012 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -14871,9 +15032,9 @@ String Parser::internalParseTokenizerSingleStringCharacter(std::size_t startLoca
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 656 "javascript_tasklets/parser/parser_imp.peg"
+#line 664 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 14877 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15038 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -14996,9 +15157,9 @@ String Parser::internalParseTokenizerDoubleStringCharacter(std::size_t startLoca
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 664 "javascript_tasklets/parser/parser_imp.peg"
+#line 672 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = appendCodePoint(u"", ch);
-#line 15002 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15163 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -15032,9 +15193,9 @@ String Parser::internalParseTokenizerDoubleStringCharacter(std::size_t startLoca
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 666 "javascript_tasklets/parser/parser_imp.peg"
+#line 674 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = escape.cooked;
-#line 15038 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15199 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15058,9 +15219,9 @@ String Parser::internalParseTokenizerDoubleStringCharacter(std::size_t startLoca
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 668 "javascript_tasklets/parser/parser_imp.peg"
+#line 676 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 15064 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15225 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15123,9 +15284,9 @@ String Parser::internalParseTokenizerLineContinuation(std::size_t startLocation_
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 671 "javascript_tasklets/parser/parser_imp.peg"
+#line 679 "javascript_tasklets/parser/parser_imp.peg"
                                                                                         (returnValue__) = appendCodePoint(u"\\", lineTerminator);
-#line 15129 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15290 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -15205,9 +15366,9 @@ RawAndCookedString Parser::internalParseTokenizerEscapeSequence(std::size_t star
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 676 "javascript_tasklets/parser/parser_imp.peg"
+#line 684 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(u"0", String(1, u'\0'));
-#line 15211 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15372 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -15223,9 +15384,9 @@ RawAndCookedString Parser::internalParseTokenizerEscapeSequence(std::size_t star
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 678 "javascript_tasklets/parser/parser_imp.peg"
+#line 686 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = characterEscape;
-#line 15229 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15390 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15249,9 +15410,9 @@ RawAndCookedString Parser::internalParseTokenizerEscapeSequence(std::size_t star
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 680 "javascript_tasklets/parser/parser_imp.peg"
+#line 688 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(unicodeEscape.raw, appendCodePoint(u"", unicodeEscape.ch));
-#line 15255 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15416 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15275,9 +15436,9 @@ RawAndCookedString Parser::internalParseTokenizerEscapeSequence(std::size_t star
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 682 "javascript_tasklets/parser/parser_imp.peg"
+#line 690 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(hexEscape.raw, appendCodePoint(u"", hexEscape.ch));
-#line 15281 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15442 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15332,9 +15493,9 @@ RawStringAndChar Parser::internalParseTokenizerHexEscapeSequence(std::size_t sta
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 687 "javascript_tasklets/parser/parser_imp.peg"
+#line 695 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawStringAndChar(u"x", 0);
-#line 15338 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15499 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -15369,7 +15530,7 @@ RawStringAndChar Parser::internalParseTokenizerHexEscapeSequence(std::size_t sta
         {
             const char *predicateReturnValue__ = nullptr;
             {
-#line 689 "javascript_tasklets/parser/parser_imp.peg"
+#line 697 "javascript_tasklets/parser/parser_imp.peg"
       
         auto digitValue = character_properties::javascriptDigitValue(digit1);
         if(digitValue < 0 || digitValue >= 0x10)
@@ -15380,7 +15541,7 @@ RawStringAndChar Parser::internalParseTokenizerHexEscapeSequence(std::size_t sta
             (returnValue__).raw = appendCodePoint(std::move((returnValue__).raw), digit1);
         }
     
-#line 15384 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15545 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             if(predicateReturnValue__ != nullptr)
@@ -15418,7 +15579,7 @@ RawStringAndChar Parser::internalParseTokenizerHexEscapeSequence(std::size_t sta
         {
             const char *predicateReturnValue__ = nullptr;
             {
-#line 700 "javascript_tasklets/parser/parser_imp.peg"
+#line 708 "javascript_tasklets/parser/parser_imp.peg"
       
         auto digitValue = character_properties::javascriptDigitValue(digit2);
         if(digitValue < 0 || digitValue >= 0x10)
@@ -15429,7 +15590,7 @@ RawStringAndChar Parser::internalParseTokenizerHexEscapeSequence(std::size_t sta
             (returnValue__).raw = appendCodePoint(std::move((returnValue__).raw), digit2);
         }
     
-#line 15433 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15594 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             if(predicateReturnValue__ != nullptr)
@@ -15470,9 +15631,9 @@ RawAndCookedString Parser::internalParseTokenizerCharacterEscapeSequence(std::si
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 714 "javascript_tasklets/parser/parser_imp.peg"
+#line 722 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = singleEscapeCharacter;
-#line 15476 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15637 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -15488,9 +15649,9 @@ RawAndCookedString Parser::internalParseTokenizerCharacterEscapeSequence(std::si
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 716 "javascript_tasklets/parser/parser_imp.peg"
+#line 724 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(appendCodePoint(u"", nonEscapeCharacter));
-#line 15494 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15655 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15561,9 +15722,9 @@ RawAndCookedString Parser::internalParseTokenizerSingleEscapeCharacter(std::size
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 721 "javascript_tasklets/parser/parser_imp.peg"
+#line 729 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(appendCodePoint(u"", char1));
-#line 15567 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15728 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -15588,9 +15749,9 @@ RawAndCookedString Parser::internalParseTokenizerSingleEscapeCharacter(std::size
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 723 "javascript_tasklets/parser/parser_imp.peg"
+#line 731 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(u"b", u"\b");
-#line 15594 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15755 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15623,9 +15784,9 @@ RawAndCookedString Parser::internalParseTokenizerSingleEscapeCharacter(std::size
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 725 "javascript_tasklets/parser/parser_imp.peg"
+#line 733 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(u"f", u"\f");
-#line 15629 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15790 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15658,9 +15819,9 @@ RawAndCookedString Parser::internalParseTokenizerSingleEscapeCharacter(std::size
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 727 "javascript_tasklets/parser/parser_imp.peg"
+#line 735 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(u"n", u"\n");
-#line 15664 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15825 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15693,9 +15854,9 @@ RawAndCookedString Parser::internalParseTokenizerSingleEscapeCharacter(std::size
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 729 "javascript_tasklets/parser/parser_imp.peg"
+#line 737 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(u"r", u"\r");
-#line 15699 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15860 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15728,9 +15889,9 @@ RawAndCookedString Parser::internalParseTokenizerSingleEscapeCharacter(std::size
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 731 "javascript_tasklets/parser/parser_imp.peg"
+#line 739 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(u"t", u"\t");
-#line 15734 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15895 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15763,9 +15924,9 @@ RawAndCookedString Parser::internalParseTokenizerSingleEscapeCharacter(std::size
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 733 "javascript_tasklets/parser/parser_imp.peg"
+#line 741 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(u"v", u"\v");
-#line 15769 "javascript_tasklets/parser/parser_imp.cpp"
+#line 15930 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -15894,9 +16055,9 @@ char32_t Parser::internalParseTokenizerNonEscapeCharacter(std::size_t startLocat
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 741 "javascript_tasklets/parser/parser_imp.peg"
+#line 749 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = ch;
-#line 15900 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16061 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -15979,9 +16140,9 @@ BodyAndFlags Parser::internalParseTokenizerRegularExpressionLiteral(std::size_t 
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 749 "javascript_tasklets/parser/parser_imp.peg"
+#line 757 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = BodyAndFlags(body, flags);
-#line 15985 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16146 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -16033,9 +16194,9 @@ String Parser::internalParseTokenizerRegularExpressionBody(std::size_t startLoca
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 753 "javascript_tasklets/parser/parser_imp.peg"
+#line 761 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 16039 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16200 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -16052,9 +16213,9 @@ String Parser::internalParseTokenizerRegularExpressionBody(std::size_t startLoca
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 756 "javascript_tasklets/parser/parser_imp.peg"
+#line 764 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) += value;
-#line 16058 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16219 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -16075,9 +16236,9 @@ String Parser::internalParseTokenizerRegularExpressionBody(std::size_t startLoca
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 756 "javascript_tasklets/parser/parser_imp.peg"
+#line 764 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) += value;
-#line 16081 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16242 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -16196,9 +16357,9 @@ String Parser::internalParseTokenizerRegularExpressionChar(std::size_t startLoca
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 763 "javascript_tasklets/parser/parser_imp.peg"
+#line 771 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = appendCodePoint(u"", nonTerminator);
-#line 16202 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16363 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -16214,9 +16375,9 @@ String Parser::internalParseTokenizerRegularExpressionChar(std::size_t startLoca
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 765 "javascript_tasklets/parser/parser_imp.peg"
+#line 773 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = backslashSequence;
-#line 16220 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16381 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -16240,9 +16401,9 @@ String Parser::internalParseTokenizerRegularExpressionChar(std::size_t startLoca
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 767 "javascript_tasklets/parser/parser_imp.peg"
+#line 775 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = classValue;
-#line 16246 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16407 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -16334,9 +16495,9 @@ String Parser::internalParseTokenizerRegularExpressionBackslashSequence(std::siz
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 774 "javascript_tasklets/parser/parser_imp.peg"
+#line 782 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = appendCodePoint(u"\\", nonTerminator);
-#line 16340 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16501 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -16382,9 +16543,9 @@ String Parser::internalParseTokenizerRegularExpressionClass(std::size_t startLoc
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 779 "javascript_tasklets/parser/parser_imp.peg"
+#line 787 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"[";
-#line 16388 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16549 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -16409,9 +16570,9 @@ String Parser::internalParseTokenizerRegularExpressionClass(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 782 "javascript_tasklets/parser/parser_imp.peg"
+#line 790 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) += classChar;
-#line 16415 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16576 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -16450,9 +16611,9 @@ String Parser::internalParseTokenizerRegularExpressionClass(std::size_t startLoc
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 785 "javascript_tasklets/parser/parser_imp.peg"
+#line 793 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) += u"]";
-#line 16456 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16617 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -16555,9 +16716,9 @@ String Parser::internalParseTokenizerRegularExpressionClassChar(std::size_t star
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 792 "javascript_tasklets/parser/parser_imp.peg"
+#line 800 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = appendCodePoint(u"", nonTerminator);
-#line 16561 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16722 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -16573,9 +16734,9 @@ String Parser::internalParseTokenizerRegularExpressionClassChar(std::size_t star
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 794 "javascript_tasklets/parser/parser_imp.peg"
+#line 802 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = backslashSequence;
-#line 16579 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16740 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -16614,9 +16775,9 @@ String Parser::internalParseTokenizerRegularExpressionFlags(std::size_t startLoc
         return returnValue__;
     }
     {
-#line 798 "javascript_tasklets/parser/parser_imp.peg"
+#line 806 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"";
-#line 16620 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16781 "javascript_tasklets/parser/parser_imp.cpp"
     }
     ruleResult__ = this->makeSuccess(startLocation__);
     if(ruleResult__.success())
@@ -16639,9 +16800,9 @@ String Parser::internalParseTokenizerRegularExpressionFlags(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 801 "javascript_tasklets/parser/parser_imp.peg"
+#line 809 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) = appendCodePoint(std::move((returnValue__)), ch);
-#line 16645 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16806 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -16675,9 +16836,9 @@ String Parser::internalParseTokenizerRegularExpressionFlags(std::size_t startLoc
                         auto savedStartLocation__ = startLocation__;
                         startLocation__ = ruleResult__.location;
                         {
-#line 804 "javascript_tasklets/parser/parser_imp.peg"
+#line 812 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__) += u"\\" + unicodeEscape.raw;
-#line 16681 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16842 "javascript_tasklets/parser/parser_imp.cpp"
                         }
                         ruleResult__ = this->makeSuccess(startLocation__);
                         startLocation__ = savedStartLocation__;
@@ -16781,9 +16942,9 @@ RawAndCookedString Parser::internalParseTokenizerNoSubstitutionTemplate(std::siz
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 813 "javascript_tasklets/parser/parser_imp.peg"
+#line 821 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__).raw += value.raw; (returnValue__).cooked += value.cooked;
-#line 16787 "javascript_tasklets/parser/parser_imp.cpp"
+#line 16948 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -16873,9 +17034,9 @@ RawAndCookedString Parser::internalParseTokenizerTemplateHead(std::size_t startL
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 821 "javascript_tasklets/parser/parser_imp.peg"
+#line 829 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__).raw += value.raw; (returnValue__).cooked += value.cooked;
-#line 16879 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17040 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -16983,9 +17144,9 @@ RawAndCookedString Parser::internalParseTokenizerTemplateMiddle(std::size_t star
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 829 "javascript_tasklets/parser/parser_imp.peg"
+#line 837 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__).raw += value.raw; (returnValue__).cooked += value.cooked;
-#line 16989 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17150 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -17093,9 +17254,9 @@ RawAndCookedString Parser::internalParseTokenizerTemplateTail(std::size_t startL
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 837 "javascript_tasklets/parser/parser_imp.peg"
+#line 845 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__).raw += value.raw; (returnValue__).cooked += value.cooked;
-#line 17099 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17260 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -17197,9 +17358,9 @@ RawAndCookedString Parser::internalParseTokenizerTemplateCharacter(std::size_t s
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 844 "javascript_tasklets/parser/parser_imp.peg"
+#line 852 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = RawAndCookedString(u"$");
-#line 17203 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17364 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -17233,9 +17394,9 @@ RawAndCookedString Parser::internalParseTokenizerTemplateCharacter(std::size_t s
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 847 "javascript_tasklets/parser/parser_imp.peg"
+#line 855 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__).raw += u"\\" + escapeSequence.raw; (returnValue__).cooked += escapeSequence.cooked;
-#line 17239 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17400 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -17277,9 +17438,9 @@ RawAndCookedString Parser::internalParseTokenizerTemplateCharacter(std::size_t s
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 850 "javascript_tasklets/parser/parser_imp.peg"
+#line 858 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__).raw = appendCodePoint(std::move((returnValue__).raw) + u"\\", lineContinuation);
-#line 17283 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17444 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -17303,12 +17464,12 @@ RawAndCookedString Parser::internalParseTokenizerTemplateCharacter(std::size_t s
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 852 "javascript_tasklets/parser/parser_imp.peg"
+#line 860 "javascript_tasklets/parser/parser_imp.peg"
      
         (returnValue__).raw = appendCodePoint(std::move((returnValue__).raw), lineTerminator);
         (returnValue__).cooked = appendCodePoint(std::move((returnValue__).cooked), lineTerminator);
     
-#line 17312 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17473 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -17373,12 +17534,12 @@ RawAndCookedString Parser::internalParseTokenizerTemplateCharacter(std::size_t s
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 858 "javascript_tasklets/parser/parser_imp.peg"
+#line 866 "javascript_tasklets/parser/parser_imp.peg"
      
         (returnValue__).raw = appendCodePoint(std::move((returnValue__).raw), ch);
         (returnValue__).cooked = appendCodePoint(std::move((returnValue__).cooked), ch);
     
-#line 17382 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17543 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -17432,9 +17593,9 @@ String Parser::internalParseIdentifierName(std::size_t startLocation__, RuleResu
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 867 "javascript_tasklets/parser/parser_imp.peg"
+#line 875 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = value;
-#line 17438 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17599 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -17480,9 +17641,9 @@ RawAndCookedString Parser::internalParseTokenNoSubstitutionTemplate(std::size_t 
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 873 "javascript_tasklets/parser/parser_imp.peg"
+#line 881 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = std::move(value);
-#line 17486 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17647 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -17528,9 +17689,9 @@ RawAndCookedString Parser::internalParseTokenTemplateHead(std::size_t startLocat
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 879 "javascript_tasklets/parser/parser_imp.peg"
+#line 887 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = std::move(value);
-#line 17534 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17695 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -17576,9 +17737,9 @@ RawAndCookedString Parser::internalParseTokenTemplateMiddle(std::size_t startLoc
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 885 "javascript_tasklets/parser/parser_imp.peg"
+#line 893 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = std::move(value);
-#line 17582 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17743 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -17624,9 +17785,9 @@ RawAndCookedString Parser::internalParseTokenTemplateTail(std::size_t startLocat
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 891 "javascript_tasklets/parser/parser_imp.peg"
+#line 899 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = std::move(value);
-#line 17630 "javascript_tasklets/parser/parser_imp.cpp"
+#line 17791 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -18717,6 +18878,38 @@ void Parser::internalParseTokenSwitch(std::size_t startLocation__, RuleResult &r
         startLocation__ = ruleResult__.location;
         ruleResult__ = Parser::RuleResult();
         this->internalParseTokenizerSwitch(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+}
+
+void Parser::parseTokenTarget()
+{
+    RuleResult result;
+    internalParseTokenTarget(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+}
+
+void Parser::internalParseTokenTarget(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    auto &ruleResult__ = this->getResults(startLocation__).resultTokenTarget;
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return;
+    }
+    ruleResult__ = Parser::RuleResult();
+    this->internalParseTokenizerTokenSeperator<true>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenizerTarget(startLocation__, ruleResult__, isRequiredForSuccess__);
         assert(!ruleResult__.empty());
         startLocation__ = savedStartLocation__;
     }
@@ -20675,6 +20868,54 @@ void Parser::internalParseTokenFSlashEqual(std::size_t startLocation__, RuleResu
     ruleResultOut__ = ruleResult__;
 }
 
+String Parser::parseTokenIdentifierName()
+{
+    RuleResult result;
+    auto retval = internalParseTokenIdentifierName(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+String Parser::internalParseTokenIdentifierName(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    String returnValue__{};
+    String value{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultTokenIdentifierName;
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    this->internalParseTokenizerTokenSeperator<true>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        value = this->internalParseTokenizerIdentifierName(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1003 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = value;
+#line 20911 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
 template <bool isModule, bool isStrict>
 String Parser::parseTokenIdentifier()
 {
@@ -20729,9 +20970,9 @@ String Parser::internalParseTokenIdentifier(std::size_t startLocation__, RuleRes
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 995 "javascript_tasklets/parser/parser_imp.peg"
+#line 1009 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = value;
-#line 20735 "javascript_tasklets/parser/parser_imp.cpp"
+#line 20976 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -20765,12 +21006,12 @@ String Parser::internalParseTokenIdentifierOrYield(std::size_t startLocation__, 
     {
         const char *predicateReturnValue__ = nullptr;
         {
-#line 998 "javascript_tasklets/parser/parser_imp.peg"
+#line 1012 "javascript_tasklets/parser/parser_imp.peg"
       
-        if(!canHaveYieldOperator || isStrict)
+        if(canHaveYieldOperator || isStrict)
             (predicateReturnValue__) = "yield not allowed here";
     
-#line 20774 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21015 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         if(predicateReturnValue__ != nullptr)
@@ -20790,9 +21031,9 @@ String Parser::internalParseTokenIdentifierOrYield(std::size_t startLocation__, 
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1003 "javascript_tasklets/parser/parser_imp.peg"
+#line 1017 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = u"yield";
-#line 20796 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21037 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -20808,9 +21049,9 @@ String Parser::internalParseTokenIdentifierOrYield(std::size_t startLocation__, 
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1005 "javascript_tasklets/parser/parser_imp.peg"
+#line 1019 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = value;
-#line 20814 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21055 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -20823,6 +21064,46 @@ String Parser::internalParseTokenIdentifierOrYield(std::size_t startLocation__, 
             }
         }
     }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+std::size_t Parser::parseTokenLocation()
+{
+    RuleResult result;
+    auto retval = internalParseTokenLocation(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+std::size_t Parser::internalParseTokenLocation(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    std::size_t returnValue__{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultTokenLocation;
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    this->internalParseTokenizerTokenSeperator<true>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1025 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = (static_cast<const ::std::size_t &>(startLocation__));
+#line 21101 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+        ruleResult__.location = startLocation__;
     ruleResultOut__ = ruleResult__;
     return returnValue__;
 }
@@ -20864,9 +21145,9 @@ String Parser::internalParseTokenNumericLiteral(std::size_t startLocation__, Rul
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1011 "javascript_tasklets/parser/parser_imp.peg"
+#line 1032 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = value;
-#line 20870 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21151 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -20912,9 +21193,9 @@ String Parser::internalParseTokenStringLiteral(std::size_t startLocation__, Rule
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1017 "javascript_tasklets/parser/parser_imp.peg"
+#line 1038 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = value;
-#line 20918 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21199 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -20960,9 +21241,9 @@ BodyAndFlags Parser::internalParseTokenRegularExpressionLiteral(std::size_t star
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1023 "javascript_tasklets/parser/parser_imp.peg"
+#line 1044 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = value;
-#line 20966 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21247 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -20984,6 +21265,7 @@ ExpressionPointer Parser::parseRegularExpressionLiteral()
 ExpressionPointer Parser::internalParseRegularExpressionLiteral(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
 {
     ExpressionPointer returnValue__{};
+    std::size_t regExpLocation{};
     BodyAndFlags regExp{};
     auto &ruleResult__ = this->getResults(startLocation__).resultRegularExpressionLiteral;
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -20992,16 +21274,25 @@ ExpressionPointer Parser::internalParseRegularExpressionLiteral(std::size_t star
         return returnValue__;
     }
     ruleResult__ = Parser::RuleResult();
-    regExp = this->internalParseTokenRegularExpressionLiteral(startLocation__, ruleResult__, isRequiredForSuccess__);
+    regExpLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
     assert(!ruleResult__.empty());
     if(ruleResult__.success())
     {
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        regExp = this->internalParseTokenRegularExpressionLiteral(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
         {
-#line 1028 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::ExpressionRegExpLiteral>((static_cast<const ::std::size_t &>(startLocation__)), regExp.body, regExp.flags);
-#line 21005 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1050 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionRegExpLiteral>(regExpLocation, regExp.body, regExp.flags);
+#line 21296 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -21025,6 +21316,7 @@ template <bool isModule, bool isStrict, bool canHaveYieldOperator>
 ExpressionPointer Parser::internalParseIdentifierReference(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
 {
     ExpressionPointer returnValue__{};
+    std::size_t nameLocation{};
     String name{};
     auto &ruleResult__ = this->getResults(startLocation__).resultIdentifierReference[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -21033,16 +21325,25 @@ ExpressionPointer Parser::internalParseIdentifierReference(std::size_t startLoca
         return returnValue__;
     }
     ruleResult__ = Parser::RuleResult();
-    name = this->internalParseTokenIdentifierOrYield<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    nameLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
     assert(!ruleResult__.empty());
     if(ruleResult__.success())
     {
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        name = this->internalParseTokenIdentifierOrYield<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
         {
-#line 1033 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::ExpressionIdentifierReference>((static_cast<const ::std::size_t &>(startLocation__)), name);
-#line 21046 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1056 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionIdentifierReference>(nameLocation, name);
+#line 21347 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -21075,12 +21376,12 @@ ExpressionPointer Parser::internalParseFunctionExpression(std::size_t startLocat
     {
         const char *predicateReturnValue__ = nullptr;
         {
-#line 1037 "javascript_tasklets/parser/parser_imp.peg"
+#line 1060 "javascript_tasklets/parser/parser_imp.peg"
       
         (predicateReturnValue__) = "FunctionExpression not implemented";
 #warning implement FunctionExpression
     
-#line 21084 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21385 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         if(predicateReturnValue__ != nullptr)
@@ -21114,12 +21415,12 @@ ExpressionPointer Parser::internalParseGeneratorExpression(std::size_t startLoca
     {
         const char *predicateReturnValue__ = nullptr;
         {
-#line 1043 "javascript_tasklets/parser/parser_imp.peg"
+#line 1066 "javascript_tasklets/parser/parser_imp.peg"
       
         (predicateReturnValue__) = "GeneratorExpression not implemented";
 #warning implement GeneratorExpression
     
-#line 21123 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21424 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         if(predicateReturnValue__ != nullptr)
@@ -21153,12 +21454,12 @@ ExpressionPointer Parser::internalParseClassExpression(std::size_t startLocation
     {
         const char *predicateReturnValue__ = nullptr;
         {
-#line 1049 "javascript_tasklets/parser/parser_imp.peg"
+#line 1072 "javascript_tasklets/parser/parser_imp.peg"
       
         (predicateReturnValue__) = "ClassExpression not implemented";
 #warning implement ClassExpression
     
-#line 21162 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21463 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         if(predicateReturnValue__ != nullptr)
@@ -21265,9 +21566,9 @@ ExpressionPointer Parser::internalParseParenthesizedExpression(std::size_t start
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1062 "javascript_tasklets/parser/parser_imp.peg"
+#line 1085 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = expression;
-#line 21271 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21572 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -21291,6 +21592,7 @@ template <bool isModule, bool isStrict, bool canHaveYieldOperator>
 ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
 {
     ExpressionPointer returnValue__{};
+    std::size_t thisLocation{};
     ExpressionPointer identifierReference{};
     ExpressionPointer literal{};
     ExpressionPointer arrayLiteral{};
@@ -21299,7 +21601,7 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
     ExpressionPointer classExpression{};
     ExpressionPointer generatorExpression{};
     ExpressionPointer regularExpressionLiteral{};
-    ExpressionPointer templateLiteral{};
+    ExpressionTemplateLiteralPointer templateLiteral{};
     ExpressionPointer parenthesizedExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultPrimaryExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -21308,16 +21610,25 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
         return returnValue__;
     }
     ruleResult__ = Parser::RuleResult();
-    this->internalParseTokenThis(startLocation__, ruleResult__, isRequiredForSuccess__);
+    thisLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
     assert(!ruleResult__.empty());
     if(ruleResult__.success())
     {
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenThis(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
         {
-#line 1066 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::ExpressionThis>((static_cast<const ::std::size_t &>(startLocation__)));
-#line 21321 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1090 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionThis>(thisLocation);
+#line 21632 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -21333,9 +21644,9 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1068 "javascript_tasklets/parser/parser_imp.peg"
+#line 1092 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = identifierReference;
-#line 21339 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21650 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21359,9 +21670,9 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1070 "javascript_tasklets/parser/parser_imp.peg"
+#line 1094 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = literal;
-#line 21365 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21676 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21385,9 +21696,9 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1072 "javascript_tasklets/parser/parser_imp.peg"
+#line 1096 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = arrayLiteral;
-#line 21391 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21702 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21411,9 +21722,9 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1074 "javascript_tasklets/parser/parser_imp.peg"
+#line 1098 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = objectLiteral;
-#line 21417 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21728 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21437,9 +21748,9 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1076 "javascript_tasklets/parser/parser_imp.peg"
+#line 1100 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = functionExpression;
-#line 21443 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21754 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21463,9 +21774,9 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1078 "javascript_tasklets/parser/parser_imp.peg"
+#line 1102 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = classExpression;
-#line 21469 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21780 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21489,9 +21800,9 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1080 "javascript_tasklets/parser/parser_imp.peg"
+#line 1104 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = generatorExpression;
-#line 21495 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21806 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21515,9 +21826,9 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1082 "javascript_tasklets/parser/parser_imp.peg"
+#line 1106 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = regularExpressionLiteral;
-#line 21521 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21832 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21541,9 +21852,9 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1084 "javascript_tasklets/parser/parser_imp.peg"
+#line 1108 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = templateLiteral;
-#line 21547 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21858 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21567,9 +21878,9 @@ ExpressionPointer Parser::internalParsePrimaryExpression(std::size_t startLocati
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1086 "javascript_tasklets/parser/parser_imp.peg"
+#line 1110 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = parenthesizedExpression;
-#line 21573 "javascript_tasklets/parser/parser_imp.cpp"
+#line 21884 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21599,6 +21910,7 @@ ExpressionPointer Parser::parseLiteral()
 ExpressionPointer Parser::internalParseLiteral(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
 {
     ExpressionPointer returnValue__{};
+    std::size_t location{};
     String numericLiteral{};
     String stringLiteral{};
     auto &ruleResult__ = this->getResults(startLocation__).resultLiteral;
@@ -21608,123 +21920,132 @@ ExpressionPointer Parser::internalParseLiteral(std::size_t startLocation__, Rule
         return returnValue__;
     }
     ruleResult__ = Parser::RuleResult();
-    this->internalParseTokenNull(startLocation__, ruleResult__, isRequiredForSuccess__);
+    location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
     assert(!ruleResult__.empty());
     if(ruleResult__.success())
     {
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenNull(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
         {
-#line 1091 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::ExpressionNullLiteral>((static_cast<const ::std::size_t &>(startLocation__)));
-#line 21621 "javascript_tasklets/parser/parser_imp.cpp"
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1117 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionNullLiteral>(location);
+#line 21940 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
         }
-        ruleResult__ = this->makeSuccess(startLocation__);
+        if(ruleResult__.fail())
+        {
+            Parser::RuleResult lastRuleResult__ = ruleResult__;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenFalse(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            if(ruleResult__.success())
+            {
+                auto savedStartLocation__ = startLocation__;
+                startLocation__ = ruleResult__.location;
+                {
+#line 1119 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionBooleanLiteral>((static_cast<const ::std::size_t &>(startLocation__)), false);
+#line 21958 "javascript_tasklets/parser/parser_imp.cpp"
+                }
+                ruleResult__ = this->makeSuccess(startLocation__);
+                startLocation__ = savedStartLocation__;
+            }
+            if(ruleResult__.success())
+            {
+                if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                {
+                    ruleResult__.endLocation = lastRuleResult__.endLocation;
+                }
+            }
+        }
+        if(ruleResult__.fail())
+        {
+            Parser::RuleResult lastRuleResult__ = ruleResult__;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenTrue(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            if(ruleResult__.success())
+            {
+                auto savedStartLocation__ = startLocation__;
+                startLocation__ = ruleResult__.location;
+                {
+#line 1121 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionBooleanLiteral>((static_cast<const ::std::size_t &>(startLocation__)), true);
+#line 21984 "javascript_tasklets/parser/parser_imp.cpp"
+                }
+                ruleResult__ = this->makeSuccess(startLocation__);
+                startLocation__ = savedStartLocation__;
+            }
+            if(ruleResult__.success())
+            {
+                if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                {
+                    ruleResult__.endLocation = lastRuleResult__.endLocation;
+                }
+            }
+        }
+        if(ruleResult__.fail())
+        {
+            Parser::RuleResult lastRuleResult__ = ruleResult__;
+            ruleResult__ = Parser::RuleResult();
+            numericLiteral = this->internalParseTokenNumericLiteral(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            if(ruleResult__.success())
+            {
+                auto savedStartLocation__ = startLocation__;
+                startLocation__ = ruleResult__.location;
+                {
+#line 1123 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionNumericLiteral>((static_cast<const ::std::size_t &>(startLocation__)), value::StringHandle::toNumberValue(numericLiteral));
+#line 22010 "javascript_tasklets/parser/parser_imp.cpp"
+                }
+                ruleResult__ = this->makeSuccess(startLocation__);
+                startLocation__ = savedStartLocation__;
+            }
+            if(ruleResult__.success())
+            {
+                if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                {
+                    ruleResult__.endLocation = lastRuleResult__.endLocation;
+                }
+            }
+        }
+        if(ruleResult__.fail())
+        {
+            Parser::RuleResult lastRuleResult__ = ruleResult__;
+            ruleResult__ = Parser::RuleResult();
+            stringLiteral = this->internalParseTokenStringLiteral(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            if(ruleResult__.success())
+            {
+                auto savedStartLocation__ = startLocation__;
+                startLocation__ = ruleResult__.location;
+                {
+#line 1125 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionStringLiteral>((static_cast<const ::std::size_t &>(startLocation__)), stringLiteral);
+#line 22036 "javascript_tasklets/parser/parser_imp.cpp"
+                }
+                ruleResult__ = this->makeSuccess(startLocation__);
+                startLocation__ = savedStartLocation__;
+            }
+            if(ruleResult__.success())
+            {
+                if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                {
+                    ruleResult__.endLocation = lastRuleResult__.endLocation;
+                }
+            }
+        }
         startLocation__ = savedStartLocation__;
-    }
-    if(ruleResult__.fail())
-    {
-        Parser::RuleResult lastRuleResult__ = ruleResult__;
-        ruleResult__ = Parser::RuleResult();
-        this->internalParseTokenFalse(startLocation__, ruleResult__, isRequiredForSuccess__);
-        assert(!ruleResult__.empty());
-        if(ruleResult__.success())
-        {
-            auto savedStartLocation__ = startLocation__;
-            startLocation__ = ruleResult__.location;
-            {
-#line 1093 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::ExpressionBooleanLiteral>((static_cast<const ::std::size_t &>(startLocation__)), false);
-#line 21639 "javascript_tasklets/parser/parser_imp.cpp"
-            }
-            ruleResult__ = this->makeSuccess(startLocation__);
-            startLocation__ = savedStartLocation__;
-        }
-        if(ruleResult__.success())
-        {
-            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
-            {
-                ruleResult__.endLocation = lastRuleResult__.endLocation;
-            }
-        }
-    }
-    if(ruleResult__.fail())
-    {
-        Parser::RuleResult lastRuleResult__ = ruleResult__;
-        ruleResult__ = Parser::RuleResult();
-        this->internalParseTokenTrue(startLocation__, ruleResult__, isRequiredForSuccess__);
-        assert(!ruleResult__.empty());
-        if(ruleResult__.success())
-        {
-            auto savedStartLocation__ = startLocation__;
-            startLocation__ = ruleResult__.location;
-            {
-#line 1095 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::ExpressionBooleanLiteral>((static_cast<const ::std::size_t &>(startLocation__)), true);
-#line 21665 "javascript_tasklets/parser/parser_imp.cpp"
-            }
-            ruleResult__ = this->makeSuccess(startLocation__);
-            startLocation__ = savedStartLocation__;
-        }
-        if(ruleResult__.success())
-        {
-            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
-            {
-                ruleResult__.endLocation = lastRuleResult__.endLocation;
-            }
-        }
-    }
-    if(ruleResult__.fail())
-    {
-        Parser::RuleResult lastRuleResult__ = ruleResult__;
-        ruleResult__ = Parser::RuleResult();
-        numericLiteral = this->internalParseTokenNumericLiteral(startLocation__, ruleResult__, isRequiredForSuccess__);
-        assert(!ruleResult__.empty());
-        if(ruleResult__.success())
-        {
-            auto savedStartLocation__ = startLocation__;
-            startLocation__ = ruleResult__.location;
-            {
-#line 1097 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::ExpressionNumericLiteral>((static_cast<const ::std::size_t &>(startLocation__)), value::StringHandle::toNumberValue(numericLiteral));
-#line 21691 "javascript_tasklets/parser/parser_imp.cpp"
-            }
-            ruleResult__ = this->makeSuccess(startLocation__);
-            startLocation__ = savedStartLocation__;
-        }
-        if(ruleResult__.success())
-        {
-            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
-            {
-                ruleResult__.endLocation = lastRuleResult__.endLocation;
-            }
-        }
-    }
-    if(ruleResult__.fail())
-    {
-        Parser::RuleResult lastRuleResult__ = ruleResult__;
-        ruleResult__ = Parser::RuleResult();
-        stringLiteral = this->internalParseTokenStringLiteral(startLocation__, ruleResult__, isRequiredForSuccess__);
-        assert(!ruleResult__.empty());
-        if(ruleResult__.success())
-        {
-            auto savedStartLocation__ = startLocation__;
-            startLocation__ = ruleResult__.location;
-            {
-#line 1099 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::ExpressionStringLiteral>((static_cast<const ::std::size_t &>(startLocation__)), stringLiteral);
-#line 21717 "javascript_tasklets/parser/parser_imp.cpp"
-            }
-            ruleResult__ = this->makeSuccess(startLocation__);
-            startLocation__ = savedStartLocation__;
-        }
-        if(ruleResult__.success())
-        {
-            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
-            {
-                ruleResult__.endLocation = lastRuleResult__.endLocation;
-            }
-        }
     }
     ruleResultOut__ = ruleResult__;
     return returnValue__;
@@ -21745,7 +22066,9 @@ template <bool isModule, bool isStrict, bool canHaveYieldOperator>
 ArrayLiteralElementPointer Parser::internalParseArrayLiteralElement(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
 {
     ArrayLiteralElementPointer returnValue__{};
+    std::size_t ellipsisLocation{};
     ExpressionPointer spreadExpression{};
+    std::size_t expressionLocation{};
     ExpressionPointer expression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultArrayLiteralElement[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -21778,9 +22101,9 @@ ArrayLiteralElementPointer Parser::internalParseArrayLiteralElement(std::size_t 
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1107 "javascript_tasklets/parser/parser_imp.peg"
+#line 1134 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = nullptr;
-#line 21784 "javascript_tasklets/parser/parser_imp.cpp"
+#line 22107 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -21789,8 +22112,17 @@ ArrayLiteralElementPointer Parser::internalParseArrayLiteralElement(std::size_t 
     {
         Parser::RuleResult lastRuleResult__ = ruleResult__;
         ruleResult__ = Parser::RuleResult();
-        this->internalParseTokenEllipsis(startLocation__, ruleResult__, isRequiredForSuccess__);
+        ellipsisLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
         assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenEllipsis(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
         if(ruleResult__.success())
         {
             auto savedStartLocation__ = startLocation__;
@@ -21805,9 +22137,9 @@ ArrayLiteralElementPointer Parser::internalParseArrayLiteralElement(std::size_t 
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1110 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::SpreadArrayLiteralElement>((static_cast<const ::std::size_t &>(startLocation__)), spreadExpression);
-#line 21811 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1138 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::SpreadArrayLiteralElement>(ellipsisLocation, spreadExpression);
+#line 22143 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21824,16 +22156,25 @@ ArrayLiteralElementPointer Parser::internalParseArrayLiteralElement(std::size_t 
     {
         Parser::RuleResult lastRuleResult__ = ruleResult__;
         ruleResult__ = Parser::RuleResult();
-        expression = this->internalParseAssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        expressionLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
         assert(!ruleResult__.empty());
         if(ruleResult__.success())
         {
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            expression = this->internalParseAssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
             {
-#line 1112 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::ExpressionArrayLiteralElement>((static_cast<const ::std::size_t &>(startLocation__)), expression);
-#line 21837 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1141 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionArrayLiteralElement>(expressionLocation, expression);
+#line 22178 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21898,9 +22239,9 @@ ArrayLiteralElementList Parser::internalParseArrayLiteralElementList(std::size_t
                 auto savedStartLocation__ = startLocation__;
                 startLocation__ = ruleResult__.location;
                 {
-#line 1119 "javascript_tasklets/parser/parser_imp.peg"
+#line 1148 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__).push_back(element);
-#line 21904 "javascript_tasklets/parser/parser_imp.cpp"
+#line 22245 "javascript_tasklets/parser/parser_imp.cpp"
                 }
                 ruleResult__ = this->makeSuccess(startLocation__);
                 startLocation__ = savedStartLocation__;
@@ -21926,9 +22267,9 @@ ArrayLiteralElementList Parser::internalParseArrayLiteralElementList(std::size_t
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1123 "javascript_tasklets/parser/parser_imp.peg"
+#line 1152 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__).push_back(lastElement);
-#line 21932 "javascript_tasklets/parser/parser_imp.cpp"
+#line 22273 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -21956,6 +22297,7 @@ template <bool isModule, bool isStrict, bool canHaveYieldOperator>
 ExpressionPointer Parser::internalParseArrayLiteral(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
 {
     ExpressionPointer returnValue__{};
+    std::size_t location{};
     ArrayLiteralElementList elements{};
     auto &ruleResult__ = this->getResults(startLocation__).resultArrayLiteral[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -21964,8 +22306,17 @@ ExpressionPointer Parser::internalParseArrayLiteral(std::size_t startLocation__,
         return returnValue__;
     }
     ruleResult__ = Parser::RuleResult();
-    this->internalParseTokenLBracket(startLocation__, ruleResult__, isRequiredForSuccess__);
+    location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
     assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenLBracket(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
     if(ruleResult__.success())
     {
         auto savedStartLocation__ = startLocation__;
@@ -21989,9 +22340,9 @@ ExpressionPointer Parser::internalParseArrayLiteral(std::size_t startLocation__,
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1131 "javascript_tasklets/parser/parser_imp.peg"
-     (returnValue__) = arena.make<ast::ExpressionArrayLiteral>((static_cast<const ::std::size_t &>(startLocation__)), std::move(elements));
-#line 21995 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1161 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionArrayLiteral>(location, std::move(elements));
+#line 22346 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -22024,12 +22375,12 @@ ExpressionPointer Parser::internalParseObjectLiteral(std::size_t startLocation__
     {
         const char *predicateReturnValue__ = nullptr;
         {
-#line 1135 "javascript_tasklets/parser/parser_imp.peg"
+#line 1165 "javascript_tasklets/parser/parser_imp.peg"
       
         (predicateReturnValue__) = "ObjectLiteral not implemented";
 #warning implement ObjectLiteral
     
-#line 22033 "javascript_tasklets/parser/parser_imp.cpp"
+#line 22384 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         if(predicateReturnValue__ != nullptr)
@@ -22089,9 +22440,9 @@ ast::TemplateRest Parser::internalParseTemplateLiteralRest(std::size_t startLoca
                 auto savedStartLocation__ = startLocation__;
                 startLocation__ = ruleResult__.location;
                 {
-#line 1144 "javascript_tasklets/parser/parser_imp.peg"
+#line 1174 "javascript_tasklets/parser/parser_imp.peg"
          (returnValue__).emplace_back(expression, ast::TemplateString(middle.raw, middle.cooked));
-#line 22095 "javascript_tasklets/parser/parser_imp.cpp"
+#line 22446 "javascript_tasklets/parser/parser_imp.cpp"
                 }
                 ruleResult__ = this->makeSuccess(startLocation__);
                 startLocation__ = savedStartLocation__;
@@ -22128,9 +22479,9 @@ ast::TemplateRest Parser::internalParseTemplateLiteralRest(std::size_t startLoca
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1148 "javascript_tasklets/parser/parser_imp.peg"
+#line 1178 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__).emplace_back(lastExpression, ast::TemplateString(tail.raw, tail.cooked));
-#line 22134 "javascript_tasklets/parser/parser_imp.cpp"
+#line 22485 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -22140,7 +22491,7 @@ ast::TemplateRest Parser::internalParseTemplateLiteralRest(std::size_t startLoca
 }
 
 template <bool isModule, bool isStrict, bool canHaveYieldOperator>
-ExpressionPointer Parser::parseTemplateLiteral()
+ExpressionTemplateLiteralPointer Parser::parseTemplateLiteral()
 {
     RuleResult result;
     auto retval = internalParseTemplateLiteral<isModule, isStrict, canHaveYieldOperator>(0, result, true);
@@ -22151,10 +22502,12 @@ ExpressionPointer Parser::parseTemplateLiteral()
 }
 
 template <bool isModule, bool isStrict, bool canHaveYieldOperator>
-ExpressionPointer Parser::internalParseTemplateLiteral(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+ExpressionTemplateLiteralPointer Parser::internalParseTemplateLiteral(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
 {
-    ExpressionPointer returnValue__{};
+    ExpressionTemplateLiteralPointer returnValue__{};
+    std::size_t location{};
     RawAndCookedString noSubstitutionTemplate{};
+    std::size_t headLocation{};
     RawAndCookedString first{};
     ast::TemplateRest rest{};
     auto &ruleResult__ = this->getResults(startLocation__).resultTemplateLiteral[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
@@ -22164,20 +22517,29 @@ ExpressionPointer Parser::internalParseTemplateLiteral(std::size_t startLocation
         return returnValue__;
     }
     ruleResult__ = Parser::RuleResult();
-    noSubstitutionTemplate = this->internalParseTokenNoSubstitutionTemplate(startLocation__, ruleResult__, isRequiredForSuccess__);
+    location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
     assert(!ruleResult__.empty());
     if(ruleResult__.success())
     {
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        noSubstitutionTemplate = this->internalParseTokenNoSubstitutionTemplate(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
         {
-#line 1153 "javascript_tasklets/parser/parser_imp.peg"
+#line 1184 "javascript_tasklets/parser/parser_imp.peg"
      
-        (returnValue__) = arena.make<ast::ExpressionTemplateLiteral>((static_cast<const ::std::size_t &>(startLocation__)),
+        (returnValue__) = arena.make<ast::ExpressionTemplateLiteral>(location,
                                                         ast::TemplateString(noSubstitutionTemplate.raw,
                                                                        noSubstitutionTemplate.cooked));
     
-#line 22181 "javascript_tasklets/parser/parser_imp.cpp"
+#line 22543 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -22186,8 +22548,17 @@ ExpressionPointer Parser::internalParseTemplateLiteral(std::size_t startLocation
     {
         Parser::RuleResult lastRuleResult__ = ruleResult__;
         ruleResult__ = Parser::RuleResult();
-        first = this->internalParseTokenTemplateHead(startLocation__, ruleResult__, isRequiredForSuccess__);
+        headLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
         assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            first = this->internalParseTokenTemplateHead(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
         if(ruleResult__.success())
         {
             auto savedStartLocation__ = startLocation__;
@@ -22202,11 +22573,11 @@ ExpressionPointer Parser::internalParseTemplateLiteral(std::size_t startLocation
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1160 "javascript_tasklets/parser/parser_imp.peg"
+#line 1192 "javascript_tasklets/parser/parser_imp.peg"
      
-        (returnValue__) = arena.make<ast::ExpressionTemplateLiteral>((static_cast<const ::std::size_t &>(startLocation__)), ast::TemplateString(first.raw, first.cooked), std::move(rest));
+        (returnValue__) = arena.make<ast::ExpressionTemplateLiteral>(headLocation, ast::TemplateString(first.raw, first.cooked), std::move(rest));
     
-#line 22210 "javascript_tasklets/parser/parser_imp.cpp"
+#line 22581 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -22247,12 +22618,12 @@ ExpressionPointer Parser::internalParseArrowFunction(std::size_t startLocation__
     {
         const char *predicateReturnValue__ = nullptr;
         {
-#line 1166 "javascript_tasklets/parser/parser_imp.peg"
+#line 1198 "javascript_tasklets/parser/parser_imp.peg"
       
         (predicateReturnValue__) = "ArrowFunction not implemented";
 #warning implement ArrowFunction
     
-#line 22256 "javascript_tasklets/parser/parser_imp.cpp"
+#line 22627 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         if(predicateReturnValue__ != nullptr)
@@ -22286,16 +22657,1228 @@ ExpressionPointer Parser::internalParseYieldExpression(std::size_t startLocation
     {
         const char *predicateReturnValue__ = nullptr;
         {
-#line 1172 "javascript_tasklets/parser/parser_imp.peg"
+#line 1204 "javascript_tasklets/parser/parser_imp.peg"
       
         (predicateReturnValue__) = "YieldExpression not implemented";
 #warning implement YieldExpression
     
-#line 22295 "javascript_tasklets/parser/parser_imp.cpp"
+#line 22666 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         if(predicateReturnValue__ != nullptr)
             ruleResult__ = this->makeFail(startLocation__, predicateReturnValue__, isRequiredForSuccess__);
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::parseMemberExpression()
+{
+    RuleResult result;
+    auto retval = internalParseMemberExpression<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::internalParseMemberExpression(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    ExpressionPointer constructor{};
+    std::size_t newLocation{};
+    ast::ArgumentList newArguments{};
+    ExpressionPointer superProperty{};
+    ExpressionPointer metaProperty{};
+    ExpressionPointer primaryExpression{};
+    std::size_t periodLocation{};
+    std::size_t identifierNameLocation{};
+    String identifierName{};
+    std::size_t lBracketLocation{};
+    ExpressionPointer nameExpression{};
+    std::size_t templateLiteralLocation{};
+    ExpressionTemplateLiteralPointer templateLiteral{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultMemberExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    this->internalParseTokenNew(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        constructor = this->internalParseMemberExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        newLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        newArguments = this->internalParseArguments<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1215 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionNew>(newLocation, constructor, std::move(newArguments));
+#line 22747 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        superProperty = this->internalParseSuperProperty<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1217 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = superProperty;
+#line 22765 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        metaProperty = this->internalParseMetaProperty(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1219 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = metaProperty;
+#line 22791 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        primaryExpression = this->internalParsePrimaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1221 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = primaryExpression;
+#line 22817 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = this->makeSuccess(startLocation__);
+        {
+            auto savedStartLocation__ = startLocation__;
+            auto &savedRuleResult__ = ruleResult__;
+            while(true)
+            {
+                Parser::RuleResult ruleResult__;
+                startLocation__ = savedRuleResult__.location;
+                ruleResult__ = Parser::RuleResult();
+                periodLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenPeriod(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    identifierNameLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    identifierName = this->internalParseTokenIdentifierName(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    {
+#line 1228 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionMember>(periodLocation, (returnValue__), arena.make<ast::ExpressionStringLiteral>(identifierNameLocation, identifierName));
+#line 22879 "javascript_tasklets/parser/parser_imp.cpp"
+                    }
+                    ruleResult__ = this->makeSuccess(startLocation__);
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.fail())
+                {
+                    Parser::RuleResult lastRuleResult__ = ruleResult__;
+                    ruleResult__ = Parser::RuleResult();
+                    lBracketLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenLBracket(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        nameExpression = this->internalParseExpression<isModule, isStrict, true, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenRBracket(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        {
+#line 1233 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionMember>(lBracketLocation, (returnValue__), nameExpression);
+#line 22924 "javascript_tasklets/parser/parser_imp.cpp"
+                        }
+                        ruleResult__ = this->makeSuccess(startLocation__);
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                        {
+                            ruleResult__.endLocation = lastRuleResult__.endLocation;
+                        }
+                    }
+                }
+                if(ruleResult__.fail())
+                {
+                    Parser::RuleResult lastRuleResult__ = ruleResult__;
+                    ruleResult__ = Parser::RuleResult();
+                    templateLiteralLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        templateLiteral = this->internalParseTemplateLiteral<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        {
+#line 1236 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionTemplateCall>(templateLiteralLocation, (returnValue__), templateLiteral);
+#line 22959 "javascript_tasklets/parser/parser_imp.cpp"
+                        }
+                        ruleResult__ = this->makeSuccess(startLocation__);
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                        {
+                            ruleResult__.endLocation = lastRuleResult__.endLocation;
+                        }
+                    }
+                }
+                if(ruleResult__.fail() || ruleResult__.location == startLocation__)
+                {
+                    savedRuleResult__ = this->makeSuccess(savedRuleResult__.location, ruleResult__.endLocation);
+                    startLocation__ = savedStartLocation__;
+                    break;
+                }
+                savedRuleResult__ = this->makeSuccess(ruleResult__.location, ruleResult__.endLocation);
+            }
+        }
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::parseSuperProperty()
+{
+    RuleResult result;
+    auto retval = internalParseSuperProperty<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::internalParseSuperProperty(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    std::size_t periodLocation{};
+    String name{};
+    std::size_t lBracketLocation{};
+    ExpressionPointer nameExpression{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultSuperProperty[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    this->internalParseTokenSuper(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        periodLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenPeriod(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        name = this->internalParseTokenIdentifierName(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1245 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionSuperMember>(periodLocation, arena.make<ast::ExpressionStringLiteral>((static_cast<const ::std::size_t &>(startLocation__)), name));
+#line 23049 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenSuper(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            lBracketLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenLBracket(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            nameExpression = this->internalParseExpression<isModule, isStrict, true, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenRBracket(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1251 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionSuperMember>(lBracketLocation, nameExpression);
+#line 23103 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+ExpressionPointer Parser::parseMetaProperty()
+{
+    RuleResult result;
+    auto retval = internalParseMetaProperty(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+ExpressionPointer Parser::internalParseMetaProperty(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    ExpressionPointer newTarget{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultMetaProperty;
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    newTarget = this->internalParseNewTarget(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1256 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = newTarget;
+#line 23150 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+ExpressionPointer Parser::parseNewTarget()
+{
+    RuleResult result;
+    auto retval = internalParseNewTarget(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+ExpressionPointer Parser::internalParseNewTarget(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    std::size_t newTargetLocation{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultNewTarget;
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    this->internalParseTokenNew(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        newTargetLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenPeriod(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenTarget(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1264 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionNewTarget>(newTargetLocation);
+#line 23216 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::parseNewExpression()
+{
+    RuleResult result;
+    auto retval = internalParseNewExpression<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::internalParseNewExpression(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    ExpressionPointer memberExpression{};
+    std::size_t newLocation{};
+    ExpressionPointer newExpression{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultNewExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    memberExpression = this->internalParseMemberExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1269 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = memberExpression;
+#line 23259 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        newLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenNew(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            newExpression = this->internalParseNewExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1273 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionNew>(newLocation, newExpression);
+#line 23295 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::parseCallExpression()
+{
+    RuleResult result;
+    auto retval = internalParseCallExpression<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::internalParseCallExpression(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    ExpressionPointer superCall{};
+    ExpressionPointer memberExpression{};
+    std::size_t firstCallLocation{};
+    ast::ArgumentList firstArguments{};
+    std::size_t callLocation{};
+    ast::ArgumentList arguments{};
+    std::size_t periodLocation{};
+    std::size_t identifierNameLocation{};
+    String identifierName{};
+    std::size_t lBracketLocation{};
+    ExpressionPointer nameExpression{};
+    std::size_t templateLiteralLocation{};
+    ExpressionTemplateLiteralPointer templateLiteral{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultCallExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    superCall = this->internalParseSuperCall<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1279 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = superCall;
+#line 23356 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        memberExpression = this->internalParseMemberExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            firstCallLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            firstArguments = this->internalParseArguments<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1283 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionCall>(firstCallLocation, memberExpression, std::move(firstArguments));
+#line 23392 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = this->makeSuccess(startLocation__);
+        {
+            auto savedStartLocation__ = startLocation__;
+            auto &savedRuleResult__ = ruleResult__;
+            while(true)
+            {
+                Parser::RuleResult ruleResult__;
+                startLocation__ = savedRuleResult__.location;
+                ruleResult__ = Parser::RuleResult();
+                callLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    arguments = this->internalParseArguments<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    {
+#line 1288 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionCall>(callLocation, (returnValue__), std::move(firstArguments));
+#line 23436 "javascript_tasklets/parser/parser_imp.cpp"
+                    }
+                    ruleResult__ = this->makeSuccess(startLocation__);
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.fail())
+                {
+                    Parser::RuleResult lastRuleResult__ = ruleResult__;
+                    ruleResult__ = Parser::RuleResult();
+                    periodLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenPeriod(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        identifierNameLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        identifierName = this->internalParseTokenIdentifierName(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        {
+#line 1293 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionMember>(periodLocation, (returnValue__), arena.make<ast::ExpressionStringLiteral>(identifierNameLocation, identifierName));
+#line 23481 "javascript_tasklets/parser/parser_imp.cpp"
+                        }
+                        ruleResult__ = this->makeSuccess(startLocation__);
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                        {
+                            ruleResult__.endLocation = lastRuleResult__.endLocation;
+                        }
+                    }
+                }
+                if(ruleResult__.fail())
+                {
+                    Parser::RuleResult lastRuleResult__ = ruleResult__;
+                    ruleResult__ = Parser::RuleResult();
+                    lBracketLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenLBracket(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        nameExpression = this->internalParseExpression<isModule, isStrict, true, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenRBracket(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        {
+#line 1298 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionMember>(lBracketLocation, (returnValue__), nameExpression);
+#line 23534 "javascript_tasklets/parser/parser_imp.cpp"
+                        }
+                        ruleResult__ = this->makeSuccess(startLocation__);
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                        {
+                            ruleResult__.endLocation = lastRuleResult__.endLocation;
+                        }
+                    }
+                }
+                if(ruleResult__.fail())
+                {
+                    Parser::RuleResult lastRuleResult__ = ruleResult__;
+                    ruleResult__ = Parser::RuleResult();
+                    templateLiteralLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        templateLiteral = this->internalParseTemplateLiteral<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        {
+#line 1301 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionTemplateCall>(templateLiteralLocation, (returnValue__), templateLiteral);
+#line 23569 "javascript_tasklets/parser/parser_imp.cpp"
+                        }
+                        ruleResult__ = this->makeSuccess(startLocation__);
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                        {
+                            ruleResult__.endLocation = lastRuleResult__.endLocation;
+                        }
+                    }
+                }
+                if(ruleResult__.fail() || ruleResult__.location == startLocation__)
+                {
+                    savedRuleResult__ = this->makeSuccess(savedRuleResult__.location, ruleResult__.endLocation);
+                    startLocation__ = savedStartLocation__;
+                    break;
+                }
+                savedRuleResult__ = this->makeSuccess(ruleResult__.location, ruleResult__.endLocation);
+            }
+        }
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::parseSuperCall()
+{
+    RuleResult result;
+    auto retval = internalParseSuperCall<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::internalParseSuperCall(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    std::size_t callLocation{};
+    ast::ArgumentList arguments{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultSuperCall[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    this->internalParseTokenSuper(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        callLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        arguments = this->internalParseArguments<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1309 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionSuperCall>(callLocation, std::move(arguments));
+#line 23648 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ast::ArgumentList Parser::parseArguments()
+{
+    RuleResult result;
+    auto retval = internalParseArguments<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ast::ArgumentList Parser::internalParseArguments(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ast::ArgumentList returnValue__{};
+    ast::ArgumentList retval{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultArguments[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    this->internalParseTokenLParen(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        retval = this->internalParseArgumentList<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1316 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = std::move(retval);
+#line 23696 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.fail())
+            ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenRParen(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ArgumentPointer Parser::parseArgument()
+{
+    RuleResult result;
+    auto retval = internalParseArgument<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ArgumentPointer Parser::internalParseArgument(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ArgumentPointer returnValue__{};
+    std::size_t expressionLocation{};
+    ExpressionPointer expression{};
+    std::size_t ellipsisLocation{};
+    ExpressionPointer spread{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultArgument[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    expressionLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        expression = this->internalParseAssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1324 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ArgumentExpression>(expressionLocation, expression);
+#line 23762 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        ellipsisLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenEllipsis(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            spread = this->internalParseAssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1328 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ArgumentSpread>(ellipsisLocation, spread);
+#line 23798 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ast::ArgumentList Parser::parseArgumentList()
+{
+    RuleResult result;
+    auto retval = internalParseArgumentList<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ast::ArgumentList Parser::internalParseArgumentList(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ast::ArgumentList returnValue__{};
+    ArgumentPointer argument{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultArgumentList[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    argument = this->internalParseArgument<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1334 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__).push_back(argument);
+#line 23847 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        auto &savedRuleResult__ = ruleResult__;
+        while(true)
+        {
+            Parser::RuleResult ruleResult__;
+            startLocation__ = savedRuleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            argument = this->internalParseArgument<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            if(ruleResult__.success())
+            {
+                auto savedStartLocation__ = startLocation__;
+                startLocation__ = ruleResult__.location;
+                {
+#line 1334 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__).push_back(argument);
+#line 23870 "javascript_tasklets/parser/parser_imp.cpp"
+                }
+                ruleResult__ = this->makeSuccess(startLocation__);
+                startLocation__ = savedStartLocation__;
+            }
+            if(ruleResult__.fail() || ruleResult__.location == startLocation__)
+            {
+                savedRuleResult__ = this->makeSuccess(savedRuleResult__.location, ruleResult__.endLocation);
+                startLocation__ = savedStartLocation__;
+                break;
+            }
+            savedRuleResult__ = this->makeSuccess(ruleResult__.location, ruleResult__.endLocation);
+        }
     }
     ruleResultOut__ = ruleResult__;
     return returnValue__;
@@ -22316,25 +23899,980 @@ template <bool isModule, bool isStrict, bool canHaveYieldOperator>
 ExpressionPointer Parser::internalParseLeftHandSideExpression(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
 {
     ExpressionPointer returnValue__{};
+    ExpressionPointer callExpression{};
+    ExpressionPointer newExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultLeftHandSideExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
     {
         ruleResultOut__ = ruleResult__;
         return returnValue__;
     }
+    ruleResult__ = Parser::RuleResult();
+    callExpression = this->internalParseCallExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
     {
-        const char *predicateReturnValue__ = nullptr;
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
         {
-#line 1178 "javascript_tasklets/parser/parser_imp.peg"
-      
-        (predicateReturnValue__) = "LeftHandSideExpression not implemented";
-#warning implement LeftHandSideExpression
-    
-#line 22334 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1340 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = callExpression;
+#line 23921 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
-        if(predicateReturnValue__ != nullptr)
-            ruleResult__ = this->makeFail(startLocation__, predicateReturnValue__, isRequiredForSuccess__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        newExpression = this->internalParseNewExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1342 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = newExpression;
+#line 23942 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::parsePostfixExpression()
+{
+    RuleResult result;
+    auto retval = internalParsePostfixExpression<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::internalParsePostfixExpression(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    ExpressionPointer expression{};
+    std::size_t incLocation{};
+    std::size_t decLocation{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultPostfixExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    expression = this->internalParseLeftHandSideExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1347 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = expression;
+#line 23985 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        isRequiredForSuccess__ = !isRequiredForSuccess__;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenizerTokenSeperatorWithLineTerminator(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        isRequiredForSuccess__ = !isRequiredForSuccess__;
+        if(ruleResult__.success())
+            ruleResult__ = this->makeFail(startLocation__, "not allowed here", isRequiredForSuccess__);
+        else
+            ruleResult__ = this->makeSuccess(startLocation__);
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            incLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenPlusPlus(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1352 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionPostfixIncrement>(incLocation, (returnValue__));
+#line 24028 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.fail())
+        {
+            Parser::RuleResult lastRuleResult__ = ruleResult__;
+            isRequiredForSuccess__ = !isRequiredForSuccess__;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenizerTokenSeperatorWithLineTerminator(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            isRequiredForSuccess__ = !isRequiredForSuccess__;
+            if(ruleResult__.success())
+                ruleResult__ = this->makeFail(startLocation__, "not allowed here", isRequiredForSuccess__);
+            else
+                ruleResult__ = this->makeSuccess(startLocation__);
+            if(ruleResult__.success())
+            {
+                auto savedStartLocation__ = startLocation__;
+                startLocation__ = ruleResult__.location;
+                ruleResult__ = Parser::RuleResult();
+                decLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                assert(!ruleResult__.empty());
+                startLocation__ = savedStartLocation__;
+            }
+            if(ruleResult__.success())
+            {
+                auto savedStartLocation__ = startLocation__;
+                startLocation__ = ruleResult__.location;
+                ruleResult__ = Parser::RuleResult();
+                this->internalParseTokenMinusMinus(startLocation__, ruleResult__, isRequiredForSuccess__);
+                assert(!ruleResult__.empty());
+                startLocation__ = savedStartLocation__;
+            }
+            if(ruleResult__.success())
+            {
+                auto savedStartLocation__ = startLocation__;
+                startLocation__ = ruleResult__.location;
+                {
+#line 1356 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionPostfixDecrement>(decLocation, (returnValue__));
+#line 24070 "javascript_tasklets/parser/parser_imp.cpp"
+                }
+                ruleResult__ = this->makeSuccess(startLocation__);
+                startLocation__ = savedStartLocation__;
+            }
+            if(ruleResult__.success())
+            {
+                if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                {
+                    ruleResult__.endLocation = lastRuleResult__.endLocation;
+                }
+            }
+        }
+        if(ruleResult__.fail())
+            ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::parseUnaryExpression()
+{
+    RuleResult result;
+    auto retval = internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::internalParseUnaryExpression(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    std::size_t deleteLocation{};
+    ExpressionPointer deleteExpression{};
+    std::size_t voidLocation{};
+    ExpressionPointer voidExpression{};
+    std::size_t typeOfLocation{};
+    ExpressionPointer typeOfExpression{};
+    std::size_t incLocation{};
+    ExpressionPointer incExpression{};
+    std::size_t decLocation{};
+    ExpressionPointer decExpression{};
+    std::size_t plusLocation{};
+    ExpressionPointer unaryPlusExpression{};
+    std::size_t minusLocation{};
+    ExpressionPointer unaryMinusExpression{};
+    std::size_t tildeLocation{};
+    ExpressionPointer bitwiseNotExpression{};
+    std::size_t notLocation{};
+    ExpressionPointer logicalNotExpression{};
+    ExpressionPointer expression{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultUnaryExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    deleteLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        this->internalParseTokenDelete(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = Parser::RuleResult();
+        deleteExpression = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1364 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionDelete>(deleteLocation, deleteExpression);
+#line 24159 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        voidLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenVoid(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            voidExpression = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1368 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionVoid>(voidLocation, voidExpression);
+#line 24195 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        typeOfLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenTypeOf(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            typeOfExpression = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1372 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionTypeOf>(typeOfLocation, typeOfExpression);
+#line 24239 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        incLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenPlusPlus(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            incExpression = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1376 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionPrefixIncrement>(incLocation, incExpression);
+#line 24283 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        decLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenMinusMinus(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            decExpression = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1380 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionPrefixDecrement>(decLocation, decExpression);
+#line 24327 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        plusLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenPlus(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            unaryPlusExpression = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1384 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionUnaryPlus>(plusLocation, unaryPlusExpression);
+#line 24371 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        minusLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenMinus(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            unaryMinusExpression = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1388 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionUnaryMinus>(minusLocation, unaryMinusExpression);
+#line 24415 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        tildeLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenTilde(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            bitwiseNotExpression = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1392 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionBitwiseNot>(tildeLocation, bitwiseNotExpression);
+#line 24459 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        notLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenEMark(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            logicalNotExpression = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1396 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = arena.make<ast::ExpressionLogicalNot>(notLocation, logicalNotExpression);
+#line 24503 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    if(ruleResult__.fail())
+    {
+        Parser::RuleResult lastRuleResult__ = ruleResult__;
+        ruleResult__ = Parser::RuleResult();
+        expression = this->internalParsePostfixExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+        assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            {
+#line 1398 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = expression;
+#line 24529 "javascript_tasklets/parser/parser_imp.cpp"
+            }
+            ruleResult__ = this->makeSuccess(startLocation__);
+            startLocation__ = savedStartLocation__;
+        }
+        if(ruleResult__.success())
+        {
+            if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+            {
+                ruleResult__.endLocation = lastRuleResult__.endLocation;
+            }
+        }
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::parseMultiplicativeExpression()
+{
+    RuleResult result;
+    auto retval = internalParseMultiplicativeExpression<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::internalParseMultiplicativeExpression(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    ExpressionPointer firstExpression{};
+    std::size_t multiplyLocation{};
+    ExpressionPointer multiply{};
+    std::size_t divideLocation{};
+    ExpressionPointer divide{};
+    std::size_t modulusLocation{};
+    ExpressionPointer modulus{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultMultiplicativeExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    firstExpression = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1403 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = firstExpression;
+#line 24584 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = this->makeSuccess(startLocation__);
+        {
+            auto savedStartLocation__ = startLocation__;
+            auto &savedRuleResult__ = ruleResult__;
+            while(true)
+            {
+                Parser::RuleResult ruleResult__;
+                startLocation__ = savedRuleResult__.location;
+                ruleResult__ = Parser::RuleResult();
+                multiplyLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenStar(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    multiply = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    {
+#line 1408 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionMultiply>(multiplyLocation, (returnValue__), multiply);
+#line 24629 "javascript_tasklets/parser/parser_imp.cpp"
+                    }
+                    ruleResult__ = this->makeSuccess(startLocation__);
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.fail())
+                {
+                    Parser::RuleResult lastRuleResult__ = ruleResult__;
+                    ruleResult__ = Parser::RuleResult();
+                    divideLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenFSlash(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        divide = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        {
+#line 1412 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionDivide>(divideLocation, (returnValue__), divide);
+#line 24665 "javascript_tasklets/parser/parser_imp.cpp"
+                        }
+                        ruleResult__ = this->makeSuccess(startLocation__);
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                        {
+                            ruleResult__.endLocation = lastRuleResult__.endLocation;
+                        }
+                    }
+                }
+                if(ruleResult__.fail())
+                {
+                    Parser::RuleResult lastRuleResult__ = ruleResult__;
+                    ruleResult__ = Parser::RuleResult();
+                    modulusLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenPercent(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        modulus = this->internalParseUnaryExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        {
+#line 1416 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionModulus>(modulusLocation, (returnValue__), modulus);
+#line 24709 "javascript_tasklets/parser/parser_imp.cpp"
+                        }
+                        ruleResult__ = this->makeSuccess(startLocation__);
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                        {
+                            ruleResult__.endLocation = lastRuleResult__.endLocation;
+                        }
+                    }
+                }
+                if(ruleResult__.fail() || ruleResult__.location == startLocation__)
+                {
+                    savedRuleResult__ = this->makeSuccess(savedRuleResult__.location, ruleResult__.endLocation);
+                    startLocation__ = savedStartLocation__;
+                    break;
+                }
+                savedRuleResult__ = this->makeSuccess(ruleResult__.location, ruleResult__.endLocation);
+            }
+        }
+        startLocation__ = savedStartLocation__;
+    }
+    ruleResultOut__ = ruleResult__;
+    return returnValue__;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::parseAdditiveExpression()
+{
+    RuleResult result;
+    auto retval = internalParseAdditiveExpression<isModule, isStrict, canHaveYieldOperator>(0, result, true);
+    assert(!result.empty());
+    if(result.fail())
+        throw ParseError(errorLocation, errorMessage);
+    return retval;
+}
+
+template <bool isModule, bool isStrict, bool canHaveYieldOperator>
+ExpressionPointer Parser::internalParseAdditiveExpression(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
+{
+    ExpressionPointer returnValue__{};
+    ExpressionPointer firstExpression{};
+    std::size_t plusLocation{};
+    ExpressionPointer plus{};
+    std::size_t minusLocation{};
+    ExpressionPointer minus{};
+    auto &ruleResult__ = this->getResults(startLocation__).resultAdditiveExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
+    if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
+    {
+        ruleResultOut__ = ruleResult__;
+        return returnValue__;
+    }
+    ruleResult__ = Parser::RuleResult();
+    firstExpression = this->internalParseMultiplicativeExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        {
+#line 1422 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = firstExpression;
+#line 24773 "javascript_tasklets/parser/parser_imp.cpp"
+        }
+        ruleResult__ = this->makeSuccess(startLocation__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = this->makeSuccess(startLocation__);
+        {
+            auto savedStartLocation__ = startLocation__;
+            auto &savedRuleResult__ = ruleResult__;
+            while(true)
+            {
+                Parser::RuleResult ruleResult__;
+                startLocation__ = savedRuleResult__.location;
+                ruleResult__ = Parser::RuleResult();
+                plusLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenPlus(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    plus = this->internalParseMultiplicativeExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    {
+#line 1427 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionPlus>(plusLocation, (returnValue__), plus);
+#line 24818 "javascript_tasklets/parser/parser_imp.cpp"
+                    }
+                    ruleResult__ = this->makeSuccess(startLocation__);
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.fail())
+                {
+                    Parser::RuleResult lastRuleResult__ = ruleResult__;
+                    ruleResult__ = Parser::RuleResult();
+                    minusLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenMinus(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        minus = this->internalParseMultiplicativeExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        {
+#line 1431 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionMinus>(minusLocation, (returnValue__), minus);
+#line 24854 "javascript_tasklets/parser/parser_imp.cpp"
+                        }
+                        ruleResult__ = this->makeSuccess(startLocation__);
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                        {
+                            ruleResult__.endLocation = lastRuleResult__.endLocation;
+                        }
+                    }
+                }
+                if(ruleResult__.fail() || ruleResult__.location == startLocation__)
+                {
+                    savedRuleResult__ = this->makeSuccess(savedRuleResult__.location, ruleResult__.endLocation);
+                    startLocation__ = savedStartLocation__;
+                    break;
+                }
+                savedRuleResult__ = this->makeSuccess(ruleResult__.location, ruleResult__.endLocation);
+            }
+        }
+        startLocation__ = savedStartLocation__;
     }
     ruleResultOut__ = ruleResult__;
     return returnValue__;
@@ -22355,25 +24893,177 @@ template <bool isModule, bool isStrict, bool canHaveYieldOperator>
 ExpressionPointer Parser::internalParseShiftExpression(std::size_t startLocation__, RuleResult &ruleResultOut__, bool isRequiredForSuccess__)
 {
     ExpressionPointer returnValue__{};
+    ExpressionPointer firstExpression{};
+    std::size_t lShiftLocation{};
+    ExpressionPointer lShift{};
+    std::size_t arShiftLocation{};
+    ExpressionPointer arShift{};
+    std::size_t urShiftLocation{};
+    ExpressionPointer urShift{};
     auto &ruleResult__ = this->getResults(startLocation__).resultShiftExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
     {
         ruleResultOut__ = ruleResult__;
         return returnValue__;
     }
+    ruleResult__ = Parser::RuleResult();
+    firstExpression = this->internalParseAdditiveExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+    assert(!ruleResult__.empty());
+    if(ruleResult__.success())
     {
-        const char *predicateReturnValue__ = nullptr;
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
         {
-#line 1184 "javascript_tasklets/parser/parser_imp.peg"
-      
-        (predicateReturnValue__) = "ShiftExpression not implemented";
-#warning implement ShiftExpression
-    
-#line 22373 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1437 "javascript_tasklets/parser/parser_imp.peg"
+     (returnValue__) = firstExpression;
+#line 24920 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
-        if(predicateReturnValue__ != nullptr)
-            ruleResult__ = this->makeFail(startLocation__, predicateReturnValue__, isRequiredForSuccess__);
+        startLocation__ = savedStartLocation__;
+    }
+    if(ruleResult__.success())
+    {
+        auto savedStartLocation__ = startLocation__;
+        startLocation__ = ruleResult__.location;
+        ruleResult__ = this->makeSuccess(startLocation__);
+        {
+            auto savedStartLocation__ = startLocation__;
+            auto &savedRuleResult__ = ruleResult__;
+            while(true)
+            {
+                Parser::RuleResult ruleResult__;
+                startLocation__ = savedRuleResult__.location;
+                ruleResult__ = Parser::RuleResult();
+                lShiftLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenLAngleLAngle(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    lShift = this->internalParseAdditiveExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    {
+#line 1442 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionLShift>(lShiftLocation, (returnValue__), lShift);
+#line 24965 "javascript_tasklets/parser/parser_imp.cpp"
+                    }
+                    ruleResult__ = this->makeSuccess(startLocation__);
+                    startLocation__ = savedStartLocation__;
+                }
+                if(ruleResult__.fail())
+                {
+                    Parser::RuleResult lastRuleResult__ = ruleResult__;
+                    ruleResult__ = Parser::RuleResult();
+                    arShiftLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenRAngleRAngle(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        arShift = this->internalParseAdditiveExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        {
+#line 1446 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionARShift>(arShiftLocation, (returnValue__), arShift);
+#line 25001 "javascript_tasklets/parser/parser_imp.cpp"
+                        }
+                        ruleResult__ = this->makeSuccess(startLocation__);
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                        {
+                            ruleResult__.endLocation = lastRuleResult__.endLocation;
+                        }
+                    }
+                }
+                if(ruleResult__.fail())
+                {
+                    Parser::RuleResult lastRuleResult__ = ruleResult__;
+                    ruleResult__ = Parser::RuleResult();
+                    urShiftLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenRAngleRAngleRAngle(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        urShift = this->internalParseAdditiveExpression<isModule, isStrict, canHaveYieldOperator>(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        {
+#line 1450 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionURShift>(urShiftLocation, (returnValue__), urShift);
+#line 25045 "javascript_tasklets/parser/parser_imp.cpp"
+                        }
+                        ruleResult__ = this->makeSuccess(startLocation__);
+                        startLocation__ = savedStartLocation__;
+                    }
+                    if(ruleResult__.success())
+                    {
+                        if(lastRuleResult__.endLocation >= ruleResult__.endLocation)
+                        {
+                            ruleResult__.endLocation = lastRuleResult__.endLocation;
+                        }
+                    }
+                }
+                if(ruleResult__.fail() || ruleResult__.location == startLocation__)
+                {
+                    savedRuleResult__ = this->makeSuccess(savedRuleResult__.location, ruleResult__.endLocation);
+                    startLocation__ = savedStartLocation__;
+                    break;
+                }
+                savedRuleResult__ = this->makeSuccess(ruleResult__.location, ruleResult__.endLocation);
+            }
+        }
+        startLocation__ = savedStartLocation__;
     }
     ruleResultOut__ = ruleResult__;
     return returnValue__;
@@ -22395,11 +25085,17 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
 {
     ExpressionPointer returnValue__{};
     ExpressionPointer firstExpression{};
+    std::size_t ltLocation{};
     ExpressionPointer compareLT{};
+    std::size_t gtLocation{};
     ExpressionPointer compareGT{};
+    std::size_t leLocation{};
     ExpressionPointer compareLE{};
+    std::size_t geLocation{};
     ExpressionPointer compareGE{};
+    std::size_t instanceOfLocation{};
     ExpressionPointer instanceOfExpression{};
+    std::size_t inLocation{};
     ExpressionPointer inExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultRelationalExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveInOperator)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -22415,9 +25111,9 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1191 "javascript_tasklets/parser/parser_imp.peg"
+#line 1456 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = firstExpression;
-#line 22421 "javascript_tasklets/parser/parser_imp.cpp"
+#line 25117 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -22435,8 +25131,17 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                 Parser::RuleResult ruleResult__;
                 startLocation__ = savedRuleResult__.location;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenLAngle(startLocation__, ruleResult__, isRequiredForSuccess__);
+                ltLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenLAngle(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -22451,9 +25156,9 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1195 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionCompareLT>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), compareLT);
-#line 22457 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1461 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionCompareLT>(ltLocation, (returnValue__), compareLT);
+#line 25162 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -22462,8 +25167,17 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                 {
                     Parser::RuleResult lastRuleResult__ = ruleResult__;
                     ruleResult__ = Parser::RuleResult();
-                    this->internalParseTokenRAngle(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    gtLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                     assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenRAngle(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
                     if(ruleResult__.success())
                     {
                         auto savedStartLocation__ = startLocation__;
@@ -22478,9 +25192,9 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                         auto savedStartLocation__ = startLocation__;
                         startLocation__ = ruleResult__.location;
                         {
-#line 1198 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionCompareGT>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), compareGT);
-#line 22484 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1465 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionCompareGT>(gtLocation, (returnValue__), compareGT);
+#line 25198 "javascript_tasklets/parser/parser_imp.cpp"
                         }
                         ruleResult__ = this->makeSuccess(startLocation__);
                         startLocation__ = savedStartLocation__;
@@ -22497,8 +25211,17 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                 {
                     Parser::RuleResult lastRuleResult__ = ruleResult__;
                     ruleResult__ = Parser::RuleResult();
-                    this->internalParseTokenLAngleEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    leLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                     assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenLAngleEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
                     if(ruleResult__.success())
                     {
                         auto savedStartLocation__ = startLocation__;
@@ -22513,9 +25236,9 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                         auto savedStartLocation__ = startLocation__;
                         startLocation__ = ruleResult__.location;
                         {
-#line 1201 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionCompareLE>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), compareLE);
-#line 22519 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1469 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionCompareLE>(leLocation, (returnValue__), compareLE);
+#line 25242 "javascript_tasklets/parser/parser_imp.cpp"
                         }
                         ruleResult__ = this->makeSuccess(startLocation__);
                         startLocation__ = savedStartLocation__;
@@ -22532,8 +25255,17 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                 {
                     Parser::RuleResult lastRuleResult__ = ruleResult__;
                     ruleResult__ = Parser::RuleResult();
-                    this->internalParseTokenRAngleEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    geLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                     assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenRAngleEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
                     if(ruleResult__.success())
                     {
                         auto savedStartLocation__ = startLocation__;
@@ -22548,9 +25280,9 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                         auto savedStartLocation__ = startLocation__;
                         startLocation__ = ruleResult__.location;
                         {
-#line 1204 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionCompareGE>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), compareGE);
-#line 22554 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1473 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionCompareGE>(geLocation, (returnValue__), compareGE);
+#line 25286 "javascript_tasklets/parser/parser_imp.cpp"
                         }
                         ruleResult__ = this->makeSuccess(startLocation__);
                         startLocation__ = savedStartLocation__;
@@ -22567,8 +25299,17 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                 {
                     Parser::RuleResult lastRuleResult__ = ruleResult__;
                     ruleResult__ = Parser::RuleResult();
-                    this->internalParseTokenInstanceOf(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    instanceOfLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                     assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenInstanceOf(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
                     if(ruleResult__.success())
                     {
                         auto savedStartLocation__ = startLocation__;
@@ -22583,9 +25324,9 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                         auto savedStartLocation__ = startLocation__;
                         startLocation__ = ruleResult__.location;
                         {
-#line 1207 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionInstanceOf>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), instanceOfExpression);
-#line 22589 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1477 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionInstanceOf>(instanceOfLocation, (returnValue__), instanceOfExpression);
+#line 25330 "javascript_tasklets/parser/parser_imp.cpp"
                         }
                         ruleResult__ = this->makeSuccess(startLocation__);
                         startLocation__ = savedStartLocation__;
@@ -22604,16 +25345,25 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                     {
                         const char *predicateReturnValue__ = nullptr;
                         {
-#line 1208 "javascript_tasklets/parser/parser_imp.peg"
+#line 1478 "javascript_tasklets/parser/parser_imp.peg"
             
             if(!canHaveInOperator)
                 (predicateReturnValue__) = "in not allowed here";
         
-#line 22613 "javascript_tasklets/parser/parser_imp.cpp"
+#line 25354 "javascript_tasklets/parser/parser_imp.cpp"
                         }
                         ruleResult__ = this->makeSuccess(startLocation__);
                         if(predicateReturnValue__ != nullptr)
                             ruleResult__ = this->makeFail(startLocation__, predicateReturnValue__, isRequiredForSuccess__);
+                    }
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        inLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
                     }
                     if(ruleResult__.success())
                     {
@@ -22638,9 +25388,9 @@ ExpressionPointer Parser::internalParseRelationalExpression(std::size_t startLoc
                         auto savedStartLocation__ = startLocation__;
                         startLocation__ = ruleResult__.location;
                         {
-#line 1214 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionIn>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), inExpression);
-#line 22644 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1485 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionIn>(inLocation, (returnValue__), inExpression);
+#line 25394 "javascript_tasklets/parser/parser_imp.cpp"
                         }
                         ruleResult__ = this->makeSuccess(startLocation__);
                         startLocation__ = savedStartLocation__;
@@ -22684,9 +25434,13 @@ ExpressionPointer Parser::internalParseEqualityExpression(std::size_t startLocat
 {
     ExpressionPointer returnValue__{};
     ExpressionPointer firstExpression{};
+    std::size_t eqLocation{};
     ExpressionPointer compareEq{};
+    std::size_t neLocation{};
     ExpressionPointer compareNE{};
+    std::size_t strictEqLocation{};
     ExpressionPointer compareStrictEq{};
+    std::size_t strictNELocation{};
     ExpressionPointer compareStrictNE{};
     auto &ruleResult__ = this->getResults(startLocation__).resultEqualityExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveInOperator)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -22702,9 +25456,9 @@ ExpressionPointer Parser::internalParseEqualityExpression(std::size_t startLocat
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1220 "javascript_tasklets/parser/parser_imp.peg"
+#line 1491 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = firstExpression;
-#line 22708 "javascript_tasklets/parser/parser_imp.cpp"
+#line 25462 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -22722,8 +25476,17 @@ ExpressionPointer Parser::internalParseEqualityExpression(std::size_t startLocat
                 Parser::RuleResult ruleResult__;
                 startLocation__ = savedRuleResult__.location;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenEqualEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                eqLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenEqualEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -22738,9 +25501,9 @@ ExpressionPointer Parser::internalParseEqualityExpression(std::size_t startLocat
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1224 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionCompareEq>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), compareEq);
-#line 22744 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1496 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionCompareEq>(eqLocation, (returnValue__), compareEq);
+#line 25507 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -22749,8 +25512,17 @@ ExpressionPointer Parser::internalParseEqualityExpression(std::size_t startLocat
                 {
                     Parser::RuleResult lastRuleResult__ = ruleResult__;
                     ruleResult__ = Parser::RuleResult();
-                    this->internalParseTokenEMarkEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    neLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                     assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenEMarkEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
                     if(ruleResult__.success())
                     {
                         auto savedStartLocation__ = startLocation__;
@@ -22765,9 +25537,9 @@ ExpressionPointer Parser::internalParseEqualityExpression(std::size_t startLocat
                         auto savedStartLocation__ = startLocation__;
                         startLocation__ = ruleResult__.location;
                         {
-#line 1227 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionCompareNE>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), compareNE);
-#line 22771 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1500 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionCompareNE>(neLocation, (returnValue__), compareNE);
+#line 25543 "javascript_tasklets/parser/parser_imp.cpp"
                         }
                         ruleResult__ = this->makeSuccess(startLocation__);
                         startLocation__ = savedStartLocation__;
@@ -22784,8 +25556,17 @@ ExpressionPointer Parser::internalParseEqualityExpression(std::size_t startLocat
                 {
                     Parser::RuleResult lastRuleResult__ = ruleResult__;
                     ruleResult__ = Parser::RuleResult();
-                    this->internalParseTokenEqualEqualEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    strictEqLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                     assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenEqualEqualEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
                     if(ruleResult__.success())
                     {
                         auto savedStartLocation__ = startLocation__;
@@ -22800,9 +25581,9 @@ ExpressionPointer Parser::internalParseEqualityExpression(std::size_t startLocat
                         auto savedStartLocation__ = startLocation__;
                         startLocation__ = ruleResult__.location;
                         {
-#line 1230 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionCompareStrictEq>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), compareStrictEq);
-#line 22806 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1504 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionCompareStrictEq>(strictEqLocation, (returnValue__), compareStrictEq);
+#line 25587 "javascript_tasklets/parser/parser_imp.cpp"
                         }
                         ruleResult__ = this->makeSuccess(startLocation__);
                         startLocation__ = savedStartLocation__;
@@ -22819,8 +25600,17 @@ ExpressionPointer Parser::internalParseEqualityExpression(std::size_t startLocat
                 {
                     Parser::RuleResult lastRuleResult__ = ruleResult__;
                     ruleResult__ = Parser::RuleResult();
-                    this->internalParseTokenEMarkEqualEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    strictNELocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                     assert(!ruleResult__.empty());
+                    if(ruleResult__.success())
+                    {
+                        auto savedStartLocation__ = startLocation__;
+                        startLocation__ = ruleResult__.location;
+                        ruleResult__ = Parser::RuleResult();
+                        this->internalParseTokenEMarkEqualEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                        assert(!ruleResult__.empty());
+                        startLocation__ = savedStartLocation__;
+                    }
                     if(ruleResult__.success())
                     {
                         auto savedStartLocation__ = startLocation__;
@@ -22835,9 +25625,9 @@ ExpressionPointer Parser::internalParseEqualityExpression(std::size_t startLocat
                         auto savedStartLocation__ = startLocation__;
                         startLocation__ = ruleResult__.location;
                         {
-#line 1233 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionCompareStrictNE>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), compareStrictNE);
-#line 22841 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1508 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionCompareStrictNE>(strictNELocation, (returnValue__), compareStrictNE);
+#line 25631 "javascript_tasklets/parser/parser_imp.cpp"
                         }
                         ruleResult__ = this->makeSuccess(startLocation__);
                         startLocation__ = savedStartLocation__;
@@ -22881,6 +25671,7 @@ ExpressionPointer Parser::internalParseBitwiseANDExpression(std::size_t startLoc
 {
     ExpressionPointer returnValue__{};
     ExpressionPointer firstExpression{};
+    std::size_t location{};
     ExpressionPointer nextExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultBitwiseANDExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveInOperator)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -22896,9 +25687,9 @@ ExpressionPointer Parser::internalParseBitwiseANDExpression(std::size_t startLoc
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1239 "javascript_tasklets/parser/parser_imp.peg"
+#line 1514 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = firstExpression;
-#line 22902 "javascript_tasklets/parser/parser_imp.cpp"
+#line 25693 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -22916,8 +25707,17 @@ ExpressionPointer Parser::internalParseBitwiseANDExpression(std::size_t startLoc
                 Parser::RuleResult ruleResult__;
                 startLocation__ = savedRuleResult__.location;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenAmp(startLocation__, ruleResult__, isRequiredForSuccess__);
+                location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenAmp(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -22932,9 +25732,9 @@ ExpressionPointer Parser::internalParseBitwiseANDExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1243 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionBitwiseAnd>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), nextExpression);
-#line 22938 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1519 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionBitwiseAnd>(location, (returnValue__), nextExpression);
+#line 25738 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -22970,6 +25770,7 @@ ExpressionPointer Parser::internalParseBitwiseXORExpression(std::size_t startLoc
 {
     ExpressionPointer returnValue__{};
     ExpressionPointer firstExpression{};
+    std::size_t location{};
     ExpressionPointer nextExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultBitwiseXORExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveInOperator)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -22985,9 +25786,9 @@ ExpressionPointer Parser::internalParseBitwiseXORExpression(std::size_t startLoc
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1249 "javascript_tasklets/parser/parser_imp.peg"
+#line 1525 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = firstExpression;
-#line 22991 "javascript_tasklets/parser/parser_imp.cpp"
+#line 25792 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -23005,8 +25806,17 @@ ExpressionPointer Parser::internalParseBitwiseXORExpression(std::size_t startLoc
                 Parser::RuleResult ruleResult__;
                 startLocation__ = savedRuleResult__.location;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenCaret(startLocation__, ruleResult__, isRequiredForSuccess__);
+                location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenCaret(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23021,9 +25831,9 @@ ExpressionPointer Parser::internalParseBitwiseXORExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1253 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionBitwiseXor>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), nextExpression);
-#line 23027 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1530 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionBitwiseXor>(location, (returnValue__), nextExpression);
+#line 25837 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23059,6 +25869,7 @@ ExpressionPointer Parser::internalParseBitwiseORExpression(std::size_t startLoca
 {
     ExpressionPointer returnValue__{};
     ExpressionPointer firstExpression{};
+    std::size_t location{};
     ExpressionPointer nextExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultBitwiseORExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveInOperator)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -23074,9 +25885,9 @@ ExpressionPointer Parser::internalParseBitwiseORExpression(std::size_t startLoca
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1259 "javascript_tasklets/parser/parser_imp.peg"
+#line 1536 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = firstExpression;
-#line 23080 "javascript_tasklets/parser/parser_imp.cpp"
+#line 25891 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -23094,8 +25905,17 @@ ExpressionPointer Parser::internalParseBitwiseORExpression(std::size_t startLoca
                 Parser::RuleResult ruleResult__;
                 startLocation__ = savedRuleResult__.location;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenPipe(startLocation__, ruleResult__, isRequiredForSuccess__);
+                location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenPipe(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23110,9 +25930,9 @@ ExpressionPointer Parser::internalParseBitwiseORExpression(std::size_t startLoca
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1263 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionBitwiseOr>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), nextExpression);
-#line 23116 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1541 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionBitwiseOr>(location, (returnValue__), nextExpression);
+#line 25936 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23148,6 +25968,7 @@ ExpressionPointer Parser::internalParseLogicalANDExpression(std::size_t startLoc
 {
     ExpressionPointer returnValue__{};
     ExpressionPointer firstExpression{};
+    std::size_t location{};
     ExpressionPointer nextExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultLogicalANDExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveInOperator)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -23163,9 +25984,9 @@ ExpressionPointer Parser::internalParseLogicalANDExpression(std::size_t startLoc
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1269 "javascript_tasklets/parser/parser_imp.peg"
+#line 1547 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = firstExpression;
-#line 23169 "javascript_tasklets/parser/parser_imp.cpp"
+#line 25990 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -23183,8 +26004,17 @@ ExpressionPointer Parser::internalParseLogicalANDExpression(std::size_t startLoc
                 Parser::RuleResult ruleResult__;
                 startLocation__ = savedRuleResult__.location;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenAmpAmp(startLocation__, ruleResult__, isRequiredForSuccess__);
+                location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenAmpAmp(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23199,9 +26029,9 @@ ExpressionPointer Parser::internalParseLogicalANDExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1273 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionLogicalAnd>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), nextExpression);
-#line 23205 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1552 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionLogicalAnd>(location, (returnValue__), nextExpression);
+#line 26035 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23237,6 +26067,7 @@ ExpressionPointer Parser::internalParseLogicalORExpression(std::size_t startLoca
 {
     ExpressionPointer returnValue__{};
     ExpressionPointer firstExpression{};
+    std::size_t location{};
     ExpressionPointer nextExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultLogicalORExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveInOperator)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -23252,9 +26083,9 @@ ExpressionPointer Parser::internalParseLogicalORExpression(std::size_t startLoca
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1279 "javascript_tasklets/parser/parser_imp.peg"
+#line 1558 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = firstExpression;
-#line 23258 "javascript_tasklets/parser/parser_imp.cpp"
+#line 26089 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -23272,8 +26103,17 @@ ExpressionPointer Parser::internalParseLogicalORExpression(std::size_t startLoca
                 Parser::RuleResult ruleResult__;
                 startLocation__ = savedRuleResult__.location;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenPipePipe(startLocation__, ruleResult__, isRequiredForSuccess__);
+                location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenPipePipe(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23288,9 +26128,9 @@ ExpressionPointer Parser::internalParseLogicalORExpression(std::size_t startLoca
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1283 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionLogicalOr>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), nextExpression);
-#line 23294 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1563 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionLogicalOr>(location, (returnValue__), nextExpression);
+#line 26134 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23326,6 +26166,7 @@ ExpressionPointer Parser::internalParseConditionalExpression(std::size_t startLo
 {
     ExpressionPointer returnValue__{};
     ExpressionPointer condition{};
+    std::size_t location{};
     ExpressionPointer trueExpression{};
     ExpressionPointer falseExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultConditionalExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveInOperator)][static_cast<std::size_t>(canHaveYieldOperator)];
@@ -23342,9 +26183,9 @@ ExpressionPointer Parser::internalParseConditionalExpression(std::size_t startLo
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1289 "javascript_tasklets/parser/parser_imp.peg"
+#line 1569 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = condition;
-#line 23348 "javascript_tasklets/parser/parser_imp.cpp"
+#line 26189 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -23354,8 +26195,17 @@ ExpressionPointer Parser::internalParseConditionalExpression(std::size_t startLo
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         ruleResult__ = Parser::RuleResult();
-        this->internalParseTokenQMark(startLocation__, ruleResult__, isRequiredForSuccess__);
+        location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
         assert(!ruleResult__.empty());
+        if(ruleResult__.success())
+        {
+            auto savedStartLocation__ = startLocation__;
+            startLocation__ = ruleResult__.location;
+            ruleResult__ = Parser::RuleResult();
+            this->internalParseTokenQMark(startLocation__, ruleResult__, isRequiredForSuccess__);
+            assert(!ruleResult__.empty());
+            startLocation__ = savedStartLocation__;
+        }
         if(ruleResult__.success())
         {
             auto savedStartLocation__ = startLocation__;
@@ -23388,9 +26238,9 @@ ExpressionPointer Parser::internalParseConditionalExpression(std::size_t startLo
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1295 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionConditional>((static_cast<const ::std::size_t &>(startLocation__)), condition, trueExpression, falseExpression);
-#line 23394 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1576 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionConditional>(location, condition, trueExpression, falseExpression);
+#line 26244 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -23421,17 +26271,29 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
     ExpressionPointer arrowFunction{};
     ExpressionPointer yieldExpression{};
     ExpressionPointer leftHandSideExpression{};
+    std::size_t location{};
     ExpressionPointer assignmentExpression{};
+    std::size_t starLocation{};
     ExpressionPointer multiplyAssignmentExpression{};
+    std::size_t fSlashLocation{};
     ExpressionPointer divideAssignmentExpression{};
+    std::size_t percentLocation{};
     ExpressionPointer modulusAssignmentExpression{};
+    std::size_t plusLocation{};
     ExpressionPointer addAssignmentExpression{};
+    std::size_t minusLocation{};
     ExpressionPointer subtractAssignmentExpression{};
+    std::size_t lShiftLocation{};
     ExpressionPointer lShiftAssignmentExpression{};
+    std::size_t arShiftLocation{};
     ExpressionPointer arShiftAssignmentExpression{};
+    std::size_t urShiftLocation{};
     ExpressionPointer urShiftAssignmentExpression{};
+    std::size_t andLocation{};
     ExpressionPointer andAssignmentExpression{};
+    std::size_t xorLocation{};
     ExpressionPointer xorAssignmentExpression{};
+    std::size_t orLocation{};
     ExpressionPointer orAssignmentExpression{};
     ExpressionPointer conditionalExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultAssignmentExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveInOperator)][static_cast<std::size_t>(canHaveYieldOperator)];
@@ -23448,9 +26310,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1300 "javascript_tasklets/parser/parser_imp.peg"
+#line 1581 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = arrowFunction;
-#line 23454 "javascript_tasklets/parser/parser_imp.cpp"
+#line 26316 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -23468,12 +26330,12 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 const char *predicateReturnValue__ = nullptr;
                 {
-#line 1303 "javascript_tasklets/parser/parser_imp.peg"
+#line 1584 "javascript_tasklets/parser/parser_imp.peg"
           
             if(!canHaveYieldOperator)
                 (predicateReturnValue__) = "yield not allowed here";
         
-#line 23477 "javascript_tasklets/parser/parser_imp.cpp"
+#line 26339 "javascript_tasklets/parser/parser_imp.cpp"
                 }
                 ruleResult__ = this->makeSuccess(startLocation__);
                 if(predicateReturnValue__ != nullptr)
@@ -23497,9 +26359,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1309 "javascript_tasklets/parser/parser_imp.peg"
+#line 1590 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = yieldExpression;
-#line 23503 "javascript_tasklets/parser/parser_imp.cpp"
+#line 26365 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -23523,8 +26385,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             ruleResult__ = Parser::RuleResult();
-            this->internalParseTokenEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+            location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
             assert(!ruleResult__.empty());
+            if(ruleResult__.success())
+            {
+                auto savedStartLocation__ = startLocation__;
+                startLocation__ = ruleResult__.location;
+                ruleResult__ = Parser::RuleResult();
+                this->internalParseTokenEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                assert(!ruleResult__.empty());
+                startLocation__ = savedStartLocation__;
+            }
             if(ruleResult__.success())
             {
                 auto savedStartLocation__ = startLocation__;
@@ -23539,9 +26410,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                 auto savedStartLocation__ = startLocation__;
                 startLocation__ = ruleResult__.location;
                 {
-#line 1314 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::AssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, assignmentExpression);
-#line 23545 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1596 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::AssignmentExpression>(location, leftHandSideExpression, assignmentExpression);
+#line 26416 "javascript_tasklets/parser/parser_imp.cpp"
                 }
                 ruleResult__ = this->makeSuccess(startLocation__);
                 startLocation__ = savedStartLocation__;
@@ -23550,8 +26421,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenStarEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                starLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenStarEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23566,9 +26446,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1317 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::MultiplyAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, multiplyAssignmentExpression);
-#line 23572 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1600 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::MultiplyAssignmentExpression>(starLocation, leftHandSideExpression, multiplyAssignmentExpression);
+#line 26452 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23585,8 +26465,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenFSlashEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                fSlashLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenFSlashEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23601,9 +26490,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1320 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::DivideAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, divideAssignmentExpression);
-#line 23607 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1604 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::DivideAssignmentExpression>(fSlashLocation, leftHandSideExpression, divideAssignmentExpression);
+#line 26496 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23620,8 +26509,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenPercentEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                percentLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenPercentEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23636,9 +26534,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1323 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ModulusAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, modulusAssignmentExpression);
-#line 23642 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1608 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ModulusAssignmentExpression>(percentLocation, leftHandSideExpression, modulusAssignmentExpression);
+#line 26540 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23655,8 +26553,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenPlusEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                plusLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenPlusEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23671,9 +26578,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1326 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::AddAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, addAssignmentExpression);
-#line 23677 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1612 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::AddAssignmentExpression>(plusLocation, leftHandSideExpression, addAssignmentExpression);
+#line 26584 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23690,8 +26597,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenMinusEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                minusLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenMinusEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23706,9 +26622,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1329 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::SubtractAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, subtractAssignmentExpression);
-#line 23712 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1616 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::SubtractAssignmentExpression>(minusLocation, leftHandSideExpression, subtractAssignmentExpression);
+#line 26628 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23725,8 +26641,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenLAngleLAngleEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                lShiftLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenLAngleLAngleEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23741,9 +26666,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1332 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::LShiftAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, lShiftAssignmentExpression);
-#line 23747 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1620 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::LShiftAssignmentExpression>(lShiftLocation, leftHandSideExpression, lShiftAssignmentExpression);
+#line 26672 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23760,8 +26685,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenRAngleRAngleEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                arShiftLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenRAngleRAngleEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23776,9 +26710,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1335 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ARShiftAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, arShiftAssignmentExpression);
-#line 23782 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1624 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ARShiftAssignmentExpression>(arShiftLocation, leftHandSideExpression, arShiftAssignmentExpression);
+#line 26716 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23795,8 +26729,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenRAngleRAngleRAngleEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                urShiftLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenRAngleRAngleRAngleEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23811,9 +26754,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1338 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::URShiftAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, urShiftAssignmentExpression);
-#line 23817 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1628 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::URShiftAssignmentExpression>(urShiftLocation, leftHandSideExpression, urShiftAssignmentExpression);
+#line 26760 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23830,8 +26773,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenAmpEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                andLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenAmpEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23846,9 +26798,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1341 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::AndAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, andAssignmentExpression);
-#line 23852 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1632 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::AndAssignmentExpression>(andLocation, leftHandSideExpression, andAssignmentExpression);
+#line 26804 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23865,8 +26817,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenCaretEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                xorLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenCaretEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23881,9 +26842,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1344 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::XorAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, xorAssignmentExpression);
-#line 23887 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1636 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::XorAssignmentExpression>(xorLocation, leftHandSideExpression, xorAssignmentExpression);
+#line 26848 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23900,8 +26861,17 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             {
                 Parser::RuleResult lastRuleResult__ = ruleResult__;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenPipeEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                orLocation = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenPipeEqual(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -23916,9 +26886,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1347 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::OrAssignmentExpression>((static_cast<const ::std::size_t &>(startLocation__)), leftHandSideExpression, orAssignmentExpression);
-#line 23922 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1640 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::OrAssignmentExpression>(orLocation, leftHandSideExpression, orAssignmentExpression);
+#line 26892 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -23952,9 +26922,9 @@ ExpressionPointer Parser::internalParseAssignmentExpression(std::size_t startLoc
             auto savedStartLocation__ = startLocation__;
             startLocation__ = ruleResult__.location;
             {
-#line 1350 "javascript_tasklets/parser/parser_imp.peg"
+#line 1643 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = conditionalExpression;
-#line 23958 "javascript_tasklets/parser/parser_imp.cpp"
+#line 26928 "javascript_tasklets/parser/parser_imp.cpp"
             }
             ruleResult__ = this->makeSuccess(startLocation__);
             startLocation__ = savedStartLocation__;
@@ -23987,6 +26957,7 @@ ExpressionPointer Parser::internalParseExpression(std::size_t startLocation__, R
 {
     ExpressionPointer returnValue__{};
     ExpressionPointer firstExpression{};
+    std::size_t location{};
     ExpressionPointer nextExpression{};
     auto &ruleResult__ = this->getResults(startLocation__).resultExpression[static_cast<std::size_t>(isModule)][static_cast<std::size_t>(isStrict)][static_cast<std::size_t>(canHaveInOperator)][static_cast<std::size_t>(canHaveYieldOperator)];
     if(!ruleResult__.empty() && (ruleResult__.fail() || !isRequiredForSuccess__))
@@ -24002,9 +26973,9 @@ ExpressionPointer Parser::internalParseExpression(std::size_t startLocation__, R
         auto savedStartLocation__ = startLocation__;
         startLocation__ = ruleResult__.location;
         {
-#line 1354 "javascript_tasklets/parser/parser_imp.peg"
+#line 1647 "javascript_tasklets/parser/parser_imp.peg"
      (returnValue__) = firstExpression;
-#line 24008 "javascript_tasklets/parser/parser_imp.cpp"
+#line 26979 "javascript_tasklets/parser/parser_imp.cpp"
         }
         ruleResult__ = this->makeSuccess(startLocation__);
         startLocation__ = savedStartLocation__;
@@ -24022,8 +26993,17 @@ ExpressionPointer Parser::internalParseExpression(std::size_t startLocation__, R
                 Parser::RuleResult ruleResult__;
                 startLocation__ = savedRuleResult__.location;
                 ruleResult__ = Parser::RuleResult();
-                this->internalParseTokenComma(startLocation__, ruleResult__, isRequiredForSuccess__);
+                location = this->internalParseTokenLocation(startLocation__, ruleResult__, isRequiredForSuccess__);
                 assert(!ruleResult__.empty());
+                if(ruleResult__.success())
+                {
+                    auto savedStartLocation__ = startLocation__;
+                    startLocation__ = ruleResult__.location;
+                    ruleResult__ = Parser::RuleResult();
+                    this->internalParseTokenComma(startLocation__, ruleResult__, isRequiredForSuccess__);
+                    assert(!ruleResult__.empty());
+                    startLocation__ = savedStartLocation__;
+                }
                 if(ruleResult__.success())
                 {
                     auto savedStartLocation__ = startLocation__;
@@ -24038,9 +27018,9 @@ ExpressionPointer Parser::internalParseExpression(std::size_t startLocation__, R
                     auto savedStartLocation__ = startLocation__;
                     startLocation__ = ruleResult__.location;
                     {
-#line 1358 "javascript_tasklets/parser/parser_imp.peg"
-         (returnValue__) = arena.make<ast::ExpressionCommaOperator>((static_cast<const ::std::size_t &>(startLocation__)), (returnValue__), nextExpression);
-#line 24044 "javascript_tasklets/parser/parser_imp.cpp"
+#line 1652 "javascript_tasklets/parser/parser_imp.peg"
+         (returnValue__) = arena.make<ast::ExpressionComma>(location, (returnValue__), nextExpression);
+#line 27024 "javascript_tasklets/parser/parser_imp.cpp"
                     }
                     ruleResult__ = this->makeSuccess(startLocation__);
                     startLocation__ = savedStartLocation__;
@@ -24287,22 +27267,22 @@ template ast::TemplateRest Parser::parseTemplateLiteralRest<true, true, false>()
 template ast::TemplateRest Parser::internalParseTemplateLiteralRest<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 template ast::TemplateRest Parser::parseTemplateLiteralRest<true, true, true>();
 template ast::TemplateRest Parser::internalParseTemplateLiteralRest<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-template ExpressionPointer Parser::parseTemplateLiteral<false, false, false>();
-template ExpressionPointer Parser::internalParseTemplateLiteral<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-template ExpressionPointer Parser::parseTemplateLiteral<false, false, true>();
-template ExpressionPointer Parser::internalParseTemplateLiteral<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-template ExpressionPointer Parser::parseTemplateLiteral<false, true, false>();
-template ExpressionPointer Parser::internalParseTemplateLiteral<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-template ExpressionPointer Parser::parseTemplateLiteral<false, true, true>();
-template ExpressionPointer Parser::internalParseTemplateLiteral<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-template ExpressionPointer Parser::parseTemplateLiteral<true, false, false>();
-template ExpressionPointer Parser::internalParseTemplateLiteral<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-template ExpressionPointer Parser::parseTemplateLiteral<true, false, true>();
-template ExpressionPointer Parser::internalParseTemplateLiteral<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-template ExpressionPointer Parser::parseTemplateLiteral<true, true, false>();
-template ExpressionPointer Parser::internalParseTemplateLiteral<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-template ExpressionPointer Parser::parseTemplateLiteral<true, true, true>();
-template ExpressionPointer Parser::internalParseTemplateLiteral<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionTemplateLiteralPointer Parser::parseTemplateLiteral<false, false, false>();
+template ExpressionTemplateLiteralPointer Parser::internalParseTemplateLiteral<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionTemplateLiteralPointer Parser::parseTemplateLiteral<false, false, true>();
+template ExpressionTemplateLiteralPointer Parser::internalParseTemplateLiteral<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionTemplateLiteralPointer Parser::parseTemplateLiteral<false, true, false>();
+template ExpressionTemplateLiteralPointer Parser::internalParseTemplateLiteral<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionTemplateLiteralPointer Parser::parseTemplateLiteral<false, true, true>();
+template ExpressionTemplateLiteralPointer Parser::internalParseTemplateLiteral<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionTemplateLiteralPointer Parser::parseTemplateLiteral<true, false, false>();
+template ExpressionTemplateLiteralPointer Parser::internalParseTemplateLiteral<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionTemplateLiteralPointer Parser::parseTemplateLiteral<true, false, true>();
+template ExpressionTemplateLiteralPointer Parser::internalParseTemplateLiteral<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionTemplateLiteralPointer Parser::parseTemplateLiteral<true, true, false>();
+template ExpressionTemplateLiteralPointer Parser::internalParseTemplateLiteral<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionTemplateLiteralPointer Parser::parseTemplateLiteral<true, true, true>();
+template ExpressionTemplateLiteralPointer Parser::internalParseTemplateLiteral<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 template ExpressionPointer Parser::parseArrowFunction<false, false, false, false>();
 template ExpressionPointer Parser::internalParseArrowFunction<false, false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 template ExpressionPointer Parser::parseArrowFunction<false, false, false, true>();
@@ -24351,6 +27331,134 @@ template ExpressionPointer Parser::parseYieldExpression<true, true, false>();
 template ExpressionPointer Parser::internalParseYieldExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 template ExpressionPointer Parser::parseYieldExpression<true, true, true>();
 template ExpressionPointer Parser::internalParseYieldExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMemberExpression<false, false, false>();
+template ExpressionPointer Parser::internalParseMemberExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMemberExpression<false, false, true>();
+template ExpressionPointer Parser::internalParseMemberExpression<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMemberExpression<false, true, false>();
+template ExpressionPointer Parser::internalParseMemberExpression<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMemberExpression<false, true, true>();
+template ExpressionPointer Parser::internalParseMemberExpression<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMemberExpression<true, false, false>();
+template ExpressionPointer Parser::internalParseMemberExpression<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMemberExpression<true, false, true>();
+template ExpressionPointer Parser::internalParseMemberExpression<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMemberExpression<true, true, false>();
+template ExpressionPointer Parser::internalParseMemberExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMemberExpression<true, true, true>();
+template ExpressionPointer Parser::internalParseMemberExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperProperty<false, false, false>();
+template ExpressionPointer Parser::internalParseSuperProperty<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperProperty<false, false, true>();
+template ExpressionPointer Parser::internalParseSuperProperty<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperProperty<false, true, false>();
+template ExpressionPointer Parser::internalParseSuperProperty<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperProperty<false, true, true>();
+template ExpressionPointer Parser::internalParseSuperProperty<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperProperty<true, false, false>();
+template ExpressionPointer Parser::internalParseSuperProperty<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperProperty<true, false, true>();
+template ExpressionPointer Parser::internalParseSuperProperty<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperProperty<true, true, false>();
+template ExpressionPointer Parser::internalParseSuperProperty<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperProperty<true, true, true>();
+template ExpressionPointer Parser::internalParseSuperProperty<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseNewExpression<false, false, false>();
+template ExpressionPointer Parser::internalParseNewExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseNewExpression<false, false, true>();
+template ExpressionPointer Parser::internalParseNewExpression<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseNewExpression<false, true, false>();
+template ExpressionPointer Parser::internalParseNewExpression<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseNewExpression<false, true, true>();
+template ExpressionPointer Parser::internalParseNewExpression<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseNewExpression<true, false, false>();
+template ExpressionPointer Parser::internalParseNewExpression<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseNewExpression<true, false, true>();
+template ExpressionPointer Parser::internalParseNewExpression<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseNewExpression<true, true, false>();
+template ExpressionPointer Parser::internalParseNewExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseNewExpression<true, true, true>();
+template ExpressionPointer Parser::internalParseNewExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseCallExpression<false, false, false>();
+template ExpressionPointer Parser::internalParseCallExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseCallExpression<false, false, true>();
+template ExpressionPointer Parser::internalParseCallExpression<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseCallExpression<false, true, false>();
+template ExpressionPointer Parser::internalParseCallExpression<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseCallExpression<false, true, true>();
+template ExpressionPointer Parser::internalParseCallExpression<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseCallExpression<true, false, false>();
+template ExpressionPointer Parser::internalParseCallExpression<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseCallExpression<true, false, true>();
+template ExpressionPointer Parser::internalParseCallExpression<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseCallExpression<true, true, false>();
+template ExpressionPointer Parser::internalParseCallExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseCallExpression<true, true, true>();
+template ExpressionPointer Parser::internalParseCallExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperCall<false, false, false>();
+template ExpressionPointer Parser::internalParseSuperCall<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperCall<false, false, true>();
+template ExpressionPointer Parser::internalParseSuperCall<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperCall<false, true, false>();
+template ExpressionPointer Parser::internalParseSuperCall<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperCall<false, true, true>();
+template ExpressionPointer Parser::internalParseSuperCall<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperCall<true, false, false>();
+template ExpressionPointer Parser::internalParseSuperCall<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperCall<true, false, true>();
+template ExpressionPointer Parser::internalParseSuperCall<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperCall<true, true, false>();
+template ExpressionPointer Parser::internalParseSuperCall<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseSuperCall<true, true, true>();
+template ExpressionPointer Parser::internalParseSuperCall<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArguments<false, false, false>();
+template ast::ArgumentList Parser::internalParseArguments<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArguments<false, false, true>();
+template ast::ArgumentList Parser::internalParseArguments<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArguments<false, true, false>();
+template ast::ArgumentList Parser::internalParseArguments<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArguments<false, true, true>();
+template ast::ArgumentList Parser::internalParseArguments<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArguments<true, false, false>();
+template ast::ArgumentList Parser::internalParseArguments<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArguments<true, false, true>();
+template ast::ArgumentList Parser::internalParseArguments<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArguments<true, true, false>();
+template ast::ArgumentList Parser::internalParseArguments<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArguments<true, true, true>();
+template ast::ArgumentList Parser::internalParseArguments<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ArgumentPointer Parser::parseArgument<false, false, false>();
+template ArgumentPointer Parser::internalParseArgument<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ArgumentPointer Parser::parseArgument<false, false, true>();
+template ArgumentPointer Parser::internalParseArgument<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ArgumentPointer Parser::parseArgument<false, true, false>();
+template ArgumentPointer Parser::internalParseArgument<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ArgumentPointer Parser::parseArgument<false, true, true>();
+template ArgumentPointer Parser::internalParseArgument<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ArgumentPointer Parser::parseArgument<true, false, false>();
+template ArgumentPointer Parser::internalParseArgument<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ArgumentPointer Parser::parseArgument<true, false, true>();
+template ArgumentPointer Parser::internalParseArgument<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ArgumentPointer Parser::parseArgument<true, true, false>();
+template ArgumentPointer Parser::internalParseArgument<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ArgumentPointer Parser::parseArgument<true, true, true>();
+template ArgumentPointer Parser::internalParseArgument<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArgumentList<false, false, false>();
+template ast::ArgumentList Parser::internalParseArgumentList<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArgumentList<false, false, true>();
+template ast::ArgumentList Parser::internalParseArgumentList<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArgumentList<false, true, false>();
+template ast::ArgumentList Parser::internalParseArgumentList<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArgumentList<false, true, true>();
+template ast::ArgumentList Parser::internalParseArgumentList<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArgumentList<true, false, false>();
+template ast::ArgumentList Parser::internalParseArgumentList<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArgumentList<true, false, true>();
+template ast::ArgumentList Parser::internalParseArgumentList<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArgumentList<true, true, false>();
+template ast::ArgumentList Parser::internalParseArgumentList<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ast::ArgumentList Parser::parseArgumentList<true, true, true>();
+template ast::ArgumentList Parser::internalParseArgumentList<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 template ExpressionPointer Parser::parseLeftHandSideExpression<false, false, false>();
 template ExpressionPointer Parser::internalParseLeftHandSideExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 template ExpressionPointer Parser::parseLeftHandSideExpression<false, false, true>();
@@ -24367,6 +27475,70 @@ template ExpressionPointer Parser::parseLeftHandSideExpression<true, true, false
 template ExpressionPointer Parser::internalParseLeftHandSideExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 template ExpressionPointer Parser::parseLeftHandSideExpression<true, true, true>();
 template ExpressionPointer Parser::internalParseLeftHandSideExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parsePostfixExpression<false, false, false>();
+template ExpressionPointer Parser::internalParsePostfixExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parsePostfixExpression<false, false, true>();
+template ExpressionPointer Parser::internalParsePostfixExpression<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parsePostfixExpression<false, true, false>();
+template ExpressionPointer Parser::internalParsePostfixExpression<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parsePostfixExpression<false, true, true>();
+template ExpressionPointer Parser::internalParsePostfixExpression<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parsePostfixExpression<true, false, false>();
+template ExpressionPointer Parser::internalParsePostfixExpression<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parsePostfixExpression<true, false, true>();
+template ExpressionPointer Parser::internalParsePostfixExpression<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parsePostfixExpression<true, true, false>();
+template ExpressionPointer Parser::internalParsePostfixExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parsePostfixExpression<true, true, true>();
+template ExpressionPointer Parser::internalParsePostfixExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseUnaryExpression<false, false, false>();
+template ExpressionPointer Parser::internalParseUnaryExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseUnaryExpression<false, false, true>();
+template ExpressionPointer Parser::internalParseUnaryExpression<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseUnaryExpression<false, true, false>();
+template ExpressionPointer Parser::internalParseUnaryExpression<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseUnaryExpression<false, true, true>();
+template ExpressionPointer Parser::internalParseUnaryExpression<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseUnaryExpression<true, false, false>();
+template ExpressionPointer Parser::internalParseUnaryExpression<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseUnaryExpression<true, false, true>();
+template ExpressionPointer Parser::internalParseUnaryExpression<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseUnaryExpression<true, true, false>();
+template ExpressionPointer Parser::internalParseUnaryExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseUnaryExpression<true, true, true>();
+template ExpressionPointer Parser::internalParseUnaryExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMultiplicativeExpression<false, false, false>();
+template ExpressionPointer Parser::internalParseMultiplicativeExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMultiplicativeExpression<false, false, true>();
+template ExpressionPointer Parser::internalParseMultiplicativeExpression<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMultiplicativeExpression<false, true, false>();
+template ExpressionPointer Parser::internalParseMultiplicativeExpression<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMultiplicativeExpression<false, true, true>();
+template ExpressionPointer Parser::internalParseMultiplicativeExpression<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMultiplicativeExpression<true, false, false>();
+template ExpressionPointer Parser::internalParseMultiplicativeExpression<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMultiplicativeExpression<true, false, true>();
+template ExpressionPointer Parser::internalParseMultiplicativeExpression<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMultiplicativeExpression<true, true, false>();
+template ExpressionPointer Parser::internalParseMultiplicativeExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseMultiplicativeExpression<true, true, true>();
+template ExpressionPointer Parser::internalParseMultiplicativeExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseAdditiveExpression<false, false, false>();
+template ExpressionPointer Parser::internalParseAdditiveExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseAdditiveExpression<false, false, true>();
+template ExpressionPointer Parser::internalParseAdditiveExpression<false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseAdditiveExpression<false, true, false>();
+template ExpressionPointer Parser::internalParseAdditiveExpression<false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseAdditiveExpression<false, true, true>();
+template ExpressionPointer Parser::internalParseAdditiveExpression<false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseAdditiveExpression<true, false, false>();
+template ExpressionPointer Parser::internalParseAdditiveExpression<true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseAdditiveExpression<true, false, true>();
+template ExpressionPointer Parser::internalParseAdditiveExpression<true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseAdditiveExpression<true, true, false>();
+template ExpressionPointer Parser::internalParseAdditiveExpression<true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+template ExpressionPointer Parser::parseAdditiveExpression<true, true, true>();
+template ExpressionPointer Parser::internalParseAdditiveExpression<true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 template ExpressionPointer Parser::parseShiftExpression<false, false, false>();
 template ExpressionPointer Parser::internalParseShiftExpression<false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 template ExpressionPointer Parser::parseShiftExpression<false, false, true>();

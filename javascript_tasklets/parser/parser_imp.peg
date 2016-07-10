@@ -20,8 +20,8 @@ code license {
  *
  */
 
-// to regenerate this file, use https://github.com/programmerjake/peg_parser_generator
-// command: peg_parser_generator parser_imp.peg
+// to regenerate parser_imp.h and parser_imp.cpp, use https://github.com/programmerjake/peg_parser_generator
+// command: peg_parser_generator javascript_tasklets/parser/parser_imp.peg
 }
 
 namespace javascript_tasklets::parser;
@@ -34,6 +34,7 @@ code header {
 #include "ast/expression.h"
 #include "ast/literal.h"
 #include "ast/arena.h"
+#include "ast/argument.h"
 
 namespace javascript_tasklets
 {
@@ -82,6 +83,8 @@ typedef ast::Node *NodePointer;
 typedef ast::Expression *ExpressionPointer;
 typedef ast::ArrayLiteralElement *ArrayLiteralElementPointer;
 typedef std::vector<ast::ArrayLiteralElement *> ArrayLiteralElementList;
+typedef ast::Argument *ArgumentPointer;
+typedef ast::ExpressionTemplateLiteral *ExpressionTemplateLiteralPointer;
 }
 }
 }
@@ -108,6 +111,10 @@ typedef NodePointer NodePointer;
 typedef ArrayLiteralElementPointer ArrayLiteralElementPointer;
 typedef ArrayLiteralElementList ArrayLiteralElementList;
 typedef ast::TemplateRest TemplateRest;
+typedef ast::ArgumentList ArgumentList;
+typedef ArgumentPointer ArgumentPointer;
+typedef ExpressionTemplateLiteralPointer ExpressionTemplateLiteralPointer;
+typedef std::size_t Location;
 
 TokenizerHexDigitValue:unsigned = 
     [^]:ch
@@ -342,6 +349,7 @@ TokenizerPublic = "public" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerReturn = "return" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerSuper = "super" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerSwitch = "switch" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerTarget = "target" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerThis = "this" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerThrow = "throw" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerTrue = "true" !"\\" !TokenizerEscapelessIdentifierPart;
@@ -925,6 +933,7 @@ TokenPublic = TokenizerTokenSeperator<true> TokenizerPublic;
 TokenReturn = TokenizerTokenSeperator<true> TokenizerReturn;
 TokenSuper = TokenizerTokenSeperator<true> TokenizerSuper;
 TokenSwitch = TokenizerTokenSeperator<true> TokenizerSwitch;
+TokenTarget = TokenizerTokenSeperator<true> TokenizerTarget;
 TokenThis = TokenizerTokenSeperator<true> TokenizerThis;
 TokenThrow = TokenizerTokenSeperator<true> TokenizerThrow;
 TokenTrue = TokenizerTokenSeperator<true> TokenizerTrue;
@@ -988,6 +997,11 @@ TokenArrow = TokenizerTokenSeperator<true> TokenizerArrow;
 TokenFSlash = TokenizerTokenSeperator<true> TokenizerFSlash;
 TokenFSlashEqual = TokenizerTokenSeperator<true> TokenizerFSlashEqual;
 
+TokenIdentifierName:String =
+    TokenizerTokenSeperator<true>
+    TokenizerIdentifierName:value
+    {$$ = value;};
+
 TokenIdentifier<isModule:bool, isStrict:bool>:String =
     TokenizerTokenSeperator<true>
     !TokenizerReservedWord
@@ -996,13 +1010,20 @@ TokenIdentifier<isModule:bool, isStrict:bool>:String =
 
 TokenIdentifierOrYield<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:String =
     &{
-        if(!canHaveYieldOperator || isStrict)
+        if(canHaveYieldOperator || isStrict)
             $? = "yield not allowed here";
     }
     TokenYield
     {$$ = u"yield";}
     / TokenIdentifier:value
     {$$ = value;}
+    ;
+
+TokenLocation:Location =
+    &(
+        TokenizerTokenSeperator<true>
+        {$$ = $_;}
+    )
     ;
 
 TokenNumericLiteral:String =
@@ -1024,13 +1045,15 @@ TokenRegularExpressionLiteral:BodyAndFlags =
     ;
 
 RegularExpressionLiteral:ExpressionPointer =
+    TokenLocation:regExpLocation
     TokenRegularExpressionLiteral:regExp
-    {$$ = arena.make<ast::ExpressionRegExpLiteral>($_, regExp.body, regExp.flags);}
+    {$$ = arena.make<ast::ExpressionRegExpLiteral>(regExpLocation, regExp.body, regExp.flags);}
     ;
 
 IdentifierReference<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenLocation:nameLocation
     TokenIdentifierOrYield:name
-    {$$ = arena.make<ast::ExpressionIdentifierReference>($_, name);}
+    {$$ = arena.make<ast::ExpressionIdentifierReference>(nameLocation, name);}
     ;
 
 FunctionExpression<isModule:bool, isStrict:bool>:ExpressionPointer =
@@ -1062,8 +1085,9 @@ ParenthesizedExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>
     {$$ = expression;};
 
 PrimaryExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenLocation:thisLocation
     TokenThis
-    {$$ = arena.make<ast::ExpressionThis>($_);}
+    {$$ = arena.make<ast::ExpressionThis>(thisLocation);}
     / IdentifierReference:identifierReference
     {$$ = identifierReference;}
     / Literal:literal
@@ -1087,16 +1111,19 @@ PrimaryExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Expre
     ;
 
 Literal:ExpressionPointer =
-    TokenNull
-    {$$ = arena.make<ast::ExpressionNullLiteral>($_);}
-    / TokenFalse
-    {$$ = arena.make<ast::ExpressionBooleanLiteral>($_, false);}
-    / TokenTrue
-    {$$ = arena.make<ast::ExpressionBooleanLiteral>($_, true);}
-    / TokenNumericLiteral:numericLiteral
-    {$$ = arena.make<ast::ExpressionNumericLiteral>($_, value::StringHandle::toNumberValue(numericLiteral));}
-    / TokenStringLiteral:stringLiteral
-    {$$ = arena.make<ast::ExpressionStringLiteral>($_, stringLiteral);}
+    TokenLocation:location
+    (
+        TokenNull
+        {$$ = arena.make<ast::ExpressionNullLiteral>(location);}
+        / TokenFalse
+        {$$ = arena.make<ast::ExpressionBooleanLiteral>($_, false);}
+        / TokenTrue
+        {$$ = arena.make<ast::ExpressionBooleanLiteral>($_, true);}
+        / TokenNumericLiteral:numericLiteral
+        {$$ = arena.make<ast::ExpressionNumericLiteral>($_, value::StringHandle::toNumberValue(numericLiteral));}
+        / TokenStringLiteral:stringLiteral
+        {$$ = arena.make<ast::ExpressionStringLiteral>($_, stringLiteral);}
+    )
     ;
 
 ArrayLiteralElement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ArrayLiteralElementPointer =
@@ -1105,11 +1132,13 @@ ArrayLiteralElement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Arr
         !TokenRBracket
     )
     {$$ = nullptr;}
-    / TokenEllipsis
+    / TokenLocation:ellipsisLocation
+    TokenEllipsis
     AssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>:spreadExpression
-    {$$ = arena.make<ast::SpreadArrayLiteralElement>($_, spreadExpression);}
-    / AssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>:expression
-    {$$ = arena.make<ast::ExpressionArrayLiteralElement>($_, expression);}
+    {$$ = arena.make<ast::SpreadArrayLiteralElement>(ellipsisLocation, spreadExpression);}
+    / TokenLocation:expressionLocation
+    AssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>:expression
+    {$$ = arena.make<ast::ExpressionArrayLiteralElement>(expressionLocation, expression);}
     ;
 
 ArrayLiteralElementList<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ArrayLiteralElementList =
@@ -1125,10 +1154,11 @@ ArrayLiteralElementList<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>
     ;
 
 ArrayLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenLocation:location
     TokenLBracket
     ArrayLiteralElementList:elements
     TokenRBracket
-    {$$ = arena.make<ast::ExpressionArrayLiteral>($_, std::move(elements));}
+    {$$ = arena.make<ast::ExpressionArrayLiteral>(location, std::move(elements));}
     ;
 
 ObjectLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
@@ -1148,17 +1178,19 @@ TemplateLiteralRest<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Tem
     {$$.emplace_back(lastExpression, ast::TemplateString(tail.raw, tail.cooked));}
     ;
 
-TemplateLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+TemplateLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionTemplateLiteralPointer =
+    TokenLocation:location
     TokenNoSubstitutionTemplate:noSubstitutionTemplate
     {
-        $$ = arena.make<ast::ExpressionTemplateLiteral>($_,
+        $$ = arena.make<ast::ExpressionTemplateLiteral>(location,
                                                         ast::TemplateString(noSubstitutionTemplate.raw,
                                                                        noSubstitutionTemplate.cooked));
     }
-    / TokenTemplateHead:first
+    / TokenLocation:headLocation
+    TokenTemplateHead:first
     TemplateLiteralRest:rest
     {
-        $$ = arena.make<ast::ExpressionTemplateLiteral>($_, ast::TemplateString(first.raw, first.cooked), std::move(rest));
+        $$ = arena.make<ast::ExpressionTemplateLiteral>(headLocation, ast::TemplateString(first.raw, first.cooked), std::move(rest));
     }
     ;
 
@@ -1174,44 +1206,283 @@ YieldExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool>:Expression
 #warning implement YieldExpression
     };
 
+MemberExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    (
+        TokenNew
+        MemberExpression:constructor
+        TokenLocation:newLocation
+        Arguments:newArguments
+        {$$ = arena.make<ast::ExpressionNew>(newLocation, constructor, std::move(newArguments));}
+        / SuperProperty:superProperty
+        {$$ = superProperty;}
+        / MetaProperty:metaProperty
+        {$$ = metaProperty;}
+        / PrimaryExpression:primaryExpression
+        {$$ = primaryExpression;}
+    )
+    (
+        TokenLocation:periodLocation
+        TokenPeriod
+        TokenLocation:identifierNameLocation
+        TokenIdentifierName:identifierName
+        {$$ = arena.make<ast::ExpressionMember>(periodLocation, $$, arena.make<ast::ExpressionStringLiteral>(identifierNameLocation, identifierName));}
+        / TokenLocation:lBracketLocation
+        TokenLBracket
+        Expression<isModule, isStrict, true, canHaveYieldOperator>:nameExpression
+        TokenRBracket
+        {$$ = arena.make<ast::ExpressionMember>(lBracketLocation, $$, nameExpression);}
+        / TokenLocation:templateLiteralLocation
+        TemplateLiteral:templateLiteral
+        {$$ = arena.make<ast::ExpressionTemplateCall>(templateLiteralLocation, $$, templateLiteral);}
+    )*
+    ;
+
+SuperProperty<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenSuper
+    TokenLocation:periodLocation
+    TokenPeriod
+    TokenIdentifierName:name
+    {$$ = arena.make<ast::ExpressionSuperMember>(periodLocation, arena.make<ast::ExpressionStringLiteral>($_, name));}
+    / TokenSuper
+    TokenLocation:lBracketLocation
+    TokenLBracket
+    Expression<isModule, isStrict, true, canHaveYieldOperator>:nameExpression
+    TokenRBracket
+    {$$ = arena.make<ast::ExpressionSuperMember>(lBracketLocation, nameExpression);}
+    ;
+
+MetaProperty:ExpressionPointer =
+    NewTarget:newTarget
+    {$$ = newTarget;}
+    ;
+
+NewTarget:ExpressionPointer =
+    TokenNew
+    TokenLocation:newTargetLocation
+    TokenPeriod
+    TokenTarget
+    {$$ = arena.make<ast::ExpressionNewTarget>(newTargetLocation);}
+    ;
+
+NewExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    MemberExpression:memberExpression
+    {$$ = memberExpression;}
+    / TokenLocation:newLocation
+    TokenNew
+    NewExpression:newExpression
+    {$$ = arena.make<ast::ExpressionNew>(newLocation, newExpression);}
+    ;
+
+CallExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    (
+        SuperCall:superCall
+        {$$ = superCall;}
+        / MemberExpression:memberExpression
+        TokenLocation:firstCallLocation
+        Arguments:firstArguments
+        {$$ = arena.make<ast::ExpressionCall>(firstCallLocation, memberExpression, std::move(firstArguments));}
+    )
+    (
+        TokenLocation:callLocation
+        Arguments:arguments
+        {$$ = arena.make<ast::ExpressionCall>(callLocation, $$, std::move(firstArguments));}
+        / TokenLocation:periodLocation
+        TokenPeriod
+        TokenLocation:identifierNameLocation
+        TokenIdentifierName:identifierName
+        {$$ = arena.make<ast::ExpressionMember>(periodLocation, $$, arena.make<ast::ExpressionStringLiteral>(identifierNameLocation, identifierName));}
+        / TokenLocation:lBracketLocation
+        TokenLBracket
+        Expression<isModule, isStrict, true, canHaveYieldOperator>:nameExpression
+        TokenRBracket
+        {$$ = arena.make<ast::ExpressionMember>(lBracketLocation, $$, nameExpression);}
+        / TokenLocation:templateLiteralLocation
+        TemplateLiteral:templateLiteral
+        {$$ = arena.make<ast::ExpressionTemplateCall>(templateLiteralLocation, $$, templateLiteral);}
+    )*
+    ;
+
+SuperCall<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenSuper
+    TokenLocation:callLocation
+    Arguments:arguments
+    {$$ = arena.make<ast::ExpressionSuperCall>(callLocation, std::move(arguments));}
+    ;
+
+Arguments<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ArgumentList =
+    TokenLParen
+    (
+        ArgumentList:retval
+        {$$ = std::move(retval);}
+    )?
+    TokenRParen
+    ;
+
+Argument<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ArgumentPointer =
+    TokenLocation:expressionLocation
+    AssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>:expression
+    {$$ = arena.make<ast::ArgumentExpression>(expressionLocation, expression);}
+    / TokenLocation:ellipsisLocation
+    TokenEllipsis
+    AssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>:spread
+    {$$ = arena.make<ast::ArgumentSpread>(ellipsisLocation, spread);}
+    ;
+
+ArgumentList<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ArgumentList =
+    (
+        Argument:argument
+        {$$.push_back(argument);}
+    )+
+    ;
+
 LeftHandSideExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
-    &{
-        $? = "LeftHandSideExpression not implemented";
-#warning implement LeftHandSideExpression
-    };
+    CallExpression:callExpression
+    {$$ = callExpression;}
+    NewExpression:newExpression
+    {$$ = newExpression;}
+    ;
+
+PostfixExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    LeftHandSideExpression:expression
+    {$$ = expression;}
+    (
+        !TokenizerTokenSeperatorWithLineTerminator
+        TokenLocation:incLocation
+        TokenPlusPlus
+        {$$ = arena.make<ast::ExpressionPostfixIncrement>(incLocation, $$);}
+        / !TokenizerTokenSeperatorWithLineTerminator
+        TokenLocation:decLocation
+        TokenMinusMinus
+        {$$ = arena.make<ast::ExpressionPostfixDecrement>(decLocation, $$);}
+    )?
+    ;
+
+UnaryExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenLocation:deleteLocation
+    TokenDelete
+    UnaryExpression:deleteExpression
+    {$$ = arena.make<ast::ExpressionDelete>(deleteLocation, deleteExpression);}
+    / TokenLocation:voidLocation
+    TokenVoid
+    UnaryExpression:voidExpression
+    {$$ = arena.make<ast::ExpressionVoid>(voidLocation, voidExpression);}
+    / TokenLocation:typeOfLocation
+    TokenTypeOf
+    UnaryExpression:typeOfExpression
+    {$$ = arena.make<ast::ExpressionTypeOf>(typeOfLocation, typeOfExpression);}
+    / TokenLocation:incLocation
+    TokenPlusPlus
+    UnaryExpression:incExpression
+    {$$ = arena.make<ast::ExpressionPrefixIncrement>(incLocation, incExpression);}
+    / TokenLocation:decLocation
+    TokenMinusMinus
+    UnaryExpression:decExpression
+    {$$ = arena.make<ast::ExpressionPrefixDecrement>(decLocation, decExpression);}
+    / TokenLocation:plusLocation
+    TokenPlus
+    UnaryExpression:unaryPlusExpression
+    {$$ = arena.make<ast::ExpressionUnaryPlus>(plusLocation, unaryPlusExpression);}
+    / TokenLocation:minusLocation
+    TokenMinus
+    UnaryExpression:unaryMinusExpression
+    {$$ = arena.make<ast::ExpressionUnaryMinus>(minusLocation, unaryMinusExpression);}
+    / TokenLocation:tildeLocation
+    TokenTilde
+    UnaryExpression:bitwiseNotExpression
+    {$$ = arena.make<ast::ExpressionBitwiseNot>(tildeLocation, bitwiseNotExpression);}
+    / TokenLocation:notLocation
+    TokenEMark
+    UnaryExpression:logicalNotExpression
+    {$$ = arena.make<ast::ExpressionLogicalNot>(notLocation, logicalNotExpression);}
+    / PostfixExpression:expression
+    {$$ = expression;}
+    ;
+
+MultiplicativeExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    UnaryExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenLocation:multiplyLocation
+        TokenStar
+        UnaryExpression:multiply
+        {$$ = arena.make<ast::ExpressionMultiply>(multiplyLocation, $$, multiply);}
+        / TokenLocation:divideLocation
+        TokenFSlash
+        UnaryExpression:divide
+        {$$ = arena.make<ast::ExpressionDivide>(divideLocation, $$, divide);}
+        / TokenLocation:modulusLocation
+        TokenPercent
+        UnaryExpression:modulus
+        {$$ = arena.make<ast::ExpressionModulus>(modulusLocation, $$, modulus);}
+    )*
+    ;
+
+AdditiveExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    MultiplicativeExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenLocation:plusLocation
+        TokenPlus
+        MultiplicativeExpression:plus
+        {$$ = arena.make<ast::ExpressionPlus>(plusLocation, $$, plus);}
+        / TokenLocation:minusLocation
+        TokenMinus
+        MultiplicativeExpression:minus
+        {$$ = arena.make<ast::ExpressionMinus>(minusLocation, $$, minus);}
+    )*
+    ;
 
 ShiftExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
-    &{
-        $? = "ShiftExpression not implemented";
-#warning implement ShiftExpression
-    };
-    
+    AdditiveExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenLocation:lShiftLocation
+        TokenLAngleLAngle
+        AdditiveExpression:lShift
+        {$$ = arena.make<ast::ExpressionLShift>(lShiftLocation, $$, lShift);}
+        / TokenLocation:arShiftLocation
+        TokenRAngleRAngle
+        AdditiveExpression:arShift
+        {$$ = arena.make<ast::ExpressionARShift>(arShiftLocation, $$, arShift);}
+        / TokenLocation:urShiftLocation
+        TokenRAngleRAngleRAngle
+        AdditiveExpression:urShift
+        {$$ = arena.make<ast::ExpressionURShift>(urShiftLocation, $$, urShift);}
+    )*
+    ;
+
 RelationalExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     ShiftExpression:firstExpression
     {$$ = firstExpression;}
     (
+        TokenLocation:ltLocation
         TokenLAngle
         ShiftExpression:compareLT
-        {$$ = arena.make<ast::ExpressionCompareLT>($_, $$, compareLT);}
-        / TokenRAngle
+        {$$ = arena.make<ast::ExpressionCompareLT>(ltLocation, $$, compareLT);}
+        / TokenLocation:gtLocation
+        TokenRAngle
         ShiftExpression:compareGT
-        {$$ = arena.make<ast::ExpressionCompareGT>($_, $$, compareGT);}
-        / TokenLAngleEqual
+        {$$ = arena.make<ast::ExpressionCompareGT>(gtLocation, $$, compareGT);}
+        / TokenLocation:leLocation
+        TokenLAngleEqual
         ShiftExpression:compareLE
-        {$$ = arena.make<ast::ExpressionCompareLE>($_, $$, compareLE);}
-        / TokenRAngleEqual
+        {$$ = arena.make<ast::ExpressionCompareLE>(leLocation, $$, compareLE);}
+        / TokenLocation:geLocation
+        TokenRAngleEqual
         ShiftExpression:compareGE
-        {$$ = arena.make<ast::ExpressionCompareGE>($_, $$, compareGE);}
-        / TokenInstanceOf
+        {$$ = arena.make<ast::ExpressionCompareGE>(geLocation, $$, compareGE);}
+        / TokenLocation:instanceOfLocation
+        TokenInstanceOf
         ShiftExpression:instanceOfExpression
-        {$$ = arena.make<ast::ExpressionInstanceOf>($_, $$, instanceOfExpression);}
+        {$$ = arena.make<ast::ExpressionInstanceOf>(instanceOfLocation, $$, instanceOfExpression);}
         / &{
             if(!canHaveInOperator)
                 $? = "in not allowed here";
         } 
+        TokenLocation:inLocation
         TokenIn
         ShiftExpression:inExpression
-        {$$ = arena.make<ast::ExpressionIn>($_, $$, inExpression);}
+        {$$ = arena.make<ast::ExpressionIn>(inLocation, $$, inExpression);}
     )*
     ;
 
@@ -1219,18 +1490,22 @@ EqualityExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHave
     RelationalExpression:firstExpression
     {$$ = firstExpression;}
     (
+        TokenLocation:eqLocation
         TokenEqualEqual
         RelationalExpression:compareEq
-        {$$ = arena.make<ast::ExpressionCompareEq>($_, $$, compareEq);}
-        / TokenEMarkEqual
+        {$$ = arena.make<ast::ExpressionCompareEq>(eqLocation, $$, compareEq);}
+        / TokenLocation:neLocation
+        TokenEMarkEqual
         RelationalExpression:compareNE
-        {$$ = arena.make<ast::ExpressionCompareNE>($_, $$, compareNE);}
-        / TokenEqualEqualEqual
+        {$$ = arena.make<ast::ExpressionCompareNE>(neLocation, $$, compareNE);}
+        / TokenLocation:strictEqLocation
+        TokenEqualEqualEqual
         RelationalExpression:compareStrictEq
-        {$$ = arena.make<ast::ExpressionCompareStrictEq>($_, $$, compareStrictEq);}
-        / TokenEMarkEqualEqual
+        {$$ = arena.make<ast::ExpressionCompareStrictEq>(strictEqLocation, $$, compareStrictEq);}
+        / TokenLocation:strictNELocation
+        TokenEMarkEqualEqual
         RelationalExpression:compareStrictNE
-        {$$ = arena.make<ast::ExpressionCompareStrictNE>($_, $$, compareStrictNE);}
+        {$$ = arena.make<ast::ExpressionCompareStrictNE>(strictNELocation, $$, compareStrictNE);}
     )*
     ;
 
@@ -1238,9 +1513,10 @@ BitwiseANDExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHa
     EqualityExpression:firstExpression
     {$$ = firstExpression;}
     (
+        TokenLocation:location
         TokenAmp
         EqualityExpression:nextExpression
-        {$$ = arena.make<ast::ExpressionBitwiseAnd>($_, $$, nextExpression);}
+        {$$ = arena.make<ast::ExpressionBitwiseAnd>(location, $$, nextExpression);}
     )*
     ;
 
@@ -1248,9 +1524,10 @@ BitwiseXORExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHa
     BitwiseANDExpression:firstExpression
     {$$ = firstExpression;}
     (
+        TokenLocation:location
         TokenCaret
         BitwiseANDExpression:nextExpression
-        {$$ = arena.make<ast::ExpressionBitwiseXor>($_, $$, nextExpression);}
+        {$$ = arena.make<ast::ExpressionBitwiseXor>(location, $$, nextExpression);}
     )*
     ;
 
@@ -1258,9 +1535,10 @@ BitwiseORExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHav
     BitwiseXORExpression:firstExpression
     {$$ = firstExpression;}
     (
+        TokenLocation:location
         TokenPipe
         BitwiseXORExpression:nextExpression
-        {$$ = arena.make<ast::ExpressionBitwiseOr>($_, $$, nextExpression);}
+        {$$ = arena.make<ast::ExpressionBitwiseOr>(location, $$, nextExpression);}
     )*
     ;
 
@@ -1268,9 +1546,10 @@ LogicalANDExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHa
     BitwiseORExpression:firstExpression
     {$$ = firstExpression;}
     (
+        TokenLocation:location
         TokenAmpAmp
         BitwiseORExpression:nextExpression
-        {$$ = arena.make<ast::ExpressionLogicalAnd>($_, $$, nextExpression);}
+        {$$ = arena.make<ast::ExpressionLogicalAnd>(location, $$, nextExpression);}
     )*
     ;
 
@@ -1278,9 +1557,10 @@ LogicalORExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHav
     LogicalANDExpression:firstExpression
     {$$ = firstExpression;}
     (
+        TokenLocation:location
         TokenPipePipe
         LogicalANDExpression:nextExpression
-        {$$ = arena.make<ast::ExpressionLogicalOr>($_, $$, nextExpression);}
+        {$$ = arena.make<ast::ExpressionLogicalOr>(location, $$, nextExpression);}
     )*
     ;
 
@@ -1288,11 +1568,12 @@ ConditionalExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canH
     LogicalORExpression:condition
     {$$ = condition;}
     (
+        TokenLocation:location
         TokenQMark
         AssignmentExpression:trueExpression
         TokenColon
         AssignmentExpression:falseExpression
-        {$$ = arena.make<ast::ExpressionConditional>($_, condition, trueExpression, falseExpression);}
+        {$$ = arena.make<ast::ExpressionConditional>(location, condition, trueExpression, falseExpression);}
     )?;
 
 AssignmentExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
@@ -1309,42 +1590,54 @@ AssignmentExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHa
     {$$ = yieldExpression;}
     / LeftHandSideExpression:leftHandSideExpression
     (
+        TokenLocation:location
         TokenEqual
         AssignmentExpression:assignmentExpression
-        {$$ = arena.make<ast::AssignmentExpression>($_, leftHandSideExpression, assignmentExpression);}
-        / TokenStarEqual
+        {$$ = arena.make<ast::AssignmentExpression>(location, leftHandSideExpression, assignmentExpression);}
+        / TokenLocation:starLocation
+        TokenStarEqual
         AssignmentExpression:multiplyAssignmentExpression
-        {$$ = arena.make<ast::MultiplyAssignmentExpression>($_, leftHandSideExpression, multiplyAssignmentExpression);}
-        / TokenFSlashEqual
+        {$$ = arena.make<ast::MultiplyAssignmentExpression>(starLocation, leftHandSideExpression, multiplyAssignmentExpression);}
+        / TokenLocation:fSlashLocation
+        TokenFSlashEqual
         AssignmentExpression:divideAssignmentExpression
-        {$$ = arena.make<ast::DivideAssignmentExpression>($_, leftHandSideExpression, divideAssignmentExpression);}
-        / TokenPercentEqual
+        {$$ = arena.make<ast::DivideAssignmentExpression>(fSlashLocation, leftHandSideExpression, divideAssignmentExpression);}
+        / TokenLocation:percentLocation
+        TokenPercentEqual
         AssignmentExpression:modulusAssignmentExpression
-        {$$ = arena.make<ast::ModulusAssignmentExpression>($_, leftHandSideExpression, modulusAssignmentExpression);}
-        / TokenPlusEqual
+        {$$ = arena.make<ast::ModulusAssignmentExpression>(percentLocation, leftHandSideExpression, modulusAssignmentExpression);}
+        / TokenLocation:plusLocation
+        TokenPlusEqual
         AssignmentExpression:addAssignmentExpression
-        {$$ = arena.make<ast::AddAssignmentExpression>($_, leftHandSideExpression, addAssignmentExpression);}
-        / TokenMinusEqual
+        {$$ = arena.make<ast::AddAssignmentExpression>(plusLocation, leftHandSideExpression, addAssignmentExpression);}
+        / TokenLocation:minusLocation
+        TokenMinusEqual
         AssignmentExpression:subtractAssignmentExpression
-        {$$ = arena.make<ast::SubtractAssignmentExpression>($_, leftHandSideExpression, subtractAssignmentExpression);}
-        / TokenLAngleLAngleEqual
+        {$$ = arena.make<ast::SubtractAssignmentExpression>(minusLocation, leftHandSideExpression, subtractAssignmentExpression);}
+        / TokenLocation:lShiftLocation
+        TokenLAngleLAngleEqual
         AssignmentExpression:lShiftAssignmentExpression
-        {$$ = arena.make<ast::LShiftAssignmentExpression>($_, leftHandSideExpression, lShiftAssignmentExpression);}
-        / TokenRAngleRAngleEqual
+        {$$ = arena.make<ast::LShiftAssignmentExpression>(lShiftLocation, leftHandSideExpression, lShiftAssignmentExpression);}
+        / TokenLocation:arShiftLocation
+        TokenRAngleRAngleEqual
         AssignmentExpression:arShiftAssignmentExpression
-        {$$ = arena.make<ast::ARShiftAssignmentExpression>($_, leftHandSideExpression, arShiftAssignmentExpression);}
-        / TokenRAngleRAngleRAngleEqual
+        {$$ = arena.make<ast::ARShiftAssignmentExpression>(arShiftLocation, leftHandSideExpression, arShiftAssignmentExpression);}
+        / TokenLocation:urShiftLocation
+        TokenRAngleRAngleRAngleEqual
         AssignmentExpression:urShiftAssignmentExpression
-        {$$ = arena.make<ast::URShiftAssignmentExpression>($_, leftHandSideExpression, urShiftAssignmentExpression);}
-        / TokenAmpEqual
+        {$$ = arena.make<ast::URShiftAssignmentExpression>(urShiftLocation, leftHandSideExpression, urShiftAssignmentExpression);}
+        / TokenLocation:andLocation
+        TokenAmpEqual
         AssignmentExpression:andAssignmentExpression
-        {$$ = arena.make<ast::AndAssignmentExpression>($_, leftHandSideExpression, andAssignmentExpression);}
-        / TokenCaretEqual
+        {$$ = arena.make<ast::AndAssignmentExpression>(andLocation, leftHandSideExpression, andAssignmentExpression);}
+        / TokenLocation:xorLocation
+        TokenCaretEqual
         AssignmentExpression:xorAssignmentExpression
-        {$$ = arena.make<ast::XorAssignmentExpression>($_, leftHandSideExpression, xorAssignmentExpression);}
-        / TokenPipeEqual
+        {$$ = arena.make<ast::XorAssignmentExpression>(xorLocation, leftHandSideExpression, xorAssignmentExpression);}
+        / TokenLocation:orLocation
+        TokenPipeEqual
         AssignmentExpression:orAssignmentExpression
-        {$$ = arena.make<ast::OrAssignmentExpression>($_, leftHandSideExpression, orAssignmentExpression);}
+        {$$ = arena.make<ast::OrAssignmentExpression>(orLocation, leftHandSideExpression, orAssignmentExpression);}
     )
     / ConditionalExpression:conditionalExpression
     {$$ = conditionalExpression;};
@@ -1353,9 +1646,10 @@ Expression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOpe
     AssignmentExpression:firstExpression
     {$$ = firstExpression;}
     (
+        TokenLocation:location
         TokenComma
         AssignmentExpression:nextExpression
-        {$$ = arena.make<ast::ExpressionCommaOperator>($_, $$, nextExpression);}
+        {$$ = arena.make<ast::ExpressionComma>(location, $$, nextExpression);}
     )*
     !TokenComma
     ;

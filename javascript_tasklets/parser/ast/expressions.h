@@ -23,7 +23,9 @@
 #define JAVASCRIPT_TASKLETS_PARSER_AST_EXPRESSIONS_H_
 
 #include "expression.h"
+#include "argument.h"
 #include "../../string.h"
+#include "literal.h"
 
 namespace javascript_tasklets
 {
@@ -31,11 +33,11 @@ namespace parser
 {
 namespace ast
 {
-struct ExpressionCommaOperator : public Expression
+struct ExpressionComma : public Expression
 {
     Expression *firstExpression;
     Expression *secondExpression;
-    ExpressionCommaOperator(std::size_t location,
+    ExpressionComma(std::size_t location,
                             Expression *firstExpression,
                             Expression *secondExpression)
         : Expression(location), firstExpression(firstExpression), secondExpression(secondExpression)
@@ -238,7 +240,264 @@ struct ExpressionInstanceOf : public Expression
     }
 };
 
+struct ExpressionLShift : public Expression
+{
+    Expression *firstExpression;
+    Expression *secondExpression;
+    ExpressionLShift(std::size_t location,
+                     Expression *firstExpression,
+                     Expression *secondExpression)
+        : Expression(location), firstExpression(firstExpression), secondExpression(secondExpression)
+    {
+    }
+};
+
+struct ExpressionARShift : public Expression
+{
+    Expression *firstExpression;
+    Expression *secondExpression;
+    ExpressionARShift(std::size_t location,
+                      Expression *firstExpression,
+                      Expression *secondExpression)
+        : Expression(location), firstExpression(firstExpression), secondExpression(secondExpression)
+    {
+    }
+};
+
+struct ExpressionURShift : public Expression
+{
+    Expression *firstExpression;
+    Expression *secondExpression;
+    ExpressionURShift(std::size_t location,
+                      Expression *firstExpression,
+                      Expression *secondExpression)
+        : Expression(location), firstExpression(firstExpression), secondExpression(secondExpression)
+    {
+    }
+};
+
+struct ExpressionPlus : public Expression
+{
+    Expression *firstExpression;
+    Expression *secondExpression;
+    ExpressionPlus(std::size_t location, Expression *firstExpression, Expression *secondExpression)
+        : Expression(location), firstExpression(firstExpression), secondExpression(secondExpression)
+    {
+    }
+};
+
+struct ExpressionMinus : public Expression
+{
+    Expression *firstExpression;
+    Expression *secondExpression;
+    ExpressionMinus(std::size_t location, Expression *firstExpression, Expression *secondExpression)
+        : Expression(location), firstExpression(firstExpression), secondExpression(secondExpression)
+    {
+    }
+};
+
+struct ExpressionMultiply : public Expression
+{
+    Expression *firstExpression;
+    Expression *secondExpression;
+    ExpressionMultiply(std::size_t location,
+                       Expression *firstExpression,
+                       Expression *secondExpression)
+        : Expression(location), firstExpression(firstExpression), secondExpression(secondExpression)
+    {
+    }
+};
+
+struct ExpressionDivide : public Expression
+{
+    Expression *firstExpression;
+    Expression *secondExpression;
+    ExpressionDivide(std::size_t location,
+                     Expression *firstExpression,
+                     Expression *secondExpression)
+        : Expression(location), firstExpression(firstExpression), secondExpression(secondExpression)
+    {
+    }
+};
+
+struct ExpressionModulus : public Expression
+{
+    Expression *firstExpression;
+    Expression *secondExpression;
+    ExpressionModulus(std::size_t location,
+                      Expression *firstExpression,
+                      Expression *secondExpression)
+        : Expression(location), firstExpression(firstExpression), secondExpression(secondExpression)
+    {
+    }
+};
+
+struct ExpressionDelete : public Expression
+{
+    Expression *expression;
+    ExpressionDelete(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionVoid : public Expression
+{
+    Expression *expression;
+    ExpressionVoid(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionTypeOf : public Expression
+{
+    Expression *expression;
+    ExpressionTypeOf(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionPrefixIncrement : public Expression
+{
+    Expression *expression;
+    ExpressionPrefixIncrement(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionPrefixDecrement : public Expression
+{
+    Expression *expression;
+    ExpressionPrefixDecrement(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionPostfixIncrement : public Expression
+{
+    Expression *expression;
+    ExpressionPostfixIncrement(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionPostfixDecrement : public Expression
+{
+    Expression *expression;
+    ExpressionPostfixDecrement(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionUnaryPlus : public Expression
+{
+    Expression *expression;
+    ExpressionUnaryPlus(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionUnaryMinus : public Expression
+{
+    Expression *expression;
+    ExpressionUnaryMinus(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionBitwiseNot : public Expression
+{
+    Expression *expression;
+    ExpressionBitwiseNot(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionLogicalNot : public Expression
+{
+    Expression *expression;
+    ExpressionLogicalNot(std::size_t location, Expression *expression)
+        : Expression(location), expression(expression)
+    {
+    }
+};
+
+struct ExpressionNew : public Expression
+{
+    Expression *constructor;
+    ArgumentList argumentList;
+    ExpressionNew(std::size_t location,
+                  Expression *constructor,
+                  ArgumentList argumentList = ArgumentList())
+        : Expression(location), constructor(constructor), argumentList(std::move(argumentList))
+    {
+    }
+};
+
+struct ExpressionCall : public Expression
+{
+    Expression *function;
+    ArgumentList argumentList;
+    ExpressionCall(std::size_t location, Expression *function, ArgumentList argumentList)
+        : Expression(location), function(function), argumentList(std::move(argumentList))
+    {
+    }
+};
+
+struct ExpressionTemplateCall : public Expression
+{
+    Expression *function;
+    ExpressionTemplateLiteral *templateLiteral;
+    ExpressionTemplateCall(std::size_t location,
+                           Expression *function,
+                           ExpressionTemplateLiteral *templateLiteral)
+        : Expression(location), function(function), templateLiteral(templateLiteral)
+    {
+    }
+};
+
+struct ExpressionSuperCall : public Expression
+{
+    ArgumentList argumentList;
+    ExpressionSuperCall(std::size_t location, ArgumentList argumentList)
+        : Expression(location), argumentList(std::move(argumentList))
+    {
+    }
+};
+
+struct ExpressionMember : public Expression
+{
+    Expression *object;
+    Expression *name;
+    ExpressionMember(std::size_t location, Expression *object, Expression *name)
+        : Expression(location), object(object), name(name)
+    {
+    }
+};
+
+struct ExpressionSuperMember : public Expression
+{
+    Expression *name;
+    ExpressionSuperMember(std::size_t location, Expression *name) : Expression(location), name(name)
+    {
+    }
+};
+
 struct ExpressionThis : public Expression
+{
+    using Expression::Expression;
+};
+
+struct ExpressionNewTarget : public Expression
 {
     using Expression::Expression;
 };

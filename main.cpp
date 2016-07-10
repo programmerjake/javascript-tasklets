@@ -31,7 +31,7 @@ namespace test
 {
 const auto testSource =
     uR"(
-yield
+true ? abc : 123
 )";
 void main()
 {
