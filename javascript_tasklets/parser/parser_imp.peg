@@ -93,10 +93,7 @@ public:
 
 code source {
 #include "../character_properties.h"
-#include "ast/expression_this.h"
-#include "ast/identifier_reference.h"
-#include "ast/comma_operator.h"
-#include "ast/assignment_expression.h"
+#include "ast/expressions.h"
 #include "../value.h"
 }
 
@@ -1039,19 +1036,19 @@ IdentifierReference<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Exp
 FunctionExpression<isModule:bool, isStrict:bool>:ExpressionPointer =
     &{
         $? = "FunctionExpression not implemented";
-#warning implement function expression
+#warning implement FunctionExpression
     };
 
 GeneratorExpression<isModule:bool, isStrict:bool>:ExpressionPointer =
     &{
         $? = "GeneratorExpression not implemented";
-#warning implement generator expression
+#warning implement GeneratorExpression
     };
 
 ClassExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     &{
         $? = "ClassExpression not implemented";
-#warning implement class expression
+#warning implement ClassExpression
     };
 
 ParenthesizedExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
@@ -1137,7 +1134,7 @@ ArrayLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Expression
 ObjectLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     &{
         $? = "ObjectLiteral not implemented";
-#warning implement object literal
+#warning implement ObjectLiteral
     };
 
 TemplateLiteralRest<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:TemplateRest =
@@ -1168,26 +1165,135 @@ TemplateLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Express
 ArrowFunction<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     &{
         $? = "ArrowFunction not implemented";
-#warning implement arrow function
+#warning implement ArrowFunction
     };
 
 YieldExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool>:ExpressionPointer =
     &{
         $? = "YieldExpression not implemented";
-#warning implement yield expression
+#warning implement YieldExpression
     };
 
 LeftHandSideExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     &{
         $? = "LeftHandSideExpression not implemented";
-#warning implement left-hand-side expression
+#warning implement LeftHandSideExpression
     };
 
-ConditionalExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+ShiftExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     &{
-        $? = "ConditionalExpression not implemented";
-#warning implement conditional expression
+        $? = "ShiftExpression not implemented";
+#warning implement ShiftExpression
     };
+    
+RelationalExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    ShiftExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenLAngle
+        ShiftExpression:compareLT
+        {$$ = arena.make<ast::ExpressionCompareLT>($_, $$, compareLT);}
+        / TokenRAngle
+        ShiftExpression:compareGT
+        {$$ = arena.make<ast::ExpressionCompareGT>($_, $$, compareGT);}
+        / TokenLAngleEqual
+        ShiftExpression:compareLE
+        {$$ = arena.make<ast::ExpressionCompareLE>($_, $$, compareLE);}
+        / TokenRAngleEqual
+        ShiftExpression:compareGE
+        {$$ = arena.make<ast::ExpressionCompareGE>($_, $$, compareGE);}
+        / TokenInstanceOf
+        ShiftExpression:instanceOfExpression
+        {$$ = arena.make<ast::ExpressionInstanceOf>($_, $$, instanceOfExpression);}
+        / &{
+            if(!canHaveInOperator)
+                $? = "in not allowed here";
+        } 
+        TokenIn
+        ShiftExpression:inExpression
+        {$$ = arena.make<ast::ExpressionIn>($_, $$, inExpression);}
+    )*
+    ;
+
+EqualityExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    RelationalExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenEqualEqual
+        RelationalExpression:compareEq
+        {$$ = arena.make<ast::ExpressionCompareEq>($_, $$, compareEq);}
+        / TokenEMarkEqual
+        RelationalExpression:compareNE
+        {$$ = arena.make<ast::ExpressionCompareNE>($_, $$, compareNE);}
+        / TokenEqualEqualEqual
+        RelationalExpression:compareStrictEq
+        {$$ = arena.make<ast::ExpressionCompareStrictEq>($_, $$, compareStrictEq);}
+        / TokenEMarkEqualEqual
+        RelationalExpression:compareStrictNE
+        {$$ = arena.make<ast::ExpressionCompareStrictNE>($_, $$, compareStrictNE);}
+    )*
+    ;
+
+BitwiseANDExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    EqualityExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenAmp
+        EqualityExpression:nextExpression
+        {$$ = arena.make<ast::ExpressionBitwiseAnd>($_, $$, nextExpression);}
+    )*
+    ;
+
+BitwiseXORExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    BitwiseANDExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenCaret
+        BitwiseANDExpression:nextExpression
+        {$$ = arena.make<ast::ExpressionBitwiseXor>($_, $$, nextExpression);}
+    )*
+    ;
+
+BitwiseORExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    BitwiseXORExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenPipe
+        BitwiseXORExpression:nextExpression
+        {$$ = arena.make<ast::ExpressionBitwiseOr>($_, $$, nextExpression);}
+    )*
+    ;
+
+LogicalANDExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    BitwiseORExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenAmpAmp
+        BitwiseORExpression:nextExpression
+        {$$ = arena.make<ast::ExpressionLogicalAnd>($_, $$, nextExpression);}
+    )*
+    ;
+
+LogicalORExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    LogicalANDExpression:firstExpression
+    {$$ = firstExpression;}
+    (
+        TokenPipePipe
+        LogicalANDExpression:nextExpression
+        {$$ = arena.make<ast::ExpressionLogicalOr>($_, $$, nextExpression);}
+    )*
+    ;
+
+ConditionalExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    LogicalORExpression:condition
+    {$$ = condition;}
+    (
+        TokenQMark
+        AssignmentExpression:trueExpression
+        TokenColon
+        AssignmentExpression:falseExpression
+        {$$ = arena.make<ast::ExpressionConditional>($_, condition, trueExpression, falseExpression);}
+    )?;
 
 AssignmentExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     ArrowFunction:arrowFunction
