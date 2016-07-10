@@ -96,6 +96,7 @@ code source {
 #include "ast/expression_this.h"
 #include "ast/identifier_reference.h"
 #include "ast/comma_operator.h"
+#include "ast/assignment_expression.h"
 #include "../value.h"
 }
 
@@ -1053,12 +1054,6 @@ ClassExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Express
 #warning implement class expression
     };
 
-AssignmentExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
-    &{
-        $? = "AssignmentExpression not implemented";
-#warning implement assignment expression
-    };
-
 ParenthesizedExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     "("
     Expression<isModule, isStrict, true, canHaveYieldOperator>:expression
@@ -1169,6 +1164,84 @@ TemplateLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Express
         $$ = arena.make<ast::ExpressionTemplateLiteral>($_, ast::TemplateString(first.raw, first.cooked), std::move(rest));
     }
     ;
+
+ArrowFunction<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    &{
+        $? = "ArrowFunction not implemented";
+#warning implement arrow function
+    };
+
+YieldExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool>:ExpressionPointer =
+    &{
+        $? = "YieldExpression not implemented";
+#warning implement yield expression
+    };
+
+LeftHandSideExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    &{
+        $? = "LeftHandSideExpression not implemented";
+#warning implement left-hand-side expression
+    };
+
+ConditionalExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    &{
+        $? = "ConditionalExpression not implemented";
+#warning implement conditional expression
+    };
+
+AssignmentExpression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    ArrowFunction:arrowFunction
+    {$$ = arrowFunction;}
+    / &(
+        TokenYield
+        &{
+            if(!canHaveYieldOperator)
+                $? = "yield not allowed here";
+        }
+    )
+    YieldExpression:yieldExpression
+    {$$ = yieldExpression;}
+    / LeftHandSideExpression:leftHandSideExpression
+    (
+        TokenEqual
+        AssignmentExpression:assignmentExpression
+        {$$ = arena.make<ast::AssignmentExpression>($_, leftHandSideExpression, assignmentExpression);}
+        / TokenStarEqual
+        AssignmentExpression:multiplyAssignmentExpression
+        {$$ = arena.make<ast::MultiplyAssignmentExpression>($_, leftHandSideExpression, multiplyAssignmentExpression);}
+        / TokenFSlashEqual
+        AssignmentExpression:divideAssignmentExpression
+        {$$ = arena.make<ast::DivideAssignmentExpression>($_, leftHandSideExpression, divideAssignmentExpression);}
+        / TokenPercentEqual
+        AssignmentExpression:modulusAssignmentExpression
+        {$$ = arena.make<ast::ModulusAssignmentExpression>($_, leftHandSideExpression, modulusAssignmentExpression);}
+        / TokenPlusEqual
+        AssignmentExpression:addAssignmentExpression
+        {$$ = arena.make<ast::AddAssignmentExpression>($_, leftHandSideExpression, addAssignmentExpression);}
+        / TokenMinusEqual
+        AssignmentExpression:subtractAssignmentExpression
+        {$$ = arena.make<ast::SubtractAssignmentExpression>($_, leftHandSideExpression, subtractAssignmentExpression);}
+        / TokenLAngleLAngleEqual
+        AssignmentExpression:lShiftAssignmentExpression
+        {$$ = arena.make<ast::LShiftAssignmentExpression>($_, leftHandSideExpression, lShiftAssignmentExpression);}
+        / TokenRAngleRAngleEqual
+        AssignmentExpression:arShiftAssignmentExpression
+        {$$ = arena.make<ast::ARShiftAssignmentExpression>($_, leftHandSideExpression, arShiftAssignmentExpression);}
+        / TokenRAngleRAngleRAngleEqual
+        AssignmentExpression:urShiftAssignmentExpression
+        {$$ = arena.make<ast::URShiftAssignmentExpression>($_, leftHandSideExpression, urShiftAssignmentExpression);}
+        / TokenAmpEqual
+        AssignmentExpression:andAssignmentExpression
+        {$$ = arena.make<ast::AndAssignmentExpression>($_, leftHandSideExpression, andAssignmentExpression);}
+        / TokenCaretEqual
+        AssignmentExpression:xorAssignmentExpression
+        {$$ = arena.make<ast::XorAssignmentExpression>($_, leftHandSideExpression, xorAssignmentExpression);}
+        / TokenPipeEqual
+        AssignmentExpression:orAssignmentExpression
+        {$$ = arena.make<ast::OrAssignmentExpression>($_, leftHandSideExpression, orAssignmentExpression);}
+    )
+    / ConditionalExpression:conditionalExpression
+    {$$ = conditionalExpression;};
 
 Expression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     AssignmentExpression:firstExpression

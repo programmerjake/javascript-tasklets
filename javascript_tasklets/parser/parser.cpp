@@ -54,7 +54,7 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
     {
         Parser parser(std::move(u32source));
 #warning finish
-        result = parser.parsePrimaryExpression<false, false, true>();
+        result = parser.parseExpression<false, false, true, true>();
         arena = std::move(parser.arena);
     }
     catch(Parser::ParseError &e)

@@ -31,7 +31,7 @@ namespace test
 {
 const auto testSource =
     uR"(
-`abc${123}def`
+yield
 )";
 void main()
 {
