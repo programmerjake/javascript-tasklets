@@ -37,21 +37,33 @@ struct Argument : public Node
     using Node::Node;
 };
 
-struct ArgumentExpression : public Argument
+struct ArgumentExpression final : public Argument
 {
     Expression *expression;
     ArgumentExpression(std::size_t location, Expression *expression)
         : Argument(location), expression(expression)
     {
     }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "ArgumentExpression\n";
+        expression->dump(os, indentDepth + 1);
+    }
 };
 
-struct ArgumentSpread : public Argument
+struct ArgumentSpread final : public Argument
 {
     Expression *expression;
     ArgumentSpread(std::size_t location, Expression *expression)
         : Argument(location), expression(expression)
     {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "ArgumentSpread\n";
+        expression->dump(os, indentDepth + 1);
     }
 };
 

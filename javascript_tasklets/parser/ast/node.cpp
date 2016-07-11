@@ -19,10 +19,8 @@
  *
  */
 
-#ifndef JAVASCRIPT_TASKLETS_PARSER_AST_NODE_H_
-#define JAVASCRIPT_TASKLETS_PARSER_AST_NODE_H_
-
-#include <iosfwd>
+#include "node.h"
+#include <ostream>
 
 namespace javascript_tasklets
 {
@@ -30,27 +28,11 @@ namespace parser
 {
 namespace ast
 {
-class Arena;
-class Node
+void Node::dumpWriteIndent(std::ostream &os, std::size_t indentDepth)
 {
-    friend class Arena;
-    Node(const Node &) = delete;
-    Node &operator=(const Node &) = delete;
-
-private:
-    Node *arenaNext = nullptr;
-
-public:
-    std::size_t location;
-    explicit Node(std::size_t location) : location(location)
-    {
-    }
-    virtual ~Node() = default;
-    static void dumpWriteIndent(std::ostream &os, std::size_t indentDepth);
-    virtual void dump(std::ostream &os, std::size_t indentDepth) const = 0;
-};
+    for(std::size_t i = 0; i < indentDepth; i++)
+        os << "    ";
 }
 }
 }
-
-#endif /* JAVASCRIPT_TASKLETS_PARSER_AST_NODE_H_ */
+}

@@ -40,6 +40,16 @@ private:
     Node *head;
     Node *tail;
 
+private:
+    void addNode(Node *node) noexcept
+    {
+        node->arenaNext = nullptr;
+        if(!tail)
+            head = node;
+        else
+            tail->arenaNext = node;
+        tail = node;
+    }
 public:
     Arena() noexcept : head(nullptr), tail(nullptr)
     {
@@ -70,13 +80,7 @@ public:
     typename std::enable_if<std::is_base_of<Node, T>::value, T *>::type make(Args &&... args)
     {
         T *retval = new T(std::forward<Args>(args)...);
-        Node *node = retval;
-        node->arenaNext = tail;
-        if(!tail)
-            head = node;
-        else
-            tail->arenaNext = node;
-        tail = node;
+        addNode(retval);
         return retval;
     }
 };

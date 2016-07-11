@@ -64,6 +64,8 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
                                               gc);
         return value::ObjectHandle();
     }
+    result->dump(std::cout, 0);
+    std::cout << std::endl;
     value::ObjectHandle::throwSyntaxError(
         u"parse successful but parseScript is not implemented", LocationHandle(gc, Location(source, 0)), gc);
     return value::ObjectHandle();

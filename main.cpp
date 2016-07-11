@@ -31,7 +31,7 @@ namespace test
 {
 const auto testSource =
     uR"(
-true ? abc : 123
+String.raw`Hi ${name}!`
 )";
 void main()
 {

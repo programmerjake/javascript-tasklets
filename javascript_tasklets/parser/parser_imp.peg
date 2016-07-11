@@ -281,7 +281,7 @@ TokenizerIdentifierName:String =
         if(!character_properties::javascriptIdStart(startChar))
             $? = "expected identifier start";
         else
-            $$ = startChar;
+            $$ = appendCodePoint(u"", startChar);
     }
     (
         TokenizerUnicodeEscapeOrChar:continueChar
@@ -289,7 +289,7 @@ TokenizerIdentifierName:String =
             if(!character_properties::javascriptIdContinue(continueChar))
                 $? = "expected identifier continue";
             else
-                $$ = continueChar;
+                $$ = appendCodePoint(std::move($$), continueChar);
         }
     )*
     !"\\";
@@ -536,9 +536,8 @@ TokenizerDecimalLiteral:String = TokenizerDecimalIntegerLiteral:value0 {$$ = val
                                      TokenizerExponentPart:value4 {$$ += value4;}
                                  )?
                                / TokenizerDecimalIntegerLiteral:value5 {$$ = value5;}
-                                 TokenizerDecimalDigits:value6 {$$ += value6;}
                                  (
-                                     TokenizerExponentPart:value7 {$$ += value7;}
+                                     TokenizerExponentPart:value6 {$$ += value6;}
                                  )?
                                ;
 
@@ -1338,7 +1337,7 @@ ArgumentList<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ArgumentLi
 LeftHandSideExpression<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
     CallExpression:callExpression
     {$$ = callExpression;}
-    NewExpression:newExpression
+    / NewExpression:newExpression
     {$$ = newExpression;}
     ;
 
