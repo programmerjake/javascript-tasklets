@@ -21,6 +21,7 @@
 #include "parser.h"
 #include "parser_imp.h"
 #include "ast/arena.h"
+#include "ast/statements.h"
 #include <memory>
 #include <iostream>
 
@@ -49,12 +50,11 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
         u32source += static_cast<char32_t>(value);
     }
     ast::Arena arena;
-    ast::Node *result;
+    ast::StatementList result;
     try
     {
         Parser parser(std::move(u32source));
-#warning finish
-        result = parser.parseExpression<false, false, true, true>();
+        result = parser.parseScript();
         arena = std::move(parser.arena);
     }
     catch(Parser::ParseError &e)
@@ -64,10 +64,13 @@ value::ObjectHandle parseScript(SourceHandle source, GC &gc)
                                               gc);
         return value::ObjectHandle();
     }
-    result->dump(std::cout, 0);
+    for(auto statement : result)
+        statement->dump(std::cout, 0);
     std::cout << std::endl;
-    value::ObjectHandle::throwSyntaxError(
-        u"parse successful but parseScript is not implemented", LocationHandle(gc, Location(source, 0)), gc);
+#warning finish
+    value::ObjectHandle::throwSyntaxError(u"parse successful but parseScript is not implemented",
+                                          LocationHandle(gc, Location(source, 0)),
+                                          gc);
     return value::ObjectHandle();
 }
 }

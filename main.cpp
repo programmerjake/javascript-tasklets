@@ -31,7 +31,8 @@ namespace test
 {
 const auto testSource =
     uR"(
-String.raw`Hi ${name}!`
+a
+[1]
 )";
 void main()
 {

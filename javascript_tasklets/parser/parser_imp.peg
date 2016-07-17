@@ -32,6 +32,7 @@ code header {
 #include <vector>
 #include "ast/node.h"
 #include "ast/expression.h"
+#include "ast/statement.h"
 #include "ast/literal.h"
 #include "ast/arena.h"
 #include "ast/argument.h"
@@ -79,12 +80,18 @@ struct BodyAndFlags final
     }
 };
 
+struct DirectivePrologue final
+{
+    bool useStrict = false;
+};
+
 typedef ast::Node *NodePointer;
 typedef ast::Expression *ExpressionPointer;
 typedef ast::ArrayLiteralElement *ArrayLiteralElementPointer;
 typedef std::vector<ast::ArrayLiteralElement *> ArrayLiteralElementList;
 typedef ast::Argument *ArgumentPointer;
 typedef ast::ExpressionTemplateLiteral *ExpressionTemplateLiteralPointer;
+typedef ast::Statement *StatementPointer;
 }
 }
 }
@@ -97,6 +104,7 @@ public:
 code source {
 #include "../character_properties.h"
 #include "ast/expressions.h"
+#include "ast/statements.h"
 #include "../value.h"
 }
 
@@ -115,6 +123,9 @@ typedef ast::ArgumentList ArgumentList;
 typedef ArgumentPointer ArgumentPointer;
 typedef ExpressionTemplateLiteralPointer ExpressionTemplateLiteralPointer;
 typedef std::size_t Location;
+typedef StatementPointer StatementPointer;
+typedef ast::StatementList StatementList;
+typedef DirectivePrologue DirectivePrologue;
 
 TokenizerHexDigitValue:unsigned = 
     [^]:ch
@@ -340,6 +351,7 @@ TokenizerImport = "import" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerIn = "in" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerInstanceOf = "instanceof" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerInterface = "interface" !"\\" !TokenizerEscapelessIdentifierPart;
+TokenizerLet = "let" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerNew = "new" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerNull = "null" !"\\" !TokenizerEscapelessIdentifierPart;
 TokenizerPackage = "package" !"\\" !TokenizerEscapelessIdentifierPart;
@@ -923,6 +935,7 @@ TokenImport = TokenizerTokenSeperator<true> TokenizerImport;
 TokenIn = TokenizerTokenSeperator<true> TokenizerIn;
 TokenInstanceOf = TokenizerTokenSeperator<true> TokenizerInstanceOf;
 TokenInterface = TokenizerTokenSeperator<true> TokenizerInterface;
+TokenLet = TokenizerTokenSeperator<true> TokenizerLet;
 TokenNew = TokenizerTokenSeperator<true> TokenizerNew;
 TokenNull = TokenizerTokenSeperator<true> TokenizerNull;
 TokenPackage = TokenizerTokenSeperator<true> TokenizerPackage;
@@ -952,7 +965,6 @@ TokenLBracket = TokenizerTokenSeperator<true> TokenizerLBracket;
 TokenRBracket = TokenizerTokenSeperator<true> TokenizerRBracket;
 TokenPeriod = TokenizerTokenSeperator<true> TokenizerPeriod;
 TokenEllipsis = TokenizerTokenSeperator<true> TokenizerEllipsis;
-TokenSemicolon = TokenizerTokenSeperator<true> TokenizerSemicolon;
 TokenComma = TokenizerTokenSeperator<true> TokenizerComma;
 TokenLAngle = TokenizerTokenSeperator<true> TokenizerLAngle;
 TokenRAngle = TokenizerTokenSeperator<true> TokenizerRAngle;
@@ -995,6 +1007,30 @@ TokenCaretEqual = TokenizerTokenSeperator<true> TokenizerCaretEqual;
 TokenArrow = TokenizerTokenSeperator<true> TokenizerArrow;
 TokenFSlash = TokenizerTokenSeperator<true> TokenizerFSlash;
 TokenFSlashEqual = TokenizerTokenSeperator<true> TokenizerFSlashEqual;
+
+TokenRequiredSemicolon:Location =
+    TokenizerTokenSeperator<true>
+    {$$ = $_;}
+    TokenizerSemicolon;
+
+TokenSemicolon:Location =
+    TokenRequiredSemicolon:semicolonLocation
+    {$$ = semicolonLocation;}
+    / &TokenizerTokenSeperatorWithLineTerminator
+    {$$ = $_;}
+    / &TokenRBrace
+    {$$ = $_;}
+    / &(
+        TokenizerTokenSeperator<true>
+        EOF
+    )
+    {$$ = $_;}
+    ;
+
+TokenSemicolonAfterDoWhile =
+    TokenSemicolon
+    / TokenizerTokenSeperator<true>
+    ;
 
 TokenIdentifierName:String =
     TokenizerTokenSeperator<true>
@@ -1047,6 +1083,23 @@ RegularExpressionLiteral:ExpressionPointer =
     TokenLocation:regExpLocation
     TokenRegularExpressionLiteral:regExp
     {$$ = arena.make<ast::ExpressionRegExpLiteral>(regExpLocation, regExp.body, regExp.flags);}
+    ;
+
+DirectivePrologue:DirectivePrologue =
+    &(
+        (
+            TokenizerTokenSeperator<true>
+            "'use strict'"
+            TokenSemicolon
+            {$$.useStrict = true;}
+            / TokenizerTokenSeperator<true>
+            "\"use strict\""
+            TokenSemicolon
+            {$$.useStrict = true;}
+            / TokenStringLiteral
+            TokenSemicolon
+        )*
+    )
     ;
 
 IdentifierReference<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionPointer =
@@ -1652,4 +1705,224 @@ Expression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOpe
     )*
     !TokenComma
     ;
+
+VariableStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+ContinueStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+BreakStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+ReturnStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+WithStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+LabelledStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+ThrowStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+TryStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+DebuggerStatement:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+Statement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    BlockStatement:blockStatement
+    {$$ = blockStatement;}
+    / ReturnStatement:returnStatement
+    &{
+        if(!canHaveReturnStatement)
+        {
+            $? = "return statement not allowed here";
+        }
+        else
+        {
+            $$ = returnStatement;
+        }
+    }
+    / VariableStatement:variableStatement
+    {$$ = variableStatement;}
+    / EmptyStatement:emptyStatement
+    {$$ = emptyStatement;}
+    / ExpressionStatement:expressionStatement
+    {$$ = expressionStatement;}
+    / IfStatement:ifStatement
+    {$$ = ifStatement;}
+    / BreakableStatement:breakableStatement
+    {$$ = breakableStatement;}
+    / ContinueStatement:continueStatement
+    {$$ = continueStatement;}
+    / BreakStatement:breakStatement
+    {$$ = breakStatement;}
+    / WithStatement:withStatement
+    {$$ = withStatement;}
+    / LabelledStatement:labelledStatement
+    {$$ = labelledStatement;}
+    / ThrowStatement:throwStatement
+    {$$ = throwStatement;}
+    / TryStatement:tryStatement
+    {$$ = tryStatement;}
+    / DebuggerStatement:debuggerStatement
+    {$$ = debuggerStatement;}
+    ;
+
+IterationStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+SwitchStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+BreakableStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    SwitchStatement:switchStatement
+    {$$ = switchStatement;}
+    / IterationStatement:iterationStatement
+    {$$ = iterationStatement;}
+    ;
+
+BlockStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    Block:block
+    {$$ = block;}
+    ;
+
+Block<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    TokenLocation:lBraceLocation
+    TokenLBrace
+    StatementList:statementList?
+    {$$ = arena.make<ast::StatementBlock>(lBraceLocation, std::move(statementList));}
+    TokenRBrace
+    ;
+
+StatementList<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementList =
+    (
+        StatementListItem:statementListItem
+        {$$.push_back(statementListItem);}
+    )+
+    ;
+
+StatementListItem<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    Statement:statement
+    {$$ = statement;}
+    / Declaration:declaration
+    {$$ = declaration;}
+    ;
+
+Declaration<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+EmptyStatement:StatementPointer =
+    TokenLocation:semicolonLocation
+    TokenRequiredSemicolon
+    {$$ = arena.make<ast::StatementEmpty>(semicolonLocation);}
+    ;
+
+ExpressionStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPointer =
+    !TokenLBrace
+    !TokenFunction
+    !TokenClass
+    !(TokenLet TokenLBracket)
+    TokenLocation:expressionLocation
+    Expression<isModule, isStrict, true, canHaveYieldOperator>:expression
+    TokenSemicolon
+    {$$ = arena.make<ast::StatementExpression>(expressionLocation, expression);}
+    ;
+
+IfStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    TokenLocation:ifLocation
+    TokenIf
+    TokenLParen
+    Expression<isModule, isStrict, true, canHaveYieldOperator>:condition
+    TokenRParen
+    Statement:thenPart
+    (
+        !TokenElse
+        {$$ = arena.make<ast::StatementIf>(ifLocation, condition, thenPart, nullptr);}
+        / TokenElse
+        Statement:elsePart
+        {$$ = arena.make<ast::StatementIf>(ifLocation, condition, thenPart, elsePart);}
+    )
+    ;
+
+Script:StatementList =
+    (
+        ScriptBody:scriptBody
+        {$$ = std::move(scriptBody);}
+    )?
+    TokenizerTokenSeperator<true>
+    EOF
+    ;
+
+ScriptBody:StatementList =
+    DirectivePrologue:directivePrologue
+    (
+        &{
+            if(directivePrologue.useStrict)
+                $? = "missing statement";
+        }
+        StatementList<false, false, false, false>:statementList
+        {$$ = std::move(statementList);}
+        / &{
+            if(!directivePrologue.useStrict)
+                $? = "missing statement";
+        }
+        StatementList<false, true, false, false>:strictStatementList
+        {$$ = std::move(strictStatementList);}
+    )
+    ;
+
+
 
