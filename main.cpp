@@ -31,8 +31,11 @@ namespace test
 {
 const auto testSource =
     uR"(
-a
-[1]
+const a=123, {a=xyz, b:c=45, "345":d, 12:[x, y, z, ...rest], length, [length - 1]:last}=v
+var a = 12, [x, y, z, ] = [1, 2, 3], let;
+let a = 23;
+let [a, b, c] = v;
+let = 25;
 )";
 void main()
 {

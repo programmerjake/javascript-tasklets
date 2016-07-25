@@ -25,6 +25,7 @@
 #include "expression.h"
 #include "argument.h"
 #include "../../string.h"
+#include "../../value.h"
 #include "literal.h"
 
 namespace javascript_tasklets
@@ -968,6 +969,68 @@ struct ExpressionIdentifierReference final : public Expression
         os << "ExpressionIdentifierReference name=";
         writeString(os, name);
         os << "\n";
+    }
+};
+
+struct IdentifierPropertyName final : public PropertyName
+{
+    String name;
+    IdentifierPropertyName(std::size_t location, String name)
+        : PropertyName(location), name(std::move(name))
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "IdentifierPropertyName name=";
+        writeString(os, name);
+        os << "\n";
+    }
+};
+
+struct StringPropertyName final : public PropertyName
+{
+    String value;
+    StringPropertyName(std::size_t location, String value)
+        : PropertyName(location), value(std::move(value))
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "StringPropertyName value=\'";
+        writeString(os, value);
+        os << "\'\n";
+    }
+};
+
+struct NumericPropertyName final : public PropertyName
+{
+    double value;
+    NumericPropertyName(std::size_t location, double value) : PropertyName(location), value(value)
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "NumericPropertyName value=";
+        writeString(os, value::DoubleHandle::toStringValue(value));
+        os << "\n";
+    }
+};
+
+struct ComputedPropertyName final : public PropertyName
+{
+    Expression *expression;
+    ComputedPropertyName(std::size_t location, Expression *expression)
+        : PropertyName(location), expression(expression)
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "ComputedPropertyName\n";
+        expression->dump(os, indentDepth + 1);
     }
 };
 }

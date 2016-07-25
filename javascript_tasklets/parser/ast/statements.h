@@ -24,6 +24,7 @@
 
 #include "statement.h"
 #include "expression.h"
+#include "binding.h"
 
 namespace javascript_tasklets
 {
@@ -101,6 +102,159 @@ struct StatementIf final : public Statement
             dumpWriteIndent(os, indentDepth + 1);
             os << "<no else-part>\n";
         }
+    }
+};
+
+struct StatementVariable final : public Statement
+{
+    BindingList bindingList;
+    StatementVariable(std::size_t location, BindingList bindingList)
+        : Statement(location), bindingList(std::move(bindingList))
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "StatementVariable\n";
+        for(auto binding : bindingList)
+            binding->dump(os, indentDepth + 1);
+    }
+};
+
+struct StatementDoWhile final : public Statement
+{
+    Statement *body;
+    Expression *condition;
+    StatementDoWhile(std::size_t location, Statement *body, Expression *condition)
+        : Statement(location), body(body), condition(condition)
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "StatementDoWhile\n";
+        body->dump(os, indentDepth + 1);
+        condition->dump(os, indentDepth + 1);
+    }
+};
+
+struct StatementWhile final : public Statement
+{
+    Expression *condition;
+    Statement *body;
+    StatementWhile(std::size_t location, Expression *condition, Statement *body)
+        : Statement(location), condition(condition), body(body)
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "StatementWhile\n";
+        condition->dump(os, indentDepth + 1);
+        body->dump(os, indentDepth + 1);
+    }
+};
+
+struct StatementFor final : public Statement
+{
+    Expression *initialize;
+    Expression *condition;
+    Expression *increment;
+    Statement *body;
+    StatementFor(std::size_t location,
+                 Expression *initialize,
+                 Expression *condition,
+                 Expression *increment,
+                 Statement *body)
+        : Statement(location),
+          initialize(initialize),
+          condition(condition),
+          increment(increment),
+          body(body)
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "StatementFor\n";
+        if(initialize)
+        {
+            initialize->dump(os, indentDepth + 1);
+        }
+        else
+        {
+            dumpWriteIndent(os, indentDepth + 1);
+            os << "<no initialize-part>\n";
+        }
+        if(condition)
+        {
+            condition->dump(os, indentDepth + 1);
+        }
+        else
+        {
+            dumpWriteIndent(os, indentDepth + 1);
+            os << "<no condition>\n";
+        }
+        if(increment)
+        {
+            increment->dump(os, indentDepth + 1);
+        }
+        else
+        {
+            dumpWriteIndent(os, indentDepth + 1);
+            os << "<no increment-part>\n";
+        }
+        body->dump(os, indentDepth + 1);
+    }
+};
+
+struct StatementForVar final : public Statement
+{
+    BindingList initialize;
+    Expression *condition;
+    Expression *increment;
+    Statement *body;
+    StatementForVar(std::size_t location,
+                    BindingList initialize,
+                    Expression *condition,
+                    Expression *increment,
+                    Statement *body)
+        : Statement(location),
+          initialize(std::move(initialize)),
+          condition(condition),
+          increment(increment),
+          body(body)
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "StatementForVar\n";
+        dumpWriteIndent(os, indentDepth + 1);
+        os << "StatementForVarInitializer\n";
+        for(auto binding : initialize)
+        {
+            binding->dump(os, indentDepth + 2);
+        }
+        if(condition)
+        {
+            condition->dump(os, indentDepth + 1);
+        }
+        else
+        {
+            dumpWriteIndent(os, indentDepth + 1);
+            os << "<no condition>\n";
+        }
+        if(increment)
+        {
+            increment->dump(os, indentDepth + 1);
+        }
+        else
+        {
+            dumpWriteIndent(os, indentDepth + 1);
+            os << "<no increment-part>\n";
+        }
+        body->dump(os, indentDepth + 1);
     }
 };
 }

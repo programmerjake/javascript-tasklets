@@ -19,10 +19,10 @@
  *
  */
 
-#ifndef JAVASCRIPT_TASKLETS_PARSER_AST_EXPRESSION_H_
-#define JAVASCRIPT_TASKLETS_PARSER_AST_EXPRESSION_H_
+#ifndef JAVASCRIPT_TASKLETS_PARSER_AST_DECLARATION_H_
+#define JAVASCRIPT_TASKLETS_PARSER_AST_DECLARATION_H_
 
-#include "node.h"
+#include "statement.h"
 
 namespace javascript_tasklets
 {
@@ -30,17 +30,12 @@ namespace parser
 {
 namespace ast
 {
-struct Expression : public Node
+struct Declaration : public Statement
 {
-    using Node::Node;
-};
-
-struct PropertyName : public Node
-{
-    using Node::Node;
+    using Statement::Statement;
 };
 }
 }
 }
 
-#endif /* JAVASCRIPT_TASKLETS_PARSER_AST_EXPRESSION_H_ */
+#endif /* JAVASCRIPT_TASKLETS_PARSER_AST_DECLARATION_H_ */

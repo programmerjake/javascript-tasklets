@@ -33,9 +33,11 @@ code header {
 #include "ast/node.h"
 #include "ast/expression.h"
 #include "ast/statement.h"
+#include "ast/declaration.h"
 #include "ast/literal.h"
 #include "ast/arena.h"
 #include "ast/argument.h"
+#include "ast/binding.h"
 
 namespace javascript_tasklets
 {
@@ -92,6 +94,8 @@ typedef std::vector<ast::ArrayLiteralElement *> ArrayLiteralElementList;
 typedef ast::Argument *ArgumentPointer;
 typedef ast::ExpressionTemplateLiteral *ExpressionTemplateLiteralPointer;
 typedef ast::Statement *StatementPointer;
+typedef ast::Binding *BindingPointer;
+typedef ast::PropertyName *PropertyNamePointer;
 }
 }
 }
@@ -105,6 +109,7 @@ code source {
 #include "../character_properties.h"
 #include "ast/expressions.h"
 #include "ast/statements.h"
+#include "ast/declarations.h"
 #include "../value.h"
 }
 
@@ -126,6 +131,9 @@ typedef std::size_t Location;
 typedef StatementPointer StatementPointer;
 typedef ast::StatementList StatementList;
 typedef DirectivePrologue DirectivePrologue;
+typedef BindingPointer BindingPointer;
+typedef PropertyNamePointer PropertyNamePointer;
+typedef ast::BindingList BindingList;
 
 TokenizerHexDigitValue:unsigned = 
     [^]:ch
@@ -1108,6 +1116,11 @@ IdentifierReference<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Exp
     {$$ = arena.make<ast::ExpressionIdentifierReference>(nameLocation, name);}
     ;
 
+BindingIdentifier<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:String =
+    TokenIdentifierOrYield:name
+    {$$ = std::move(name);}
+    ;
+
 FunctionExpression<isModule:bool, isStrict:bool>:ExpressionPointer =
     &{
         $? = "FunctionExpression not implemented";
@@ -1219,15 +1232,25 @@ ObjectLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Expressio
 #warning implement ObjectLiteral
     };
 
-TemplateLiteralRest<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:TemplateRest =
+PropertyName<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:PropertyNamePointer =
+    TokenLocation:location
     (
-        Expression<isModule, isStrict, true, canHaveYieldOperator>:expression
-        TokenTemplateMiddle:middle
-        {$$.emplace_back(expression, ast::TemplateString(middle.raw, middle.cooked));}
-    )*
-    Expression<isModule, isStrict, true, canHaveYieldOperator>:lastExpression
-    TokenTemplateTail:tail
-    {$$.emplace_back(lastExpression, ast::TemplateString(tail.raw, tail.cooked));}
+        IdentifierName:identifierName
+        {$$ = arena.make<ast::IdentifierPropertyName>(location, std::move(identifierName));}
+        / TokenStringLiteral:stringLiteral
+        {$$ = arena.make<ast::StringPropertyName>(location, std::move(stringLiteral));}
+        / TokenNumericLiteral:numericLiteral
+        {$$ = arena.make<ast::NumericPropertyName>(location, value::StringHandle::toNumberValue(numericLiteral));}
+        / TokenLBracket
+        AssignmentExpression<isModule, isStrict, true, canHaveYieldOperator>:expression
+        TokenRBracket
+        {$$ = arena.make<ast::ComputedPropertyName>(location, expression);}
+    );
+
+Initializer<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
+    TokenEqual
+    AssignmentExpression:expression
+    {$$ = expression;}
     ;
 
 TemplateLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:ExpressionTemplateLiteralPointer =
@@ -1244,6 +1267,17 @@ TemplateLiteral<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:Express
     {
         $$ = arena.make<ast::ExpressionTemplateLiteral>(headLocation, ast::TemplateString(first.raw, first.cooked), std::move(rest));
     }
+    ;
+
+TemplateLiteralRest<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:TemplateRest =
+    (
+        Expression<isModule, isStrict, true, canHaveYieldOperator>:expression
+        TokenTemplateMiddle:middle
+        {$$.emplace_back(expression, ast::TemplateString(middle.raw, middle.cooked));}
+    )*
+    Expression<isModule, isStrict, true, canHaveYieldOperator>:lastExpression
+    TokenTemplateTail:tail
+    {$$.emplace_back(lastExpression, ast::TemplateString(tail.raw, tail.cooked));}
     ;
 
 ArrowFunction<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:ExpressionPointer =
@@ -1706,13 +1740,6 @@ Expression<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOpe
     !TokenComma
     ;
 
-VariableStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPointer =
-    &{
-        $? = "not implemented";
-#warning implement
-    }
-    ;
-
 ContinueStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPointer =
     &{
         $? = "not implemented";
@@ -1809,6 +1836,43 @@ Statement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturn
     {$$ = debuggerStatement;}
     ;
 
+Declaration<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPointer =
+    HoistableDeclaration<isModule, isStrict, canHaveYieldOperator, false>:hoistableDeclaration
+    {$$ = hoistableDeclaration;}
+    / ClassDeclaration<isModule, isStrict, canHaveYieldOperator, false>:classDeclaration
+    {$$ = classDeclaration;}
+    / LexicalDeclaration<isModule, isStrict, true, canHaveYieldOperator>:lexicalDeclaration
+    {$$ = lexicalDeclaration;}
+    ;
+
+HoistableDeclaration<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveEmptyName:bool>:StatementPointer =
+    FunctionDeclaration:functionDeclaration
+    {$$ = functionDeclaration;}
+    / GeneratorDeclaration:generatorDeclaration
+    {$$ = generatorDeclaration;}
+    ;
+
+FunctionDeclaration<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveEmptyName:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+GeneratorDeclaration<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveEmptyName:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
+ClassDeclaration<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveEmptyName:bool>:StatementPointer =
+    &{
+        $? = "not implemented";
+#warning implement
+    }
+    ;
+
 IterationStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
     &{
         $? = "not implemented";
@@ -1857,11 +1921,179 @@ StatementListItem<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHa
     {$$ = declaration;}
     ;
 
-Declaration<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
-    &{
-        $? = "not implemented";
-#warning implement
+LexicalDeclaration<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:StatementPointer =
+    TokenLocation:declarationLocation
+    (
+        TokenLet
+        BindingList:letBindingList
+        {$$ = arena.make<ast::DeclarationLet>(declarationLocation, std::move(letBindingList));}
+        / TokenConst
+        BindingList:constBindingList
+        {$$ = arena.make<ast::DeclarationConst>(declarationLocation, std::move(constBindingList));}
+    )
+    TokenSemicolon
+    ;
+
+BindingList<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:BindingList =
+    LexicalBinding:firstBinding
+    {$$.push_back(firstBinding);}
+    (
+        TokenComma
+        LexicalBinding:nextBinding
+        {$$.push_back(nextBinding);}
+    )*
+    ;
+
+LexicalBinding<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:BindingPointer =
+    TokenLocation:bindingIdentifierLocation
+    BindingIdentifier:bindingIdentifier
+    (
+        Initializer:idInitializer
+        / {idInitializer = nullptr;}
+    )
+    {
+        $$ = arena.make<ast::LexicalBinding>(bindingIdentifierLocation,
+                                             arena.make<ast::BindingIdentifier>(bindingIdentifierLocation,
+                                                                               std::move(bindingIdentifier)),
+                                             idInitializer);
     }
+    / TokenLocation:bindingPatternLocation
+    BindingPattern:bindingPattern
+    Initializer:patternInitializer
+    {$$ = arena.make<ast::LexicalBinding>(bindingPatternLocation, bindingPattern, patternInitializer);}
+    ;
+
+VariableStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPointer =
+    TokenLocation:location
+    TokenVar
+    VariableDeclarationList<isModule, isStrict, true, canHaveYieldOperator>:declarations
+    TokenSemicolon
+    {$$ = arena.make<ast::StatementVariable>(location, std::move(declarations));}
+    ;
+
+VariableDeclarationList<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:BindingList =
+    VariableDeclaration:first
+    {$$.push_back(first);}
+    (
+        TokenComma
+        VariableDeclaration:next
+        {$$.push_back(next);}
+    )*
+    ;
+
+VariableDeclaration<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:BindingPointer =
+    TokenLocation:bindingIdentifierLocation
+    BindingIdentifier:bindingIdentifier
+    (
+        Initializer:idInitializer
+        / {idInitializer = nullptr;}
+    )
+    {
+        $$ = arena.make<ast::VariableDeclaration>(bindingIdentifierLocation,
+                                                  arena.make<ast::BindingIdentifier>(bindingIdentifierLocation,
+                                                                                     std::move(bindingIdentifier)),
+                                                  idInitializer);
+    }
+    / TokenLocation:bindingPatternLocation
+    BindingPattern:bindingPattern
+    Initializer:patternInitializer
+    {$$ = arena.make<ast::VariableDeclaration>(bindingPatternLocation, bindingPattern, patternInitializer);}
+    ;
+
+BindingPattern<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:BindingPointer =
+    ObjectBindingPattern:objectPattern
+    {$$ = objectPattern;}
+    / ArrayBindingPattern:arrayPattern
+    {$$ = arrayPattern;}
+    ;
+
+ObjectBindingPattern<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:BindingPointer =
+    TokenLocation:location
+    TokenLBrace
+    (
+        BindingPropertyList:propertyList
+        TokenComma?
+    )?
+    TokenRBrace
+    {$$ = arena.make<ast::ObjectBindingPattern>(location, std::move(propertyList));}
+    ;
+
+ArrayBindingPattern<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:BindingPointer =
+    TokenLocation:location
+    TokenLBracket
+    ArrayBindingElementList:elementList
+    {$$ = arena.make<ast::ArrayBindingPattern>(location, std::move(elementList));}
+    TokenRBracket
+    ;
+
+ArrayBindingElementList<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:BindingList =
+    (
+        !(
+            TokenComma
+            TokenRBracket
+        )
+        (
+            BindingElement:bindingElement
+            / {bindingElement = nullptr;}
+        )
+        TokenComma
+        {$$.push_back(bindingElement);}
+    )*
+    (
+        BindingRestElement:restElement
+        {$$.push_back(restElement);}
+        / BindingElement:lastElement
+        {$$.push_back(lastElement);}
+    )?
+    ;
+
+BindingPropertyList<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:BindingList =
+    BindingProperty:firstProperty
+    {$$.push_back(firstProperty);}
+    (
+        TokenComma
+        BindingProperty:nextProperty
+        {$$.push_back(nextProperty);}
+    )*
+    ;
+
+BindingProperty<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:BindingPointer =
+    PropertyName:propertyName
+    TokenLocation:location
+    TokenColon
+    BindingElement:element
+    {$$ = arena.make<ast::BindingProperty>(location, propertyName, element);}
+    / SingleNameBinding:singleNameBinding
+    {$$ = singleNameBinding;}
+    ;
+
+BindingElement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:BindingPointer =
+    TokenLocation:location
+    BindingPattern:bindingPattern
+    (
+        Initializer<isModule, isStrict, true, canHaveYieldOperator>:initializer
+        / {initializer = nullptr;}
+    )
+    {$$ = arena.make<ast::BindingElement>(location, bindingPattern, initializer);}
+    / SingleNameBinding:singleNameBinding
+    {$$ = singleNameBinding;}
+    ;
+
+BindingRestElement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:BindingPointer =
+    TokenLocation:location
+    TokenEllipsis
+    BindingIdentifier:name
+    {$$ = arena.make<ast::BindingRestElement>(location, std::move(name));}
+    ;
+
+SingleNameBinding<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:BindingPointer =
+    TokenLocation:location
+    BindingIdentifier:name
+    (
+        Initializer<isModule, isStrict, true, canHaveYieldOperator>:initializer
+        / {initializer = nullptr;}
+    )
+    {$$ = arena.make<ast::SingleNameBinding>(location, std::move(name), initializer);}
     ;
 
 EmptyStatement:StatementPointer =
