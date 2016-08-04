@@ -31,11 +31,21 @@ namespace test
 {
 const auto testSource =
     uR"(
-const a=123, {a=xyz, b:c=45, "345":d, 12:[x, y, z, ...rest], length, [length - 1]:last}=v
-var a = 12, [x, y, z, ] = [1, 2, 3], let;
-let a = 23;
-let [a, b, c] = v;
-let = 25;
+while(console.log('a'))
+{
+    for(i = 0; i < 20; i++)
+        console.log(i);
+    do
+        ;
+    while(console.log('b'))
+    for(;;);
+    for(a;;);
+    for(;b;);
+    for(a;b;);
+    for(;;c);
+    for(a;;c);
+    for(;b;c);
+}
 )";
 void main()
 {

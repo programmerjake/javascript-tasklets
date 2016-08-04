@@ -121,12 +121,19 @@ struct StatementVariable final : public Statement
     }
 };
 
-struct StatementDoWhile final : public Statement
+struct IterationStatement : public Statement
 {
     Statement *body;
+    IterationStatement(std::size_t location, Statement *body) : Statement(location), body(body)
+    {
+    }
+};
+
+struct StatementDoWhile final : public IterationStatement
+{
     Expression *condition;
     StatementDoWhile(std::size_t location, Statement *body, Expression *condition)
-        : Statement(location), body(body), condition(condition)
+        : IterationStatement(location, body), condition(condition)
     {
     }
     virtual void dump(std::ostream &os, std::size_t indentDepth) const override
@@ -138,12 +145,11 @@ struct StatementDoWhile final : public Statement
     }
 };
 
-struct StatementWhile final : public Statement
+struct StatementWhile final : public IterationStatement
 {
     Expression *condition;
-    Statement *body;
     StatementWhile(std::size_t location, Expression *condition, Statement *body)
-        : Statement(location), condition(condition), body(body)
+        : IterationStatement(location, body), condition(condition)
     {
     }
     virtual void dump(std::ostream &os, std::size_t indentDepth) const override
@@ -155,22 +161,20 @@ struct StatementWhile final : public Statement
     }
 };
 
-struct StatementFor final : public Statement
+struct StatementFor final : public IterationStatement
 {
     Expression *initialize;
     Expression *condition;
     Expression *increment;
-    Statement *body;
     StatementFor(std::size_t location,
                  Expression *initialize,
                  Expression *condition,
                  Expression *increment,
                  Statement *body)
-        : Statement(location),
+        : IterationStatement(location, body),
           initialize(initialize),
           condition(condition),
-          increment(increment),
-          body(body)
+          increment(increment)
     {
     }
     virtual void dump(std::ostream &os, std::size_t indentDepth) const override
@@ -208,22 +212,20 @@ struct StatementFor final : public Statement
     }
 };
 
-struct StatementForVar final : public Statement
+struct StatementForVar final : public IterationStatement
 {
     BindingList initialize;
     Expression *condition;
     Expression *increment;
-    Statement *body;
     StatementForVar(std::size_t location,
                     BindingList initialize,
                     Expression *condition,
                     Expression *increment,
                     Statement *body)
-        : Statement(location),
+        : IterationStatement(location, body),
           initialize(std::move(initialize)),
           condition(condition),
-          increment(increment),
-          body(body)
+          increment(increment)
     {
     }
     virtual void dump(std::ostream &os, std::size_t indentDepth) const override
@@ -254,6 +256,142 @@ struct StatementForVar final : public Statement
             dumpWriteIndent(os, indentDepth + 1);
             os << "<no increment-part>\n";
         }
+        body->dump(os, indentDepth + 1);
+    }
+};
+
+struct StatementForConstOrLet final : public IterationStatement
+{
+    Statement *declaration;
+    Expression *condition;
+    Expression *increment;
+    StatementForConstOrLet(std::size_t location,
+                           Statement *declaration,
+                           Expression *condition,
+                           Expression *increment,
+                           Statement *body)
+        : IterationStatement(location, body),
+          declaration(declaration),
+          condition(condition),
+          increment(increment)
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "StatementForConstOrLet\n";
+        declaration->dump(os, indentDepth + 1);
+        if(condition)
+        {
+            condition->dump(os, indentDepth + 1);
+        }
+        else
+        {
+            dumpWriteIndent(os, indentDepth + 1);
+            os << "<no condition>\n";
+        }
+        if(increment)
+        {
+            increment->dump(os, indentDepth + 1);
+        }
+        else
+        {
+            dumpWriteIndent(os, indentDepth + 1);
+            os << "<no increment-part>\n";
+        }
+        body->dump(os, indentDepth + 1);
+    }
+};
+
+struct StatementForEachGeneric : public IterationStatement
+{
+    enum class IterateKind
+    {
+        In,
+        Of
+    };
+    static const char *getIterateKindName(IterateKind iterateKind) noexcept
+    {
+        switch(iterateKind)
+        {
+        case IterateKind::In:
+            return "in";
+        case IterateKind::Of:
+            return "of";
+        }
+        assert(false);
+        return "";
+    }
+    IterateKind iterateKind;
+    Expression *iterable;
+    StatementForEachGeneric(std::size_t location,
+                            IterateKind iterateKind,
+                            Expression *iterable,
+                            Statement *body)
+        : IterationStatement(location, body), iterateKind(iterateKind), iterable(iterable)
+    {
+    }
+};
+
+struct StatementForEachVar final : public StatementForEachGeneric
+{
+    Binding *binding;
+    StatementForEachVar(std::size_t location,
+                        Binding *binding,
+                        IterateKind iterateKind,
+                        Expression *iterable,
+                        Statement *body)
+        : StatementForEachGeneric(location, iterateKind, iterable, body), binding(binding)
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "StatementForEachVar iterateKind=" << getIterateKindName(iterateKind) << "\n";
+        binding->dump(os, indentDepth + 1);
+        iterable->dump(os, indentDepth + 1);
+        body->dump(os, indentDepth + 1);
+    }
+};
+
+struct StatementForEachConstOrLet final : public StatementForEachGeneric
+{
+    Statement *declaration;
+    StatementForEachConstOrLet(std::size_t location,
+                               Statement *declaration,
+                               IterateKind iterateKind,
+                               Expression *iterable,
+                               Statement *body)
+        : StatementForEachGeneric(location, iterateKind, iterable, body), declaration(declaration)
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "StatementForEachConstOrLet iterateKind=" << getIterateKindName(iterateKind) << "\n";
+        declaration->dump(os, indentDepth + 1);
+        iterable->dump(os, indentDepth + 1);
+        body->dump(os, indentDepth + 1);
+    }
+};
+
+struct StatementForEachExpression final : public StatementForEachGeneric
+{
+    Expression *variable;
+    StatementForEachExpression(std::size_t location,
+                               Expression *variable,
+                               IterateKind iterateKind,
+                               Expression *iterable,
+                               Statement *body)
+        : StatementForEachGeneric(location, iterateKind, iterable, body), variable(variable)
+    {
+    }
+    virtual void dump(std::ostream &os, std::size_t indentDepth) const override
+    {
+        dumpWriteIndent(os, indentDepth);
+        os << "StatementForEachExpression iterateKind=" << getIterateKindName(iterateKind) << "\n";
+        variable->dump(os, indentDepth + 1);
+        iterable->dump(os, indentDepth + 1);
         body->dump(os, indentDepth + 1);
     }
 };

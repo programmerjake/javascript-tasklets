@@ -1037,7 +1037,7 @@ TokenSemicolon:Location =
 
 TokenSemicolonAfterDoWhile =
     TokenSemicolon
-    / TokenizerTokenSeperator<true>
+    / &TokenizerTokenSeperator<true>
     ;
 
 TokenIdentifierName:String =
@@ -1873,13 +1873,6 @@ ClassDeclaration<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHav
     }
     ;
 
-IterationStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
-    &{
-        $? = "not implemented";
-#warning implement
-    }
-    ;
-
 SwitchStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
     &{
         $? = "not implemented";
@@ -2126,6 +2119,53 @@ IfStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveRetu
         / TokenElse
         Statement:elsePart
         {$$ = arena.make<ast::StatementIf>(ifLocation, condition, thenPart, elsePart);}
+    )
+    ;
+
+IterationStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHaveReturnStatement:bool>:StatementPointer =
+    TokenLocation:location
+    (
+        TokenDo
+        Statement:body1
+        TokenWhile
+        TokenLParen
+        Expression<isModule, isStrict, true, canHaveYieldOperator>:condition1
+        TokenRParen
+        TokenSemicolonAfterDoWhile
+        {$$ = arena.make<ast::StatementDoWhile>(location, body1, condition1);}
+        / TokenWhile
+        TokenLParen
+        Expression<isModule, isStrict, true, canHaveYieldOperator>:condition2
+        TokenRParen
+        Statement:body2
+        {$$ = arena.make<ast::StatementWhile>(location, condition2, body2);}
+        / TokenFor
+        TokenLParen
+        !(
+            TokenLet
+            TokenLBracket
+        )
+        (
+            Expression<isModule, isStrict, false, canHaveYieldOperator>:initializer1
+            / {initializer1 = nullptr;}
+        )
+        TokenRequiredSemicolon
+        (
+            Expression<isModule, isStrict, true, canHaveYieldOperator>:condition3
+            / {condition3 = nullptr;}
+        )
+        TokenRequiredSemicolon
+        (
+            Expression<isModule, isStrict, false, canHaveYieldOperator>:increment1
+            / {increment1 = nullptr;}
+        )
+        TokenRParen
+        Statement:body3
+        {$$ = arena.make<ast::StatementFor>(location, initializer1, condition3, increment1, body3);}
+        / &{
+            $? = "not implemented";
+#warning implement
+        } 
     )
     ;
 

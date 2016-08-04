@@ -466,7 +466,6 @@ private:
         RuleResult resultFunctionDeclaration[2][2][2][2];
         RuleResult resultGeneratorDeclaration[2][2][2][2];
         RuleResult resultClassDeclaration[2][2][2][2];
-        RuleResult resultIterationStatement[2][2][2][2];
         RuleResult resultSwitchStatement[2][2][2][2];
         RuleResult resultBreakableStatement[2][2][2][2];
         RuleResult resultBlockStatement[2][2][2][2];
@@ -491,6 +490,7 @@ private:
         RuleResult resultEmptyStatement;
         RuleResult resultExpressionStatement[2][2][2];
         RuleResult resultIfStatement[2][2][2][2];
+        RuleResult resultIterationStatement[2][2][2][2];
         RuleResult resultScript;
         RuleResult resultScriptBody;
     };
@@ -978,8 +978,6 @@ public:
     template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveEmptyName>
     StatementPointer parseClassDeclaration();
     template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveReturnStatement>
-    StatementPointer parseIterationStatement();
-    template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveReturnStatement>
     StatementPointer parseSwitchStatement();
     template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveReturnStatement>
     StatementPointer parseBreakableStatement();
@@ -1026,6 +1024,8 @@ public:
     StatementPointer parseExpressionStatement();
     template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveReturnStatement>
     StatementPointer parseIfStatement();
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveReturnStatement>
+    StatementPointer parseIterationStatement();
     ast::StatementList parseScript();
     ast::StatementList parseScriptBody();
 
@@ -1416,8 +1416,6 @@ private:
     template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveEmptyName>
     StatementPointer internalParseClassDeclaration(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveReturnStatement>
-    StatementPointer internalParseIterationStatement(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
-    template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveReturnStatement>
     StatementPointer internalParseSwitchStatement(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveReturnStatement>
     StatementPointer internalParseBreakableStatement(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
@@ -1464,6 +1462,8 @@ private:
     StatementPointer internalParseExpressionStatement(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveReturnStatement>
     StatementPointer internalParseIfStatement(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
+    template <bool isModule, bool isStrict, bool canHaveYieldOperator, bool canHaveReturnStatement>
+    StatementPointer internalParseIterationStatement(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     ast::StatementList internalParseScript(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
     ast::StatementList internalParseScriptBody(std::size_t startLocation, RuleResult &ruleResult, bool isRequiredForSuccess);
 };
@@ -2688,38 +2688,6 @@ extern template StatementPointer Parser::parseClassDeclaration<true, true, true,
 extern template StatementPointer Parser::internalParseClassDeclaration<true, true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 extern template StatementPointer Parser::parseClassDeclaration<true, true, true, true>();
 extern template StatementPointer Parser::internalParseClassDeclaration<true, true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<false, false, false, false>();
-extern template StatementPointer Parser::internalParseIterationStatement<false, false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<false, false, false, true>();
-extern template StatementPointer Parser::internalParseIterationStatement<false, false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<false, false, true, false>();
-extern template StatementPointer Parser::internalParseIterationStatement<false, false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<false, false, true, true>();
-extern template StatementPointer Parser::internalParseIterationStatement<false, false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<false, true, false, false>();
-extern template StatementPointer Parser::internalParseIterationStatement<false, true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<false, true, false, true>();
-extern template StatementPointer Parser::internalParseIterationStatement<false, true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<false, true, true, false>();
-extern template StatementPointer Parser::internalParseIterationStatement<false, true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<false, true, true, true>();
-extern template StatementPointer Parser::internalParseIterationStatement<false, true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<true, false, false, false>();
-extern template StatementPointer Parser::internalParseIterationStatement<true, false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<true, false, false, true>();
-extern template StatementPointer Parser::internalParseIterationStatement<true, false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<true, false, true, false>();
-extern template StatementPointer Parser::internalParseIterationStatement<true, false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<true, false, true, true>();
-extern template StatementPointer Parser::internalParseIterationStatement<true, false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<true, true, false, false>();
-extern template StatementPointer Parser::internalParseIterationStatement<true, true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<true, true, false, true>();
-extern template StatementPointer Parser::internalParseIterationStatement<true, true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<true, true, true, false>();
-extern template StatementPointer Parser::internalParseIterationStatement<true, true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
-extern template StatementPointer Parser::parseIterationStatement<true, true, true, true>();
-extern template StatementPointer Parser::internalParseIterationStatement<true, true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 extern template StatementPointer Parser::parseSwitchStatement<false, false, false, false>();
 extern template StatementPointer Parser::internalParseSwitchStatement<false, false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 extern template StatementPointer Parser::parseSwitchStatement<false, false, false, true>();
@@ -3280,6 +3248,38 @@ extern template StatementPointer Parser::parseIfStatement<true, true, true, fals
 extern template StatementPointer Parser::internalParseIfStatement<true, true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 extern template StatementPointer Parser::parseIfStatement<true, true, true, true>();
 extern template StatementPointer Parser::internalParseIfStatement<true, true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<false, false, false, false>();
+extern template StatementPointer Parser::internalParseIterationStatement<false, false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<false, false, false, true>();
+extern template StatementPointer Parser::internalParseIterationStatement<false, false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<false, false, true, false>();
+extern template StatementPointer Parser::internalParseIterationStatement<false, false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<false, false, true, true>();
+extern template StatementPointer Parser::internalParseIterationStatement<false, false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<false, true, false, false>();
+extern template StatementPointer Parser::internalParseIterationStatement<false, true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<false, true, false, true>();
+extern template StatementPointer Parser::internalParseIterationStatement<false, true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<false, true, true, false>();
+extern template StatementPointer Parser::internalParseIterationStatement<false, true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<false, true, true, true>();
+extern template StatementPointer Parser::internalParseIterationStatement<false, true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<true, false, false, false>();
+extern template StatementPointer Parser::internalParseIterationStatement<true, false, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<true, false, false, true>();
+extern template StatementPointer Parser::internalParseIterationStatement<true, false, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<true, false, true, false>();
+extern template StatementPointer Parser::internalParseIterationStatement<true, false, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<true, false, true, true>();
+extern template StatementPointer Parser::internalParseIterationStatement<true, false, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<true, true, false, false>();
+extern template StatementPointer Parser::internalParseIterationStatement<true, true, false, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<true, true, false, true>();
+extern template StatementPointer Parser::internalParseIterationStatement<true, true, false, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<true, true, true, false>();
+extern template StatementPointer Parser::internalParseIterationStatement<true, true, true, false>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
+extern template StatementPointer Parser::parseIterationStatement<true, true, true, true>();
+extern template StatementPointer Parser::internalParseIterationStatement<true, true, true, true>(std::size_t startLocation, RuleResult &ruleResultOut, bool isRequiredForSuccess);
 }
 }
 
