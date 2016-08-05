@@ -1841,7 +1841,7 @@ Declaration<isModule:bool, isStrict:bool, canHaveYieldOperator:bool>:StatementPo
     {$$ = hoistableDeclaration;}
     / ClassDeclaration<isModule, isStrict, canHaveYieldOperator, false>:classDeclaration
     {$$ = classDeclaration;}
-    / LexicalDeclaration<isModule, isStrict, true, canHaveYieldOperator>:lexicalDeclaration
+    / LexicalDeclaration<isModule, isStrict, true, canHaveYieldOperator, false>:lexicalDeclaration
     {$$ = lexicalDeclaration;}
     ;
 
@@ -1914,7 +1914,7 @@ StatementListItem<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canHa
     {$$ = declaration;}
     ;
 
-LexicalDeclaration<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:StatementPointer =
+LexicalDeclaration<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool, isSemicolonRequired:bool>:StatementPointer =
     TokenLocation:declarationLocation
     (
         TokenLet
@@ -1924,7 +1924,14 @@ LexicalDeclaration<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHave
         BindingList:constBindingList
         {$$ = arena.make<ast::DeclarationConst>(declarationLocation, std::move(constBindingList));}
     )
-    TokenSemicolon
+    (
+        TokenRequiredSemicolon
+        / TokenSemicolon
+        &{
+            if(isSemicolonRequired)
+                $? = "missing ;";
+        }
+    )
     ;
 
 BindingList<isModule:bool, isStrict:bool, canHaveInOperator:bool, canHaveYieldOperator:bool>:BindingList =
@@ -2146,8 +2153,8 @@ IterationStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canH
             TokenLBracket
         )
         (
-            Expression<isModule, isStrict, false, canHaveYieldOperator>:initializer1
-            / {initializer1 = nullptr;}
+            Expression<isModule, isStrict, false, canHaveYieldOperator>:initializer3
+            / {initializer3 = nullptr;}
         )
         TokenRequiredSemicolon
         (
@@ -2156,12 +2163,44 @@ IterationStatement<isModule:bool, isStrict:bool, canHaveYieldOperator:bool, canH
         )
         TokenRequiredSemicolon
         (
-            Expression<isModule, isStrict, false, canHaveYieldOperator>:increment1
-            / {increment1 = nullptr;}
+            Expression<isModule, isStrict, false, canHaveYieldOperator>:increment3
+            / {increment3 = nullptr;}
         )
         TokenRParen
         Statement:body3
-        {$$ = arena.make<ast::StatementFor>(location, initializer1, condition3, increment1, body3);}
+        {$$ = arena.make<ast::StatementFor>(location, initializer3, condition3, increment3, body3);}
+        / TokenFor
+        TokenLParen
+        TokenVar
+        VariableDeclarationList<isModule, isStrict, false, canHaveYieldOperator>:initializer4
+        TokenRequiredSemicolon
+        (
+            Expression<isModule, isStrict, true, canHaveYieldOperator>:condition4
+            / {condition4 = nullptr;}
+        )
+        TokenRequiredSemicolon
+        (
+            Expression<isModule, isStrict, false, canHaveYieldOperator>:increment4
+            / {increment4 = nullptr;}
+        )
+        TokenRParen
+        Statement:body4
+        {$$ = arena.make<ast::StatementForVar>(location, std::move(initializer4), condition4, increment4, body4);}
+        / TokenFor
+        TokenLParen
+        LexicalDeclaration<isModule, isStrict, false, canHaveYieldOperator, true>:initializer5
+        (
+            Expression<isModule, isStrict, true, canHaveYieldOperator>:condition5
+            / {condition5 = nullptr;}
+        )
+        TokenRequiredSemicolon
+        (
+            Expression<isModule, isStrict, false, canHaveYieldOperator>:increment5
+            / {increment5 = nullptr;}
+        )
+        TokenRParen
+        Statement:body5
+        {$$ = arena.make<ast::StatementForConstOrLet>(location, initializer5, condition5, increment5, body5);}
         / &{
             $? = "not implemented";
 #warning implement

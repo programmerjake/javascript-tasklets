@@ -33,7 +33,7 @@ const auto testSource =
     uR"(
 while(console.log('a'))
 {
-    for(i = 0; i < 20; i++)
+    for(var i = 0; i < 20; i++)
         console.log(i);
     do
         ;
@@ -45,6 +45,11 @@ while(console.log('a'))
     for(;;c);
     for(a;;c);
     for(;b;c);
+    for(const j=0;;j++)
+    {
+        if(j > 5)
+            eval('throw "a"');
+    }
 }
 )";
 void main()
